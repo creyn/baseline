@@ -1,0 +1,6 @@
+{
+  "name": "baseline-diagrams",
+  "private": true,
+  "description": "Generates the architecture and sequence diagrams as SVG. No dependencies.",
+  "scripts": { "build": "node architecture.js && node sequence.js" }
+}

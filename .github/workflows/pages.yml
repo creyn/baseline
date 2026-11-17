@@ -1,0 +1,56 @@
+name: Spikes on GitHub Pages
+
+# Publishes only the spikes/ folder. Each spike is a static page in its own subfolder.
+on:
+  push:
+    branches: [main]
+    paths: ['spikes/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Rules tests
+        run: node --test spikes/
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build site
+        run: |
+          mkdir -p _site
+          cp -r spikes _site/spikes
+          find _site -name '*.test.mjs' -delete
+          {
+            echo '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            echo '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            echo '<title>Baseline spikes</title></head><body style="font-family:system-ui;max-width:700px;margin:2rem auto;padding:0 16px">'
+            echo '<h1>Baseline spikes</h1><ul>'
+            for d in spikes/*/; do n=$(basename "$d"); echo "<li><a href=\"spikes/$n/\">$n</a></li>"; done
+            echo '</ul></body></html>'
+          } > _site/index.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

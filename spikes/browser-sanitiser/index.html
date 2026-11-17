@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' blob: data:; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Browser sanitiser spike</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Browser sanitiser</h1>
+  <p class="lead">Spike: render a lab result, OCR it and mask everything except the results, entirely in this browser. Files never leave the device: this page has no backend, and its Content Security Policy blocks requests to other origins.</p>
+</header>
+
+<main>
+  <section class="card">
+    <label class="field">
+      <span>Lab result (PDF or photo)</span>
+      <input id="file" type="file" accept="application/pdf,image/*">
+    </label>
+    <label class="field">
+      <span>Known identifiers <small>(optional, kept in memory only): name, PESEL, address, one per line</small></span>
+      <textarea id="known" rows="3" autocomplete="off" spellcheck="false"></textarea>
+    </label>
+    <div class="row">
+      <label class="field inline">
+        <span>Resolution</span>
+        <select id="dpi">
+          <option value="200">200 DPI</option>
+          <option value="300" selected>300 DPI</option>
+        </select>
+      </label>
+      <label class="field inline check">
+        <input id="debug" type="checkbox">
+        <span>Show decisions on the original (local only)</span>
+      </label>
+    </div>
+    <button id="run" type="button" disabled>Sanitise</button>
+    <p id="status" class="status">Loading OCR engine…</p>
+  </section>
+
+  <section id="summary" class="card" hidden></section>
+  <section id="pages"></section>
+</main>
+
+<footer>
+  <p>Synthetic sample: <a href="samples/synthetic-lab-result.png" download>synthetic-lab-result.png</a> (fake data).</p>
+  <p id="env"></p>
+</footer>
+
+<script src="vendor/tesseract/tesseract.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
