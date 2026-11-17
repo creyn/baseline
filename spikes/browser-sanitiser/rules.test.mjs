@@ -23,6 +23,8 @@ test('word classes', () => {
   assert.equal(classifyWord('Kowalski'), 'unknown');
   assert.equal(classifyWord('tys/l'), 'unit'); // tys/µl as read by OCR
   assert.equal(classifyWord('ulU/ml'), 'unit'); // µIU/ml as read by OCR
+  assert.equal(classifyWord('pg/ml*'), 'unit'); // footnote marker after a unit
+  assert.equal(classifyWord('*'), 'flag');
   assert.notEqual(classifyWord('12/3'), 'unit'); // an address number is not a unit
 });
 

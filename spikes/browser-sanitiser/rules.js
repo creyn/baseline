@@ -63,7 +63,8 @@ export function normalise(word) {
     .toLowerCase()
     .replace(/^[\s"'„”“,;:()[\]{}]+/, '')
     .replace(/[\s"'„”“,;:()[\]{}]+$/, '')
-    .replace(/\.$/, '');
+    .replace(/\.$/, '')
+    .replace(/(?<=[^*])[*†]+$/, ''); // footnote markers such as pg/ml*; a lone * stays a flag
 }
 
 const PARAMS = set(PARAMETER_WORDS);

@@ -34,12 +34,13 @@ function setStatus(text) {
 
 async function loadPages(file, dpi) {
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-    const pdf = await pdfjs.getDocument({
+    const task = pdfjs.getDocument({
       data: new Uint8Array(await file.arrayBuffer()),
       standardFontDataUrl: url('vendor/pdfjs/standard_fonts/'),
       wasmUrl: url('vendor/pdfjs/wasm/'),
       enableXfa: false,
-    }).promise;
+    });
+    const pdf = await task.promise;
     const pages = [];
     for (let n = 1; n <= Math.min(pdf.numPages, MAX_PAGES); n++) {
       const page = await pdf.getPage(n);
@@ -49,7 +50,7 @@ async function loadPages(file, dpi) {
       pages.push(canvas);
     }
     const skipped = pdf.numPages - pages.length;
-    await pdf.destroy();
+    await task.destroy();
     return { pages, skipped };
   }
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });

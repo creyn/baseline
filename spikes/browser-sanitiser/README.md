@@ -35,6 +35,7 @@ All libraries and the language model are served from this site. The page's Conte
 | Date | Device | Document | DPI | Time per page | Leaks | Values lost | Notes |
 |---|---|---|---|---|---|---|---|
 | 2026-11-17 | server, Node 22, 1 vCPU | synthetic sample, 1 page | 300 | 10.4 s (OCR 5.8, compose 1.9, leak check 2.7) | 0 | 0 | after adding OCR variants of µ in units |
+| 2026-11-17 | server, headless Chromium, 1 vCPU | real result, text PDF, 1 page | 300 | 13.9 s (OCR 8.9, leak check 4.3) | 0 | units, fixed | the PDF failed on mobile browsers until PDF.js was switched to its legacy build; units with a footnote marker (pg/ml*) were masked until markers were stripped |
 
 Real documents are tested only on the user's own devices and are never committed.
 
@@ -43,3 +44,4 @@ Real documents are tested only on the user's own devices and are never committed
 - GitHub Pages cannot send HTTP headers, so the CSP is a `<meta>` tag. It does not apply to Web Workers. A production deployment sends the policy as a header.
 - The parameter dictionary in [rules.js](rules.js) is a starting list. An unknown parameter is masked, which is safe but loses data.
 - Up to 5 pages per document.
+- PDF.js is the legacy build. The modern build uses JavaScript features that current mobile browsers do not have yet.
