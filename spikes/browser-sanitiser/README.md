@@ -17,7 +17,7 @@ All libraries and the language model are served from this site. The page's Conte
 ## Run it
 
 - Online: the GitHub Pages site of this repository, under `spikes/browser-sanitiser/`.
-- Rules tests: `node --test spikes/browser-sanitiser/`.
+- Rules tests: `node --test 'spikes/**/*.test.mjs'`.
 - A synthetic sample with fake data: [samples/synthetic-lab-result.png](samples/synthetic-lab-result.png), generated from the SVG next to it.
 
 ## Success criteria

@@ -1,4 +1,4 @@
-// Run with: node --test spikes/browser-sanitiser/
+// Run with: node --test 'spikes/**/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { isValidPesel, classifyWord, decideLine, findLeaks, prepareKnownIdentifiers } from './rules.js';

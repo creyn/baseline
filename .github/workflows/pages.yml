@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 22
       - name: Rules tests
-        run: node --test spikes/
+        run: node --test 'spikes/**/*.test.mjs'
 
   deploy:
     needs: test
