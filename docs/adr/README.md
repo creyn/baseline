@@ -11,6 +11,7 @@ Format and rules are described in [ADR-0001](0001-record-architecture-decisions.
 | 0005 | [No archive of original documents in the first version](0005-no-archive-of-originals.md) | Accepted |
 | 0006 | [Zone-based masking: keep the results table, mask the rest](0006-zone-based-masking.md) | Accepted |
 | 0007 | [Unit normalisation: keep the original, derive a normalised value](0007-unit-normalisation.md) | Accepted |
+| 0008 | [Reference ranges are stored with each result](0008-reference-ranges.md) | Accepted |
 
 ## To be written
 
