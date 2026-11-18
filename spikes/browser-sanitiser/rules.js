@@ -43,7 +43,7 @@ const FLAGS = ['h', 'l', '↑', '↓', '*', '!', '+', '-', '--', '++', '+++', '(
 
 // Labels that make a whole line personal: the line is masked in full.
 const PERSONAL_LINE_LABELS = [
-  'pacjent', 'pacjenta', 'imię', 'nazwisko', 'pesel', 'urodzenia', 'adres', 'ulica', 'ul.',
+  'pacjent', 'pacjenta', 'imię', 'nazwisko', 'pesel', 'urodzenia', 'ur', 'adres', 'ulica', 'ul.',
   'telefon', 'tel.', 'tel', 'e-mail', 'email', 'lekarz', 'lekarza', 'zlecający', 'zleceniodawca',
   'npwz', 'pwz', 'podpis', 'pieczątka', 'kod', 'kreskowy', 'nr', 'numer', 'id', 'zlecenie', 'zlecenia',
   // People who performed, validated or signed the result
@@ -53,9 +53,16 @@ const PERSONAL_LINE_LABELS = [
 ];
 
 // Labels of a date field: the label and the date and time right after it are kept.
-// The date of birth is not one of them.
-const DATE_LABELS = ['pobrania', 'pobranie', 'wykonania', 'wykonano', 'wyniku', 'przyjęcia', 'rejestracji', 'autoryzacji',
-  'wydania', 'wystawienia', 'zatwierdzenia'];
+// Matched as word stems, so abbreviations work too: "Data rej.:", "Data pob.:", "Data wyk.:".
+// The date of birth ("urodzenia", "ur.") is never a date field.
+const DATE_LABELS = ['wyniku'];
+const DATE_LABEL_STEMS = ['rej', 'pob', 'przyj', 'wyk', 'wyd', 'aut', 'zatw', 'wyst'];
+const BIRTH_LABELS = /^(ur|urodz|urodzenia|urodzony|urodzona)$/;
+const isDateLabel = n => {
+  const w = n.replace(/[.:]+$/, '');
+  if (BIRTH_LABELS.test(w)) return false;
+  return DATE_LABELS.includes(w) || DATE_LABEL_STEMS.some(s => w.startsWith(s));
+};
 
 // Labels of a method line, e.g. "Badanie wykonano metodą ... na aparacie Cobas ...".
 // The whole line is kept (except denylist hits), because method and analyser names are open-ended.
@@ -155,7 +162,7 @@ export function classifyWord(text) {
   if (TIME.test(n)) return 'time';
   if (NUMBER.test(n) || RANGE.test(n.replace(/^\(|\)$/g, ''))) return 'number';
   if (PARAMS.has(n) || PARAMS_ASCII.has(a)) return 'parameter';
-  if (HEADERS.has(n) || DATE_LABELS.includes(n) || HEADERS_ASCII.has(a)) return 'header';
+  if (HEADERS.has(n) || HEADERS_ASCII.has(a)) return 'header';
   return 'unknown';
 }
 
@@ -181,7 +188,7 @@ const isAboveResults = (words, resultsTop) =>
 function dateFieldWords(norm, kinds) {
   const keep = new Set();
   norm.forEach((n, i) => {
-    if (!DATE_LABELS.includes(n.replace(/:$/, ''))) return;
+    if (!isDateLabel(n)) return;
     let j = i + 1;
     while (j < norm.length && DATE_FILLERS.includes(norm[j].replace(/:$/, ''))) j++;
     if (j >= norm.length || kinds[j] !== 'date') return; // a label without a date: nothing to keep

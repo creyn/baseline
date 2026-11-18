@@ -77,6 +77,13 @@ test('method lines are kept, except denylist hits', () => {
   assert.equal(kept('Badanie wykonano metodą ECLIA przez Testowy', prepareKnownIdentifiers('Jan Testowy')), 5);
 });
 
+test('abbreviated date labels', () => {
+  assert.deepEqual(keptWords('Data rej.: 2026-05-28 09:12'), ['Data', 'rej.:', '2026-05-28', '09:12']);
+  assert.deepEqual(keptWords('Data pob: 2026-05-28'), ['Data', 'pob:', '2026-05-28']);
+  assert.equal(kept('Data ur: 1980-01-01'), 0);
+  assert.deepEqual(keptWords('Data ur.: 1980-01-01 Data rej.: 2026-05-28'), ['Data', 'rej.:', '2026-05-28']);
+});
+
 test('dates of admission, analysis and release', () => {
   assert.equal(keptWords('Data/godz. wydania: 2026-05-28 11:38:55').length, 4);
   assert.equal(keptWords('Data/godz wykonania: 2026-05-28 11:38:53').length, 4);
