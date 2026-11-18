@@ -1,7 +1,7 @@
 // Run with: node --test 'spikes/**/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isValidPesel, classifyWord, decideLine, findLeaks, findHeaderBottom, prepareKnownIdentifiers } from './rules.js';
+import { isValidPesel, classifyWord, decideLine, findLeaks, findResultsTop, prepareKnownIdentifiers } from './rules.js';
 
 const line = s => s.split(' ').map(text => ({ text, confidence: 95 }));
 const kept = (s, known = []) => decideLine(line(s), known).filter(d => d.keep).length;
@@ -84,17 +84,34 @@ test('dates of admission, analysis and release', () => {
 
 const at = (s, y) => s.split(' ').map((text, i) => ({ text, confidence: 95, bbox: { x0: i * 100, y0: y, x1: i * 100 + 90, y1: y + 40 } }));
 
-test('laboratory header above the first patient label', () => {
-  const page = [at('LABORATORIUM PRZYKŁADOWE', 200), at('ul. Testowa 12/3, 00-950 Warszawa', 300), at('Pacjent: Jan Testowy', 500), at('Adres: ul. Przykładowa 5', 600)];
-  const headerBottom = findHeaderBottom(page, 3508);
-  assert.equal(headerBottom, 500);
-  assert.equal(decideLine(page[1], [], { headerBottom }).filter(d => d.keep).length, 5); // lab address kept
-  assert.equal(decideLine(page[3], [], { headerBottom }).filter(d => d.keep).length, 0); // patient address masked
-  assert.equal(decideLine(at('Testowy 44051401359', 250), prepareKnownIdentifiers('Testowy'), { headerBottom }).filter(d => d.keep).length, 0);
-  assert.equal(findLeaks([page[1]], [], { headerBottom }).length, 0);
+test('above the results table only date fields are kept', () => {
+  const page = [
+    at('LABORATORIUM PRZYKŁADOWE', 200),
+    at('Wynik zatwierdził: Anna Walidująca', 300),
+    at('Lekarz kierujący: - Data rejestracji: 2026-05-28', 400),
+    at('Odbiór wyniku: Osobiście Data/godz. pobrania: 2026-05-28 09:36', 450),
+    at('Data urodzenia: 1980-01-01', 500),
+    at('Badanie Wynik Jedn. Zakres referencyjny', 1000),
+    at('TSH 7,640 ulU/ml 0,270-4,200 H', 1100),
+  ];
+  const resultsTop = findResultsTop(page);
+  assert.equal(resultsTop, 1000);
+  const keptAt = i => page[i].filter((_, j) => decideLine(page[i], [], { resultsTop })[j].keep).map(w => w.text);
+  assert.deepEqual(keptAt(0), []);
+  assert.deepEqual(keptAt(1), []);
+  assert.deepEqual(keptAt(2), ['Data', 'rejestracji:', '2026-05-28']);
+  assert.deepEqual(keptAt(3), ['Data/godz.', 'pobrania:', '2026-05-28', '09:36']);
+  assert.deepEqual(keptAt(4), []); // date of birth
+  assert.equal(keptAt(6).length, 5); // the whole result row
+  assert.equal(findLeaks([page[1]], [], { resultsTop }).length, 4); // every word above the table outside a date field is a leak
 });
 
-test('no header zone without a patient label near the top', () => {
-  assert.equal(findHeaderBottom([at('LABORATORIUM', 200), at('Glukoza 95 mg/dl', 1200)], 3508), 0);
-  assert.equal(findHeaderBottom([at('LABORATORIUM', 200), at('Pacjent: Jan', 1500)], 3508), 0); // below 25% of the page
+test('people who performed or validated the result are masked anywhere', () => {
+  assert.equal(kept('Wynik zatwierdził: mgr Anna Walidująca'), 0);
+  assert.equal(kept('Badanie wykonano metodą ECLIA. Wykonał: Jan Diagnosta'), 0);
+  assert.deepEqual(keptWords('Data autoryzacji: 2026-05-28 12:01 dr Anna Walidująca'), ['Data', 'autoryzacji:', '2026-05-28', '12:01']);
+});
+
+test('no results table: line rules only', () => {
+  assert.equal(findResultsTop([at('LABORATORIUM', 200), at('Uwagi: brak', 1200)]), 0);
 });

@@ -46,9 +46,14 @@ const PERSONAL_LINE_LABELS = [
   'pacjent', 'pacjenta', 'imię', 'nazwisko', 'pesel', 'urodzenia', 'adres', 'ulica', 'ul.',
   'telefon', 'tel.', 'tel', 'e-mail', 'email', 'lekarz', 'lekarza', 'zlecający', 'zleceniodawca',
   'npwz', 'pwz', 'podpis', 'pieczątka', 'kod', 'kreskowy', 'nr', 'numer', 'id', 'zlecenie', 'zlecenia',
+  // People who performed, validated or signed the result
+  'mgr', 'dr', 'lek', 'prof', 'diagnosta', 'diagnostka', 'technik', 'analityk',
+  'wykonał', 'wykonała', 'autoryzował', 'autoryzowała', 'zatwierdził', 'zatwierdziła',
+  'walidował', 'walidowała', 'zwalidował', 'zwalidowała', 'sprawdził', 'sprawdziła',
 ];
 
-// Labels that allow a date on the same line.
+// Labels of a date field: the label and the date and time right after it are kept.
+// The date of birth is not one of them.
 const DATE_LABELS = ['pobrania', 'pobranie', 'wykonania', 'wykonano', 'wyniku', 'przyjęcia', 'rejestracji', 'autoryzacji',
   'wydania', 'wystawienia', 'zatwierdzenia'];
 
@@ -60,11 +65,14 @@ const METHOD_LABELS = ['metodą', 'metoda', 'metody', 'aparacie', 'aparat', 'apa
 const ICD_MARKER = /^icd-?9(-?pl)?:?$/;
 const ICD_CODE = /^[a-z]\d{2}[a-z0-9]?$/;
 
-// Laboratory header: lines above the first patient or referrer label, in the top part of the page,
-// are kept (lab name, address, logo text), except denylist hits. Stems, matched at word start.
-const HEADER_STOP_STEMS = ['pacjen', 'pesel', 'imię', 'imie', 'nazwisk', 'urodz', 'adres', 'lekarz', 'kieruj',
-  'zlecaj', 'zleceniodaw', 'kontrahent', 'płatnik', 'platnik'];
-const HEADER_MAX_FRACTION = 0.25;
+// Words that may sit between "Data" and the label, or between the label and the date.
+const DATE_PREFIX = /^(data|godz|godzina|data\/godz|data\/godzina|i)$/;
+const DATE_FILLERS = ['prób', 'próbki', 'próbek', 'materiału', 'pdf/wydruku', 'wydruku', 'pdf', 'godz', 'godzina', ''];
+
+// Words of a results table header, e.g. "Badanie Wynik Jedn. Zakres referencyjny".
+const TABLE_WORDS = ['badanie', 'badania', 'parametr', 'nazwa', 'wynik', 'wyniki', 'wartość', 'jednostka', 'jednostki',
+  'jedn', 'j.m', 'norma', 'normy', 'zakres', 'referencyjny', 'referencyjne'];
+
 
 const set = s => new Set(s.split(/\s+/).filter(Boolean).map(normalise));
 
@@ -151,44 +159,60 @@ export function classifyWord(text) {
   return 'unknown';
 }
 
-// Bottom edge (px) of the laboratory header, or 0 when there is none.
-// lines: [[{ text, bbox }]], pageHeight in px.
-export function findHeaderBottom(lines, pageHeight) {
+// Top edge (px) of the results table: the first line that is a table header (two or more table
+// words) or a result row (a parameter with a number). Everything above it is masked except date
+// fields. Returns 0 when no table is found; then only the line rules apply.
+export function findResultsTop(lines) {
   const sorted = [...lines].sort((a, b) => a[0].bbox.y0 - b[0].bbox.y0);
   for (const words of sorted) {
-    const stop = words.some(w => {
-      const n = normalise(w.text).replace(/:$/, '');
-      return HEADER_STOP_STEMS.some(s => n.startsWith(s));
-    });
-    if (stop) {
-      const y = Math.min(...words.map(w => w.bbox.y0));
-      return y <= pageHeight * HEADER_MAX_FRACTION ? y : 0;
-    }
+    const norm = words.map(w => normalise(w.text).replace(/:$/, ''));
+    const kinds = words.map(w => classifyWord(w.text));
+    const tableHeader = norm.filter(n => TABLE_WORDS.includes(n)).length >= 2;
+    const resultRow = kinds.includes('parameter') && kinds.includes('number');
+    if (tableHeader || resultRow) return Math.min(...words.map(w => w.bbox.y0));
   }
-  return 0; // no patient label found: no header zone, everything goes through the normal rules
+  return 0;
 }
 
-const isInHeader = (words, headerBottom) => headerBottom > 0 && words.every(w => w.bbox && w.bbox.y1 <= headerBottom);
+const isAboveResults = (words, resultsTop) =>
+  resultsTop > 0 && words.every(w => w.bbox && (w.bbox.y0 + w.bbox.y1) / 2 < resultsTop);
+
+// Indexes of the words of date fields: [Data[/godz.]] label [fillers] date [time].
+function dateFieldWords(norm, kinds) {
+  const keep = new Set();
+  norm.forEach((n, i) => {
+    if (!DATE_LABELS.includes(n.replace(/:$/, ''))) return;
+    let j = i + 1;
+    while (j < norm.length && DATE_FILLERS.includes(norm[j].replace(/:$/, ''))) j++;
+    if (j >= norm.length || kinds[j] !== 'date') return; // a label without a date: nothing to keep
+    keep.add(i);
+    for (let k = i - 1; k >= 0 && k >= i - 2 && DATE_PREFIX.test(norm[k].replace(/[.:]$/, '')); k--) keep.add(k);
+    for (let k = i + 1; k < j; k++) keep.add(k);
+    for (let k = j; k < norm.length && (kinds[k] === 'date' || kinds[k] === 'time'); k++) keep.add(k);
+  });
+  return keep;
+}
 
 // Decides for every word of one OCR line: { keep: boolean, reason: string }.
 // words: [{ text, bbox }], known: output of prepareKnownIdentifiers,
-// options.headerBottom: from findHeaderBottom.
-export function decideLine(words, known = [], { headerBottom = 0 } = {}) {
+// options.resultsTop: from findResultsTop.
+export function decideLine(words, known = [], { resultsTop = 0 } = {}) {
   const norm = words.map(w => normalise(w.text));
-  const inHeader = isInHeader(words, headerBottom);
+  const aboveResults = isAboveResults(words, resultsTop);
   const methodLine = norm.some(n => METHOD_LABELS.includes(n));
   const icdAt = norm.findIndex(n => ICD_MARKER.test(n));
   const kinds = words.map(w => classifyWord(w.text));
+  const dateField = dateFieldWords(norm, kinds);
   const personalLine = norm.some(n => PERSONAL_LINE_LABELS.includes(n) || PERSONAL_LINE_LABELS.includes(n.replace(/:$/, '')));
   const hasAnchor = icdAt >= 0 || kinds.some(k => k === 'parameter' || k === 'unit');
-  const hasDateLabel = norm.some(n => DATE_LABELS.includes(n.replace(/:$/, '')));
 
   return words.map((w, i) => {
     const raw = w.text.replace(/\s+/g, '');
     if (isValidPesel(raw.replace(/\D/g, '')) && raw.replace(/\D/g, '').length === 11) return { keep: false, reason: 'pesel' };
     if (LONG_DIGITS.test(raw)) return { keep: false, reason: 'long-number' };
     if (matchesKnown(w.text, known)) return { keep: false, reason: 'known-identifier' };
-    if (inHeader) return { keep: true, reason: 'lab-header' };
+    if (dateField.has(i)) return { keep: true, reason: 'date-field' };
+    if (aboveResults) return { keep: false, reason: 'above-results' };
     if (personalLine) return { keep: false, reason: 'personal-line' };
     if (methodLine) return { keep: true, reason: 'method' };
     if (icdAt >= 0 && i <= icdAt) return { keep: true, reason: i === icdAt ? 'icd-9' : 'test-name' };
@@ -203,7 +227,7 @@ export function decideLine(words, known = [], { headerBottom = 0 } = {}) {
         return hasAnchor ? { keep: true, reason: kinds[i] } : { keep: false, reason: `${kinds[i]}-without-anchor` };
       case 'date':
       case 'time':
-        return hasDateLabel ? { keep: true, reason: kinds[i] } : { keep: false, reason: `${kinds[i]}-without-label` };
+        return { keep: false, reason: `${kinds[i]}-without-label` };
       default:
         return { keep: false, reason: 'not-allowlisted' };
     }
@@ -212,10 +236,10 @@ export function decideLine(words, known = [], { headerBottom = 0 } = {}) {
 
 // Leak check on the OCR of the masked image. Any denylist hit or any
 // confidently read word outside the allowlist blocks the document.
-export function findLeaks(lines, known = [], { minConfidence = 60, headerBottom = 0 } = {}) {
+export function findLeaks(lines, known = [], { minConfidence = 60, resultsTop = 0 } = {}) {
   const leaks = [];
   for (const words of lines) {
-    const decisions = decideLine(words, known, { headerBottom });
+    const decisions = decideLine(words, known, { resultsTop });
     words.forEach((w, i) => {
       const d = decisions[i];
       if (d.keep) return;

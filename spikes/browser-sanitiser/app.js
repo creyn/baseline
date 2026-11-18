@@ -70,15 +70,15 @@ function toImage(canvas, alt) {
     }, 'image/png'));
 }
 
-function drawDecisions(source, decisions, headerBottom) {
+function drawDecisions(source, decisions, resultsTop) {
   const c = makeCanvas(source.width, source.height);
   const ctx = c.getContext('2d');
   ctx.drawImage(source, 0, 0);
   ctx.lineWidth = Math.max(2, source.width / 800);
-  if (headerBottom) { // laboratory header zone
+  if (resultsTop) { // above the results table: only date fields are kept
     ctx.strokeStyle = '#1565c0';
     ctx.setLineDash([24, 12]);
-    ctx.strokeRect(4, 4, source.width - 8, headerBottom - 8);
+    ctx.strokeRect(4, 4, source.width - 8, resultsTop - 8);
     ctx.setLineDash([]);
   }
   for (const d of decisions) {
@@ -135,9 +135,9 @@ async function run() {
         href, download: `page-${i + 1}-masked.png`, textContent: 'Download masked PNG', className: 'button',
       }));
       if ($('debug').checked) {
-        const dbg = await toImage(drawDecisions(source, r.decisions, r.headerBottom), `Decisions on page ${i + 1}`);
+        const dbg = await toImage(drawDecisions(source, r.decisions, r.resultsTop), `Decisions on page ${i + 1}`);
         const details = document.createElement('details');
-        details.innerHTML = '<summary>Decisions on the original: green kept, red masked, dashed blue the laboratory header</summary>';
+        details.innerHTML = '<summary>Decisions on the original: green kept, red masked, dashed blue the area above the results</summary>';
         details.appendChild(dbg.img);
         section.appendChild(details);
       }
