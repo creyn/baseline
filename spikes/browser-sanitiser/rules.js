@@ -26,7 +26,7 @@ wynik wyniki wartość wartości jednostka jednostki jedn j.m. norma normy zakre
 referencyjne referencyjna przedział badanie badania parametr parametry nazwa oznaczenie
 morfologia rozmaz krwi surowica surowicy osocze osocza materiał metoda hematologia biochemia
 immunologia hormony koagulologia analityka ogólna ogólne badanie mocz moczu
-data godzina pobrania pobranie wykonania wykonano wyniku rejestracji przyjęcia autoryzacji
+data godzina godz data/godz data/godzina pobrania pobranie wykonania wykonano wyniku rejestracji przyjęcia autoryzacji
 laboratorium laboratoria diagnostyka alab synevo medicover luxmed enelmed
 poniżej powyżej niski wysoki ujemny dodatni nieobecne obecne brak w normie
 od do oraz i z w na
@@ -49,7 +49,22 @@ const PERSONAL_LINE_LABELS = [
 ];
 
 // Labels that allow a date on the same line.
-const DATE_LABELS = ['pobrania', 'pobranie', 'wykonania', 'wykonano', 'wyniku', 'przyjęcia', 'rejestracji', 'autoryzacji'];
+const DATE_LABELS = ['pobrania', 'pobranie', 'wykonania', 'wykonano', 'wyniku', 'przyjęcia', 'rejestracji', 'autoryzacji',
+  'wydania', 'wystawienia', 'zatwierdzenia'];
+
+// Labels of a method line, e.g. "Badanie wykonano metodą ... na aparacie Cobas ...".
+// The whole line is kept (except denylist hits), because method and analyser names are open-ended.
+const METHOD_LABELS = ['metodą', 'metoda', 'metody', 'aparacie', 'aparat', 'aparatem', 'analizatorze', 'analizator', 'analizatora'];
+
+// ICD-9 PL procedure code printed next to a test name, e.g. "TSH (ICD-9: L69)".
+const ICD_MARKER = /^icd-?9(-?pl)?:?$/;
+const ICD_CODE = /^[a-z]\d{2}[a-z0-9]?$/;
+
+// Laboratory header: lines above the first patient or referrer label, in the top part of the page,
+// are kept (lab name, address, logo text), except denylist hits. Stems, matched at word start.
+const HEADER_STOP_STEMS = ['pacjen', 'pesel', 'imię', 'imie', 'nazwisk', 'urodz', 'adres', 'lekarz', 'kieruj',
+  'zlecaj', 'zleceniodaw', 'kontrahent', 'płatnik', 'platnik'];
+const HEADER_MAX_FRACTION = 0.25;
 
 const set = s => new Set(s.split(/\s+/).filter(Boolean).map(normalise));
 
@@ -132,17 +147,40 @@ export function classifyWord(text) {
   if (TIME.test(n)) return 'time';
   if (NUMBER.test(n) || RANGE.test(n.replace(/^\(|\)$/g, ''))) return 'number';
   if (PARAMS.has(n) || PARAMS_ASCII.has(a)) return 'parameter';
-  if (HEADERS.has(n) || HEADERS_ASCII.has(a)) return 'header';
+  if (HEADERS.has(n) || DATE_LABELS.includes(n) || HEADERS_ASCII.has(a)) return 'header';
   return 'unknown';
 }
 
+// Bottom edge (px) of the laboratory header, or 0 when there is none.
+// lines: [[{ text, bbox }]], pageHeight in px.
+export function findHeaderBottom(lines, pageHeight) {
+  const sorted = [...lines].sort((a, b) => a[0].bbox.y0 - b[0].bbox.y0);
+  for (const words of sorted) {
+    const stop = words.some(w => {
+      const n = normalise(w.text).replace(/:$/, '');
+      return HEADER_STOP_STEMS.some(s => n.startsWith(s));
+    });
+    if (stop) {
+      const y = Math.min(...words.map(w => w.bbox.y0));
+      return y <= pageHeight * HEADER_MAX_FRACTION ? y : 0;
+    }
+  }
+  return 0; // no patient label found: no header zone, everything goes through the normal rules
+}
+
+const isInHeader = (words, headerBottom) => headerBottom > 0 && words.every(w => w.bbox && w.bbox.y1 <= headerBottom);
+
 // Decides for every word of one OCR line: { keep: boolean, reason: string }.
-// words: [{ text }], known: output of prepareKnownIdentifiers.
-export function decideLine(words, known = []) {
+// words: [{ text, bbox }], known: output of prepareKnownIdentifiers,
+// options.headerBottom: from findHeaderBottom.
+export function decideLine(words, known = [], { headerBottom = 0 } = {}) {
   const norm = words.map(w => normalise(w.text));
+  const inHeader = isInHeader(words, headerBottom);
+  const methodLine = norm.some(n => METHOD_LABELS.includes(n));
+  const icdAt = norm.findIndex(n => ICD_MARKER.test(n));
   const kinds = words.map(w => classifyWord(w.text));
   const personalLine = norm.some(n => PERSONAL_LINE_LABELS.includes(n) || PERSONAL_LINE_LABELS.includes(n.replace(/:$/, '')));
-  const hasAnchor = kinds.some(k => k === 'parameter' || k === 'unit');
+  const hasAnchor = icdAt >= 0 || kinds.some(k => k === 'parameter' || k === 'unit');
   const hasDateLabel = norm.some(n => DATE_LABELS.includes(n.replace(/:$/, '')));
 
   return words.map((w, i) => {
@@ -150,7 +188,11 @@ export function decideLine(words, known = []) {
     if (isValidPesel(raw.replace(/\D/g, '')) && raw.replace(/\D/g, '').length === 11) return { keep: false, reason: 'pesel' };
     if (LONG_DIGITS.test(raw)) return { keep: false, reason: 'long-number' };
     if (matchesKnown(w.text, known)) return { keep: false, reason: 'known-identifier' };
+    if (inHeader) return { keep: true, reason: 'lab-header' };
     if (personalLine) return { keep: false, reason: 'personal-line' };
+    if (methodLine) return { keep: true, reason: 'method' };
+    if (icdAt >= 0 && i <= icdAt) return { keep: true, reason: i === icdAt ? 'icd-9' : 'test-name' };
+    if (icdAt >= 0 && i === icdAt + 1 && ICD_CODE.test(norm[i])) return { keep: true, reason: 'icd-9' };
     switch (kinds[i]) {
       case 'parameter':
       case 'header':
@@ -170,10 +212,10 @@ export function decideLine(words, known = []) {
 
 // Leak check on the OCR of the masked image. Any denylist hit or any
 // confidently read word outside the allowlist blocks the document.
-export function findLeaks(lines, known = [], minConfidence = 60) {
+export function findLeaks(lines, known = [], { minConfidence = 60, headerBottom = 0 } = {}) {
   const leaks = [];
   for (const words of lines) {
-    const decisions = decideLine(words, known);
+    const decisions = decideLine(words, known, { headerBottom });
     words.forEach((w, i) => {
       const d = decisions[i];
       if (d.keep) return;

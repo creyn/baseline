@@ -1,7 +1,7 @@
 // Run with: node --test 'spikes/**/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isValidPesel, classifyWord, decideLine, findLeaks, prepareKnownIdentifiers } from './rules.js';
+import { isValidPesel, classifyWord, decideLine, findLeaks, findHeaderBottom, prepareKnownIdentifiers } from './rules.js';
 
 const line = s => s.split(' ').map(text => ({ text, confidence: 95 }));
 const kept = (s, known = []) => decideLine(line(s), known).filter(d => d.keep).length;
@@ -62,4 +62,39 @@ test('leak check', () => {
   assert.equal(findLeaks([line('Hemoglobina 13,5 g/dl Testowy')], known).length, 1);
   assert.equal(findLeaks([line('44051401359')]).length, 1);
   assert.equal(findLeaks([[{ text: 'xq', confidence: 20 }]]).length, 0); // noise is ignored
+});
+
+test('ICD-9 PL code and the test name before it are kept', () => {
+  const row = 'TSH (ICD-9: L69) 7,640 ulU/ml* 0,270-4,200 H';
+  assert.deepEqual(keptWords(row), row.split(' '));
+  assert.deepEqual(keptWords('Tyreotropina (ICD-9: L69) 2,15'), ['Tyreotropina', '(ICD-9:', 'L69)', '2,15']); // not in the dictionary
+  assert.equal(kept('Pacjent Jan (ICD-9: L69)'), 0); // a personal label still wins
+});
+
+test('method lines are kept, except denylist hits', () => {
+  const m = 'Badanie wykonano metodą elektrochemiluminescencji na aparacie Cobas 8000.';
+  assert.deepEqual(keptWords(m), m.split(' '));
+  assert.equal(kept('Badanie wykonano metodą ECLIA przez Testowy', prepareKnownIdentifiers('Jan Testowy')), 5);
+});
+
+test('dates of admission, analysis and release', () => {
+  assert.equal(keptWords('Data/godz. wydania: 2026-05-28 11:38:55').length, 4);
+  assert.equal(keptWords('Data/godz wykonania: 2026-05-28 11:38:53').length, 4);
+});
+
+const at = (s, y) => s.split(' ').map((text, i) => ({ text, confidence: 95, bbox: { x0: i * 100, y0: y, x1: i * 100 + 90, y1: y + 40 } }));
+
+test('laboratory header above the first patient label', () => {
+  const page = [at('LABORATORIUM PRZYKŁADOWE', 200), at('ul. Testowa 12/3, 00-950 Warszawa', 300), at('Pacjent: Jan Testowy', 500), at('Adres: ul. Przykładowa 5', 600)];
+  const headerBottom = findHeaderBottom(page, 3508);
+  assert.equal(headerBottom, 500);
+  assert.equal(decideLine(page[1], [], { headerBottom }).filter(d => d.keep).length, 5); // lab address kept
+  assert.equal(decideLine(page[3], [], { headerBottom }).filter(d => d.keep).length, 0); // patient address masked
+  assert.equal(decideLine(at('Testowy 44051401359', 250), prepareKnownIdentifiers('Testowy'), { headerBottom }).filter(d => d.keep).length, 0);
+  assert.equal(findLeaks([page[1]], [], { headerBottom }).length, 0);
+});
+
+test('no header zone without a patient label near the top', () => {
+  assert.equal(findHeaderBottom([at('LABORATORIUM', 200), at('Glukoza 95 mg/dl', 1200)], 3508), 0);
+  assert.equal(findHeaderBottom([at('LABORATORIUM', 200), at('Pacjent: Jan', 1500)], 3508), 0); // below 25% of the page
 });

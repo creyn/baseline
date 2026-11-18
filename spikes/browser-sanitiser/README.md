@@ -8,8 +8,15 @@ If yes, the server-side sanitiser and the quarantine disappear (see [ADR-0003](.
 
 1. **Render.** PDF.js renders each page to a canvas at 200 or 300 DPI. Photos are drawn as they are.
 2. **OCR.** Tesseract.js (WebAssembly, LSTM, Polish `best_int` model) reads words with their positions.
-3. **Decide.** [rules.js](rules.js) keeps a word only if it is a known parameter, a header, a unit, or a number or flag on a line with a parameter or unit. Dates are kept only next to a date label. Lines with personal labels (patient, PESEL, date of birth, address, doctor, order number) are masked in full. A valid PESEL, any number with 7 or more digits and the user's known identifiers are always masked.
-4. **Compose (keep-only).** The output starts as a white page, and only the kept words are copied onto it. Stamps, signatures, logos, barcodes and unknown text never reach the output, without having to be detected.
+3. **Decide.** [rules.js](rules.js) keeps a word only if:
+   - it is a known parameter, a header word or a unit, or a number or flag on a line with a parameter, unit or ICD-9 PL code;
+   - it is a date or time next to a date label (collection, admission, analysis, release);
+   - it is the test name and code before or in an ICD-9 PL marker, e.g. `TSH (ICD-9: L69)`, so tests missing from the dictionary are kept too;
+   - it is on a method line ("Badanie wykonano metodą … na aparacie …");
+   - it is in the laboratory header: the lines above the first patient or referrer label, within the top quarter of the page. Without such a label there is no header zone.
+
+   Lines with personal labels (patient, PESEL, date of birth, address, doctor, order number) are masked in full. A valid PESEL, any number with 7 or more digits and the user's known identifiers are always masked, also in the header and on method lines.
+4. **Compose (keep-only).** The output starts as a white page, and only the kept words are copied onto it. Masked words are shown as dark boxes, or left blank. The boxes are drawn on the new page, so no pixel of the masked text is ever copied. Stamps, signatures, logos, barcodes and unknown text never reach the output, without having to be detected.
 5. **Leak check.** A second OCR pass on the output. Any denylist hit or any confidently read word outside the allowlist blocks the document.
 
 All libraries and the language model are served from this site. The page's Content Security Policy only allows requests to its own origin.
@@ -44,4 +51,6 @@ Real documents are tested only on the user's own devices and are never committed
 - GitHub Pages cannot send HTTP headers, so the CSP is a `<meta>` tag. It does not apply to Web Workers. A production deployment sends the policy as a header.
 - The parameter dictionary in [rules.js](rules.js) is a starting list. An unknown parameter is masked, which is safe but loses data.
 - Up to 5 pages per document.
+- Graphics such as the laboratory logo are not kept, only text. Keeping a picture region would also keep barcodes, which often encode the order or patient number.
+- Dark boxes show the length of each masked run, e.g. how long a name is.
 - PDF.js is the legacy build. The modern build uses JavaScript features that current mobile browsers do not have yet.

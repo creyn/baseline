@@ -70,11 +70,17 @@ function toImage(canvas, alt) {
     }, 'image/png'));
 }
 
-function drawDecisions(source, decisions) {
+function drawDecisions(source, decisions, headerBottom) {
   const c = makeCanvas(source.width, source.height);
   const ctx = c.getContext('2d');
   ctx.drawImage(source, 0, 0);
   ctx.lineWidth = Math.max(2, source.width / 800);
+  if (headerBottom) { // laboratory header zone
+    ctx.strokeStyle = '#1565c0';
+    ctx.setLineDash([24, 12]);
+    ctx.strokeRect(4, 4, source.width - 8, headerBottom - 8);
+    ctx.setLineDash([]);
+  }
   for (const d of decisions) {
     const { x0, y0, x1, y1 } = d.bbox;
     ctx.strokeStyle = d.keep ? '#2e7d32' : '#c62828';
@@ -105,7 +111,7 @@ async function run() {
 
     for (const [i, source] of pages.entries()) {
       setStatus(`Page ${i + 1} of ${pages.length}: OCR, masking, leak check…`);
-      const r = await sanitisePage(worker, source, known, makeCanvas);
+      const r = await sanitisePage(worker, source, known, makeCanvas, { style: $('style').value });
       for (const k of ['ocr', 'compose', 'leakCheck']) totals[k] += r.timings[k];
       leakCount += r.leaks.length;
 
@@ -129,9 +135,9 @@ async function run() {
         href, download: `page-${i + 1}-masked.png`, textContent: 'Download masked PNG', className: 'button',
       }));
       if ($('debug').checked) {
-        const dbg = await toImage(drawDecisions(source, r.decisions), `Decisions on page ${i + 1}`);
+        const dbg = await toImage(drawDecisions(source, r.decisions, r.headerBottom), `Decisions on page ${i + 1}`);
         const details = document.createElement('details');
-        details.innerHTML = '<summary>Decisions on the original: green kept, red masked</summary>';
+        details.innerHTML = '<summary>Decisions on the original: green kept, red masked, dashed blue the laboratory header</summary>';
         details.appendChild(dbg.img);
         section.appendChild(details);
       }
