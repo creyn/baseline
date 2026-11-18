@@ -164,7 +164,7 @@
 <line x1="119" y1="1630" x2="274" y2="1630" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
 <text x="198" y="1623" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">30. approve, with corrections</text>
 <path d="M277 1668 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
-<text x="313" y="1681" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">31. out-of-range flags computed by code, not by the model</text>
+<text x="313" y="1681" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">31. flags: as printed by the lab, computed by code only if missing</text>
 <line x1="277" y1="1718" x2="432" y2="1718" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
 <text x="356" y="1711" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">32. results: status Approved</text>
 <line x1="277" y1="1756" x2="906" y2="1756" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
