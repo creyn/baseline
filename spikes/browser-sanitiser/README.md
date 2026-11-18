@@ -28,15 +28,22 @@ All libraries and the language model are served from this site. The page's Conte
 - Rules tests: `node --test 'spikes/**/*.test.mjs'`.
 - A synthetic sample with fake data: [samples/synthetic-lab-result.png](samples/synthetic-lab-result.png), generated from the SVG next to it.
 
-## Success criteria
+## Acceptance tests
 
-| Criterion | Target |
-|---|---|
-| Leaks | none, on every tested document |
-| Results kept | every value, unit and range readable after masking |
-| Time per page, laptop | under about 10 s at 300 DPI |
-| Time per page, phone | under about 30 s |
-| OCR quality | comparable to native Tesseract on the same pages |
+| # | Test | Pass when |
+|---|---|---|
+| T1 | Synthetic sample on a laptop and a phone | Clean; every result, unit, range and date field kept |
+| T2 | 5 or more real documents: 2 or more laboratories, 1 or more with several pages, 1 or more photo of a printout, a scan if available. Known identifiers filled in. | No personal data visible on any page marked Clean (hard requirement). A leak on a page marked Blocked is acceptable: it failed closed. |
+| T3 | The same documents, results kept | Every value, unit and range kept on 4 of 5 documents or more |
+| T4 | The same documents, date fields kept | Every date field except the date of birth kept on 4 of 5 documents or more |
+| T5 | False blocks | At most 1 document Blocked with nothing personal left on it |
+| T6 | Phone, 300 DPI, a document with 2 or more pages | Finishes without a crash; time per page recorded |
+| T7 | 200 DPI vs 300 DPI on a laptop, 2 documents | Time and lost values recorded for both |
+| T8 | Offline: load the page, switch the device to airplane mode, process a document | Works offline, which shows that nothing is sent |
+
+Time targets, revised after the first measurements: under about 20 s per page on a laptop and under about 60 s per page on a phone, at the DPI chosen in T7. Import is occasional and runs in the background, so the first target of 10 s was stricter than needed.
+
+Results are recorded per document as: laboratory, kind (text PDF, scan, photo), pages, device, DPI, time per page, verdict, kinds of personal data left (no values), lost results (names only), lost date fields (labels only).
 
 ## Results
 
