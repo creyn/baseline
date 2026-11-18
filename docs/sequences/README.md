@@ -29,7 +29,7 @@ Each answered question becomes an ADR or a change to an existing one.
 |---|---|---|
 | Q1 | ~~Who writes the known identifiers to Key Vault?~~ | Resolved by [ADR-0006](../adr/0006-zone-based-masking.md): masking needs no known identifiers. |
 | Q2 | Blocked documents vs. the 24-hour quarantine lifecycle, which would delete them before the user acts. | A separate lifecycle rule by blob index tag (`blocked`), e.g. 7 days. The preview is served by the sanitiser, so the API still cannot read the quarantine. |
-| Q3 | Unit normalisation: the same parameter comes in different units (vitamin D in ng/ml or nmol/l). | A conversion table per LOINC code, in code, covered by tests. |
+| Q3 | ~~Unit normalisation: the same parameter comes in different units (vitamin D in ng/ml or nmol/l).~~ | Resolved by [ADR-0007](../adr/0007-unit-normalisation.md). |
 | Q4 | Reference ranges differ between labs and over time. | Store and chart the range of each result. Never use one global range. |
 | Q5 | The user's own question goes to Azure OpenAI unmasked and may contain personal data. | Mask PESEL numbers and long numbers in user input. Names cannot be detected without a list. |
 | Q6 | Visits are not in the data model yet. | Visit date and specialty only. The doctor's name is personal data and is not needed. |
