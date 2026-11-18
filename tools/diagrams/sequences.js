@@ -222,7 +222,7 @@ module.exports = [
   {
     file: '07-delete-document',
     title: 'Baseline · 7. delete a document',
-    subtitle: 'Removes the document from every store. Backups and soft-deleted copies expire on their own schedule.',
+    subtitle: 'Removes the document from every live store at once. SQL backups expire after 7 days (ADR-0011).',
     colW: 200,
     participants: [P.u, P.api, P.sql, P.srch, P.clean],
     steps: [
@@ -232,7 +232,6 @@ module.exports = [
       { from: 'api', to: 'clean', text: 'delete masked pages' },
       { from: 'api', to: 'sql', text: 'delete results and the document row' },
       { from: 'api', to: 'u', text: '204 No Content', ret: true },
-      { note: ['Q7: how complete is deletion?', 'Blob soft delete and SQL backups keep data for their', 'retention period, and AI Search has no undo. Which', 'retention periods do we set, and do we state them?'], over: 'srch' },
     ],
   },
 
