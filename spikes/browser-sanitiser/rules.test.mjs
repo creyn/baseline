@@ -1,11 +1,32 @@
 // Run with: node --test 'spikes/**/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isValidPesel, classifyWord, decideLine, findLeaks, findResultsTop, prepareKnownIdentifiers } from './rules.js';
+import { isValidPesel, classifyWord, decideLine, findTable, findLeaks } from './rules.js';
 
-const line = s => s.split(' ').map(text => ({ text, confidence: 95 }));
-const kept = (s, known = []) => decideLine(line(s), known).filter(d => d.keep).length;
-const keptWords = (s, known = []) => line(s).filter((_, i) => decideLine(line(s), known)[i].keep).map(w => w.text);
+// One OCR line at height y: words 100 px apart, 40 px high.
+const at = (s, y) => s.split(' ').map((text, i) => ({ text, confidence: 95, bbox: { x0: i * 100, y0: y, x1: i * 100 + 90, y1: y + 40 } }));
+const keptIn = (line, table) => line.filter((_, i) => decideLine(line, table)[i].keep).map(w => w.text);
+
+// A page shaped like a real result: header, patient block, table, date table, footer.
+const page = [
+  at('LABORATORIUM PRZYKŁADOWE', 100),
+  at('ul. Testowa 12/3, 00-950 Warszawa tel. 500 600 700', 150),
+  at('Wynik zatwierdził: Anna Walidująca', 300),
+  at('Lekarz kierujący: - Data rej.: 2026-05-28', 400),
+  at('Odbiór wyniku: Osobiście Data/godz. pobrania: 2026-05-28 09:36', 450),
+  at('Jan Testowy Data ur.: 1980-01-01', 500),
+  at('Badanie Wynik Jedn. Zakres referencyjny', 1000),
+  at('TSH (ICD-9: L69) 7,640 ulU/ml* 0,270 - 4,200 H', 1100),
+  at('Badanie wykonano metodą elektrochemiluminescencji na aparacie Cobas 8000.', 1160),
+  at('Tyreotropina 2,15 0,27-4,20', 1250),
+  at('Autoryzował: mgr Anna Walidująca', 1300),
+  at('FT4 1,42 ng/dl* 0,92 - 1,68', 1400),
+  at('Data/godz. przyjęcia prób.: 2026-05-28 09:36 SUROWICA DIAGNOSTYKA Jan', 1700),
+  at('Data/godz wykonania: 2026-05-28 11:38:53 LABORATORIUM DIAGNOSTYKA, Prosta 100, 02-231', 1740),
+  at('Data wystawienia pdf/wydruku: 2026-05-28 12:00:01', 3200),
+  at('mgr Piotr Diagnosta', 3250),
+];
+const table = findTable(page);
 
 test('PESEL checksum', () => {
   assert.equal(isValidPesel('44051401359'), true); // public example number
@@ -18,7 +39,6 @@ test('word classes', () => {
   assert.equal(classifyWord('g/dl'), 'unit');
   assert.equal(classifyWord('13,5'), 'number');
   assert.equal(classifyWord('12.0-16.0'), 'number');
-  assert.equal(classifyWord('(30-100)'), 'number');
   assert.equal(classifyWord('17.11.2026'), 'date');
   assert.equal(classifyWord('Kowalski'), 'unknown');
   assert.equal(classifyWord('tys/l'), 'unit'); // tys/µl as read by OCR
@@ -28,97 +48,52 @@ test('word classes', () => {
   assert.notEqual(classifyWord('12/3'), 'unit'); // an address number is not a unit
 });
 
-test('a result row stays visible', () => {
-  assert.deepEqual(keptWords('Hemoglobina 13,5 g/dl 12,0-16,0'), ['Hemoglobina', '13,5', 'g/dl', '12,0-16,0']);
-  assert.deepEqual(keptWords('Witamina D3 25-OH 32,1 ng/ml 30-100'), ['Witamina', 'D3', '25-OH', '32,1', 'ng/ml', '30-100']);
+test('the table spans from its header to the last result or method line', () => {
+  assert.deepEqual(table, { top: 1000, bottom: 1440 });
 });
 
-test('numbers without a parameter or unit on the line are masked', () => {
-  assert.equal(kept('500 600 700'), 0); // e.g. a phone number split by spaces
-  assert.equal(kept('Warszawa 00-950 12/3'), 0);
+test('everything in the table is kept, including tests missing from the dictionary', () => {
+  for (const i of [6, 7, 8, 9, 11]) assert.deepEqual(keptIn(page[i], table), page[i].map(w => w.text), page[i].map(w => w.text).join(' '));
 });
 
-test('lines with personal labels are masked in full', () => {
-  assert.equal(kept('Pacjent: Jan Testowy'), 0);
-  assert.equal(kept('Data urodzenia: 14.05.1944'), 0);
-  assert.equal(kept('Lekarz zlecający: dr Anna Przykładowa NPWZ 1234567'), 0);
+test('people lines and PESEL numbers are masked inside the table', () => {
+  assert.deepEqual(keptIn(page[10], table), []);
+  assert.deepEqual(keptIn(at('Glukoza 44051401359 95 mg/dl', 1200), table), ['Glukoza', '95', 'mg/dl']);
 });
 
-test('dates only next to a date label', () => {
-  assert.deepEqual(keptWords('Data pobrania: 17.11.2026 08:15'), ['Data', 'pobrania:', '17.11.2026', '08:15']);
-  assert.equal(keptWords('17.11.2026').length, 0);
+test('outside the table only date fields are kept', () => {
+  assert.deepEqual(keptIn(page[0], table), []);
+  assert.deepEqual(keptIn(page[1], table), []);
+  assert.deepEqual(keptIn(page[2], table), []);
+  assert.deepEqual(keptIn(page[3], table), ['Data', 'rej.:', '2026-05-28']);
+  assert.deepEqual(keptIn(page[4], table), ['Data/godz.', 'pobrania:', '2026-05-28', '09:36']);
+  assert.deepEqual(keptIn(page[5], table), []); // date of birth
+  assert.deepEqual(keptIn(page[12], table), ['Data/godz.', 'przyjęcia', 'prób.:', '2026-05-28', '09:36']);
+  assert.deepEqual(keptIn(page[13], table), ['Data/godz', 'wykonania:', '2026-05-28', '11:38:53']);
+  assert.deepEqual(keptIn(page[14], table), ['Data', 'wystawienia', 'pdf/wydruku:', '2026-05-28', '12:00:01']);
+  assert.deepEqual(keptIn(page[15], table), []);
 });
 
-test('denylist wins over the allowlist', () => {
-  assert.equal(kept('Glukoza 44051401359 mg/dl'), 2); // PESEL in a result row is masked
-  const known = prepareKnownIdentifiers('Jan Testowy');
-  assert.equal(kept('Glukoza Testowy 95 mg/dl', known), 3);
-  assert.equal(kept('Glukoza Testowv 95 mg/dl', known), 3); // OCR error, still matched
+test('a page without a table keeps only date fields', () => {
+  const noTable = [at('Pacjent: Jan Testowy', 300), at('Data pobrania: 2026-05-28', 400), at('Uwagi: brak', 600)];
+  assert.equal(findTable(noTable), null);
+  assert.deepEqual(keptIn(noTable[1], null), ['Data', 'pobrania:', '2026-05-28']);
+  assert.deepEqual(keptIn(noTable[2], null), []);
+});
+
+test('a continuation page without a header starts at the first result row', () => {
+  const page2 = [at('Jan Testowy strona 2', 100), at('Glukoza 95 mg/dl 70-99', 300), at('Kreatynina 0,9 mg/dl 0,7-1,2', 360)];
+  assert.deepEqual(findTable(page2), { top: 300, bottom: 400 });
+});
+
+test('an address with a postcode does not start a table', () => {
+  assert.equal(findTable([at('ul. Prosta 100, 02-231 Warszawa', 200), at('Uwagi: brak', 400)]), null);
 });
 
 test('leak check', () => {
-  const known = prepareKnownIdentifiers('Jan Testowy');
-  assert.equal(findLeaks([line('Hemoglobina 13,5 g/dl')], known).length, 0);
-  assert.equal(findLeaks([line('Hemoglobina 13,5 g/dl Testowy')], known).length, 1);
-  assert.equal(findLeaks([line('44051401359')]).length, 1);
-  assert.equal(findLeaks([[{ text: 'xq', confidence: 20 }]]).length, 0); // noise is ignored
-});
-
-test('ICD-9 PL code and the test name before it are kept', () => {
-  const row = 'TSH (ICD-9: L69) 7,640 ulU/ml* 0,270-4,200 H';
-  assert.deepEqual(keptWords(row), row.split(' '));
-  assert.deepEqual(keptWords('Tyreotropina (ICD-9: L69) 2,15'), ['Tyreotropina', '(ICD-9:', 'L69)', '2,15']); // not in the dictionary
-  assert.equal(kept('Pacjent Jan (ICD-9: L69)'), 0); // a personal label still wins
-});
-
-test('method lines are kept, except denylist hits', () => {
-  const m = 'Badanie wykonano metodą elektrochemiluminescencji na aparacie Cobas 8000.';
-  assert.deepEqual(keptWords(m), m.split(' '));
-  assert.equal(kept('Badanie wykonano metodą ECLIA przez Testowy', prepareKnownIdentifiers('Jan Testowy')), 5);
-});
-
-test('abbreviated date labels', () => {
-  assert.deepEqual(keptWords('Data rej.: 2026-05-28 09:12'), ['Data', 'rej.:', '2026-05-28', '09:12']);
-  assert.deepEqual(keptWords('Data pob: 2026-05-28'), ['Data', 'pob:', '2026-05-28']);
-  assert.equal(kept('Data ur: 1980-01-01'), 0);
-  assert.deepEqual(keptWords('Data ur.: 1980-01-01 Data rej.: 2026-05-28'), ['Data', 'rej.:', '2026-05-28']);
-});
-
-test('dates of admission, analysis and release', () => {
-  assert.equal(keptWords('Data/godz. wydania: 2026-05-28 11:38:55').length, 4);
-  assert.equal(keptWords('Data/godz wykonania: 2026-05-28 11:38:53').length, 4);
-});
-
-const at = (s, y) => s.split(' ').map((text, i) => ({ text, confidence: 95, bbox: { x0: i * 100, y0: y, x1: i * 100 + 90, y1: y + 40 } }));
-
-test('above the results table only date fields are kept', () => {
-  const page = [
-    at('LABORATORIUM PRZYKŁADOWE', 200),
-    at('Wynik zatwierdził: Anna Walidująca', 300),
-    at('Lekarz kierujący: - Data rejestracji: 2026-05-28', 400),
-    at('Odbiór wyniku: Osobiście Data/godz. pobrania: 2026-05-28 09:36', 450),
-    at('Data urodzenia: 1980-01-01', 500),
-    at('Badanie Wynik Jedn. Zakres referencyjny', 1000),
-    at('TSH 7,640 ulU/ml 0,270-4,200 H', 1100),
-  ];
-  const resultsTop = findResultsTop(page);
-  assert.equal(resultsTop, 1000);
-  const keptAt = i => page[i].filter((_, j) => decideLine(page[i], [], { resultsTop })[j].keep).map(w => w.text);
-  assert.deepEqual(keptAt(0), []);
-  assert.deepEqual(keptAt(1), []);
-  assert.deepEqual(keptAt(2), ['Data', 'rejestracji:', '2026-05-28']);
-  assert.deepEqual(keptAt(3), ['Data/godz.', 'pobrania:', '2026-05-28', '09:36']);
-  assert.deepEqual(keptAt(4), []); // date of birth
-  assert.equal(keptAt(6).length, 5); // the whole result row
-  assert.equal(findLeaks([page[1]], [], { resultsTop }).length, 4); // every word above the table outside a date field is a leak
-});
-
-test('people who performed or validated the result are masked anywhere', () => {
-  assert.equal(kept('Wynik zatwierdził: mgr Anna Walidująca'), 0);
-  assert.equal(kept('Badanie wykonano metodą ECLIA. Wykonał: Jan Diagnosta'), 0);
-  assert.deepEqual(keptWords('Data autoryzacji: 2026-05-28 12:01 dr Anna Walidująca'), ['Data', 'autoryzacji:', '2026-05-28', '12:01']);
-});
-
-test('no results table: line rules only', () => {
-  assert.equal(findResultsTop([at('LABORATORIUM', 200), at('Uwagi: brak', 1200)]), 0);
+  assert.equal(findLeaks([page[7]], table).length, 0); // table content is trusted
+  assert.equal(findLeaks([page[2]], table).length, 4); // words outside the table
+  assert.equal(findLeaks([at('Glukoza 44051401359 95 mg/dl', 1200)], table).length, 1); // PESEL in the table
+  assert.equal(findLeaks([page[10]], table).length, 4); // a people line in the table
+  assert.equal(findLeaks([[{ text: 'xq', confidence: 20, bbox: { x0: 0, y0: 10, x1: 9, y1: 20 } }]], table).length, 0); // noise
 });

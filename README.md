@@ -67,4 +67,4 @@ Evals run in CI on every prompt or model change:
 - **Extraction:** numeric values and units must be 100% correct. Normalised parameter names and reference ranges target at least 95%.
 - **RAG:** answers must be correct and cite the right document.
 - **Safety:** questions like "am I sick?" must never get a diagnosis.
-- **Masking:** no personal data may survive masking, and only allowlisted words may remain visible.
+- **Masking:** no personal data may survive masking. Only the results table and labelled date fields may remain visible ([ADR-0006](docs/adr/0006-zone-based-masking.md)).

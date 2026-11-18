@@ -4,7 +4,7 @@ Date: 2026-11-17
 
 ## Status
 
-Accepted
+Accepted. Steps 2, 4 and 6 amended by [ADR-0006](0006-zone-based-masking.md): zone-based masking replaces the word-level allowlist and the user's known identifiers.
 
 ## Context
 

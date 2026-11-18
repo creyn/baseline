@@ -52,11 +52,11 @@
 <line x1="155" y1="206" x2="382" y2="206" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
 <text x="270" y="199" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">1. POST /chat (question, Entra ID token)</text>
 <path d="M385 244 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
-<text x="421" y="257" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">2. denylist on the question: known identifiers, PESEL</text>
-<path d="M213.25 294 h331.5 l12 12 v51 h-343.5 z" fill="#fff8c5" stroke="#b7950b" stroke-width="1.5"/>
-<text x="225.25" y="314" font-size="12" fill="#1f2933" font-weight="bold">Q5: personal data typed by the user</text>
-<text x="225.25" y="331" font-size="12" fill="#1f2933" >The question goes to Azure OpenAI. Mask known</text>
-<text x="225.25" y="348" font-size="12" fill="#1f2933" >identifiers and PESEL in user input as well?</text>
+<text x="421" y="257" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">2. denylist on the question: PESEL, long numbers</text>
+<path d="M202.60000000000002 294 h352.79999999999995 l12 12 v51 h-364.79999999999995 z" fill="#fff8c5" stroke="#b7950b" stroke-width="1.5"/>
+<text x="214.60000000000002" y="314" font-size="12" fill="#1f2933" font-weight="bold">Q5: personal data typed by the user</text>
+<text x="214.60000000000002" y="331" font-size="12" fill="#1f2933" >The question goes to Azure OpenAI. PESEL can be</text>
+<text x="214.60000000000002" y="348" font-size="12" fill="#1f2933" >masked; names cannot be detected without a list.</text>
 <line x1="385" y1="387" x2="612" y2="387" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
 <text x="500" y="380" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">3. question + system prompt + tool definitions</text>
 <line x1="615" y1="425" x2="388" y2="425" stroke="#3e4c59" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a-normal)"/>

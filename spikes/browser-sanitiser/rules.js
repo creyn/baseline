@@ -1,6 +1,8 @@
 // Masking rules for the browser sanitiser spike. Pure functions, no DOM.
-// Deny by default: a word stays visible only if a rule below allows it.
-// See docs/adr/0003-mask-personal-data-before-ai.md.
+// Zones (docs/adr/0006-zone-based-masking.md):
+// - the results table is kept, except personal and people lines, PESEL numbers and long numbers;
+// - outside the table only labelled date fields are kept (never the date of birth);
+// - without a table, only date fields are kept.
 
 const PARAMETER_WORDS = `
 hemoglobina hemoglobin hgb hb hematokryt hct erytrocyty erytrocytów rbc leukocyty leukocytów wbc
@@ -21,17 +23,6 @@ mocz ciężar właściwy ph bakterie nabłonki wałeczki kryształy urobilinogen
 leukocyty erytrocyty barwa przejrzystość
 `;
 
-const HEADER_WORDS = `
-wynik wyniki wartość wartości jednostka jednostki jedn j.m. norma normy zakres zakresy referencyjny
-referencyjne referencyjna przedział badanie badania parametr parametry nazwa oznaczenie
-morfologia rozmaz krwi surowica surowicy osocze osocza materiał metoda hematologia biochemia
-immunologia hormony koagulologia analityka ogólna ogólne badanie mocz moczu
-data godzina godz data/godz data/godzina pobrania pobranie wykonania wykonano wyniku rejestracji przyjęcia autoryzacji
-laboratorium laboratoria diagnostyka alab synevo medicover luxmed enelmed
-poniżej powyżej niski wysoki ujemny dodatni nieobecne obecne brak w normie
-od do oraz i z w na
-`;
-
 const UNITS = `
 % g/dl g/l mg/dl mg/l µg/dl ug/dl µg/l ug/l ng/ml ng/dl pg/ml pg mmol/l µmol/l umol/l nmol/l pmol/l
 u/l iu/l mu/l miu/l µiu/ml uiu/ml miu/ml iu/ml u/ml mlu/ml fl fL tys/µl tys/ul tys./µl mln/µl mln/ul
@@ -41,38 +32,21 @@ ml/min/1.73m2 mg/g /µl /ul /wpw wpw
 
 const FLAGS = ['h', 'l', '↑', '↓', '*', '!', '+', '-', '--', '++', '+++', '(+)', '(-)'];
 
-// Labels that make a whole line personal: the line is masked in full.
+// Lines naming the patient or people who ordered, performed, validated or signed the result.
+// Masked in full even inside the table, except their date fields.
 const PERSONAL_LINE_LABELS = [
-  'pacjent', 'pacjenta', 'imię', 'nazwisko', 'pesel', 'urodzenia', 'ur', 'adres', 'ulica', 'ul.',
-  'telefon', 'tel.', 'tel', 'e-mail', 'email', 'lekarz', 'lekarza', 'zlecający', 'zleceniodawca',
-  'npwz', 'pwz', 'podpis', 'pieczątka', 'kod', 'kreskowy', 'nr', 'numer', 'id', 'zlecenie', 'zlecenia',
-  // People who performed, validated or signed the result
+  'pacjent', 'pacjenta', 'imię', 'nazwisko', 'pesel', 'urodzenia', 'ur', 'adres', 'ulica', 'ul',
+  'telefon', 'tel', 'e-mail', 'email', 'lekarz', 'lekarza', 'zlecający', 'zleceniodawca', 'kierujący',
+  'npwz', 'pwz', 'podpis', 'pieczątka', 'kod', 'kreskowy', 'nr', 'numer', 'id',
   'mgr', 'dr', 'lek', 'prof', 'diagnosta', 'diagnostka', 'technik', 'analityk',
   'wykonał', 'wykonała', 'autoryzował', 'autoryzowała', 'zatwierdził', 'zatwierdziła',
   'walidował', 'walidowała', 'zwalidował', 'zwalidowała', 'sprawdził', 'sprawdziła',
 ];
 
-// Labels of a date field: the label and the date and time right after it are kept.
-// Matched as word stems, so abbreviations work too: "Data rej.:", "Data pob.:", "Data wyk.:".
-// The date of birth ("urodzenia", "ur.") is never a date field.
-const DATE_LABELS = ['wyniku'];
+// Date field labels, matched as word stems so abbreviations work: "Data rej.:", "Data pob.:".
+const DATE_LABELS = ['wyniku', 'zlecenia'];
 const DATE_LABEL_STEMS = ['rej', 'pob', 'przyj', 'wyk', 'wyd', 'aut', 'zatw', 'wyst'];
 const BIRTH_LABELS = /^(ur|urodz|urodzenia|urodzony|urodzona)$/;
-const isDateLabel = n => {
-  const w = n.replace(/[.:]+$/, '');
-  if (BIRTH_LABELS.test(w)) return false;
-  return DATE_LABELS.includes(w) || DATE_LABEL_STEMS.some(s => w.startsWith(s));
-};
-
-// Labels of a method line, e.g. "Badanie wykonano metodą ... na aparacie Cobas ...".
-// The whole line is kept (except denylist hits), because method and analyser names are open-ended.
-const METHOD_LABELS = ['metodą', 'metoda', 'metody', 'aparacie', 'aparat', 'aparatem', 'analizatorze', 'analizator', 'analizatora'];
-
-// ICD-9 PL procedure code printed next to a test name, e.g. "TSH (ICD-9: L69)".
-const ICD_MARKER = /^icd-?9(-?pl)?:?$/;
-const ICD_CODE = /^[a-z]\d{2}[a-z0-9]?$/;
-
-// Words that may sit between "Data" and the label, or between the label and the date.
 const DATE_PREFIX = /^(data|godz|godzina|data\/godz|data\/godzina|i)$/;
 const DATE_FILLERS = ['prób', 'próbki', 'próbek', 'materiału', 'pdf/wydruku', 'wydruku', 'pdf', 'godz', 'godzina', ''];
 
@@ -80,6 +54,9 @@ const DATE_FILLERS = ['prób', 'próbki', 'próbek', 'materiału', 'pdf/wydruku'
 const TABLE_WORDS = ['badanie', 'badania', 'parametr', 'nazwa', 'wynik', 'wyniki', 'wartość', 'jednostka', 'jednostki',
   'jedn', 'j.m', 'norma', 'normy', 'zakres', 'referencyjny', 'referencyjne'];
 
+// A method line under a result, e.g. "Badanie wykonano metodą ... na aparacie Cobas ...".
+const METHOD_LABELS = ['metodą', 'metoda', 'metody', 'aparacie', 'aparat', 'aparatem', 'analizatorze', 'analizator', 'analizatora'];
+const ICD_MARKER = /^icd-?9(-?pl)?:?$/;
 
 const set = s => new Set(s.split(/\s+/).filter(Boolean).map(normalise));
 
@@ -98,10 +75,8 @@ export function normalise(word) {
 }
 
 const PARAMS = set(PARAMETER_WORDS);
-const HEADERS = set(HEADER_WORDS);
 const UNIT_SET = set(UNITS);
 const PARAMS_ASCII = new Set([...PARAMS].map(stripDiacritics));
-const HEADERS_ASCII = new Set([...HEADERS].map(stripDiacritics));
 
 const NUMBER = /^[<>≤≥]?[-+]?\d{1,6}([.,]\d{1,4})?$/;
 const RANGE = /^[<>≤≥]?\d{1,6}([.,]\d{1,4})?\s*[-–—]\s*\d{1,6}([.,]\d{1,4})?$/;
@@ -119,70 +94,57 @@ export function isValidPesel(s) {
   return (10 - (sum % 10)) % 10 === Number(s[10]);
 }
 
-export function levenshtein(a, b) {
-  if (a === b) return 0;
-  const m = a.length, n = b.length;
-  let prev = Array.from({ length: n + 1 }, (_, j) => j);
-  for (let i = 1; i <= m; i++) {
-    const cur = [i];
-    for (let j = 1; j <= n; j++) {
-      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-    }
-    prev = cur;
-  }
-  return prev[n];
-}
-
-// Known identifiers typed by the user: split into tokens, normalised, without diacritics.
-export function prepareKnownIdentifiers(text) {
-  return text
-    .split(/[\n,;]+/)
-    .flatMap(entry => [entry, ...entry.split(/\s+/)])
-    .map(t => stripDiacritics(normalise(t)).replace(/\s+/g, ''))
-    .filter(t => t.length >= 3);
-}
-
-function matchesKnown(word, known) {
-  const w = stripDiacritics(normalise(word)).replace(/\s+/g, '');
-  if (w.length < 3) return false;
-  return known.some(k => {
-    if (w === k) return true;
-    const tolerance = k.length >= 8 ? 2 : k.length >= 4 ? 1 : 0;
-    return tolerance > 0 && levenshtein(w, k) <= tolerance;
-  });
-}
-
 export function classifyWord(text) {
   const n = normalise(text);
-  const a = stripDiacritics(n);
   if (!n) return 'empty';
   if (UNIT_SET.has(n) || UNIT_LIKE.test(n)) return 'unit';
   if (FLAGS.includes(n)) return 'flag';
   if (DATE.test(n)) return 'date';
   if (TIME.test(n)) return 'time';
   if (NUMBER.test(n) || RANGE.test(n.replace(/^\(|\)$/g, ''))) return 'number';
-  if (PARAMS.has(n) || PARAMS_ASCII.has(a)) return 'parameter';
-  if (HEADERS.has(n) || HEADERS_ASCII.has(a)) return 'header';
+  if (PARAMS.has(n) || PARAMS_ASCII.has(stripDiacritics(n))) return 'parameter';
   return 'unknown';
 }
 
-// Top edge (px) of the results table: the first line that is a table header (two or more table
-// words) or a result row (a parameter with a number). Everything above it is masked except date
-// fields. Returns 0 when no table is found; then only the line rules apply.
-export function findResultsTop(lines) {
-  const sorted = [...lines].sort((a, b) => a[0].bbox.y0 - b[0].bbox.y0);
-  for (const words of sorted) {
-    const norm = words.map(w => normalise(w.text).replace(/:$/, ''));
-    const kinds = words.map(w => classifyWord(w.text));
-    const tableHeader = norm.filter(n => TABLE_WORDS.includes(n)).length >= 2;
-    const resultRow = kinds.includes('parameter') && kinds.includes('number');
-    if (tableHeader || resultRow) return Math.min(...words.map(w => w.bbox.y0));
-  }
-  return 0;
+const bare = n => n.replace(/[.:]+$/, '');
+
+function isDateLabel(n) {
+  const w = bare(n);
+  if (BIRTH_LABELS.test(w)) return false;
+  return DATE_LABELS.includes(w) || DATE_LABEL_STEMS.some(s => w.startsWith(s));
 }
 
-const isAboveResults = (words, resultsTop) =>
-  resultsTop > 0 && words.every(w => w.bbox && (w.bbox.y0 + w.bbox.y1) / 2 < resultsTop);
+// Facts about one OCR line, shared by the table finder and the decisions.
+function describeLine(words) {
+  const norm = words.map(w => normalise(w.text));
+  const kinds = words.map(w => classifyWord(w.text));
+  const has = k => kinds.includes(k);
+  return {
+    norm,
+    kinds,
+    personal: norm.some(n => PERSONAL_LINE_LABELS.includes(bare(n))),
+    tableHeader: norm.filter(n => TABLE_WORDS.includes(bare(n))).length >= 2,
+    // A result row: a value with a unit, or a known parameter with a value. No dates, no personal labels.
+    resultRow: has('number') && (has('unit') || has('parameter')) && !has('date'),
+    methodLine: norm.some(n => METHOD_LABELS.includes(n)) || norm.some(n => ICD_MARKER.test(n)),
+    y0: Math.min(...words.map(w => w.bbox?.y0 ?? 0)),
+    y1: Math.max(...words.map(w => w.bbox?.y1 ?? 0)),
+  };
+}
+
+// The results table of a page: { top, bottom } in px, or null.
+// Top: the table header, or on a page without one (e.g. a continuation page) the first result row.
+// Bottom: the last result row or method line below the top.
+export function findTable(lines) {
+  const facts = lines.map(describeLine).filter(f => !f.personal).sort((a, b) => a.y0 - b.y0);
+  const start = facts.find(f => f.tableHeader) ?? facts.find(f => f.resultRow);
+  if (!start) return null;
+  const rows = facts.filter(f => f.y0 >= start.y0 && (f.resultRow || f.methodLine));
+  if (!rows.length) return null;
+  return { top: start.y0, bottom: Math.max(...rows.map(f => f.y1)) };
+}
+
+const inTable = (f, table) => !!table && (f.y0 + f.y1) / 2 >= table.top && (f.y0 + f.y1) / 2 <= table.bottom;
 
 // Indexes of the words of date fields: [Data[/godz.]] label [fillers] date [time].
 function dateFieldWords(norm, kinds) {
@@ -190,69 +152,53 @@ function dateFieldWords(norm, kinds) {
   norm.forEach((n, i) => {
     if (!isDateLabel(n)) return;
     let j = i + 1;
-    while (j < norm.length && DATE_FILLERS.includes(norm[j].replace(/:$/, ''))) j++;
+    while (j < norm.length && DATE_FILLERS.includes(bare(norm[j]))) j++;
     if (j >= norm.length || kinds[j] !== 'date') return; // a label without a date: nothing to keep
     keep.add(i);
-    for (let k = i - 1; k >= 0 && k >= i - 2 && DATE_PREFIX.test(norm[k].replace(/[.:]$/, '')); k--) keep.add(k);
+    for (let k = i - 1; k >= 0 && k >= i - 2 && DATE_PREFIX.test(bare(norm[k])); k--) keep.add(k);
     for (let k = i + 1; k < j; k++) keep.add(k);
     for (let k = j; k < norm.length && (kinds[k] === 'date' || kinds[k] === 'time'); k++) keep.add(k);
   });
   return keep;
 }
 
-// Decides for every word of one OCR line: { keep: boolean, reason: string }.
-// words: [{ text, bbox }], known: output of prepareKnownIdentifiers,
-// options.resultsTop: from findResultsTop.
-export function decideLine(words, known = [], { resultsTop = 0 } = {}) {
-  const norm = words.map(w => normalise(w.text));
-  const aboveResults = isAboveResults(words, resultsTop);
-  const methodLine = norm.some(n => METHOD_LABELS.includes(n));
-  const icdAt = norm.findIndex(n => ICD_MARKER.test(n));
-  const kinds = words.map(w => classifyWord(w.text));
-  const dateField = dateFieldWords(norm, kinds);
-  const personalLine = norm.some(n => PERSONAL_LINE_LABELS.includes(n) || PERSONAL_LINE_LABELS.includes(n.replace(/:$/, '')));
-  const hasAnchor = icdAt >= 0 || kinds.some(k => k === 'parameter' || k === 'unit');
+function isDenylisted(text) {
+  const raw = text.replace(/\s+/g, '');
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length === 11 && isValidPesel(digits)) return 'pesel';
+  if (LONG_DIGITS.test(raw)) return 'long-number';
+  return null;
+}
 
+// Decides for every word of one OCR line: { keep, reason }.
+// words: [{ text, bbox }], table: from findTable (null when there is none).
+export function decideLine(words, table = null) {
+  const f = describeLine(words);
+  const dates = dateFieldWords(f.norm, f.kinds);
+  const zone = inTable(f, table) ? 'table' : 'outside';
   return words.map((w, i) => {
-    const raw = w.text.replace(/\s+/g, '');
-    if (isValidPesel(raw.replace(/\D/g, '')) && raw.replace(/\D/g, '').length === 11) return { keep: false, reason: 'pesel' };
-    if (LONG_DIGITS.test(raw)) return { keep: false, reason: 'long-number' };
-    if (matchesKnown(w.text, known)) return { keep: false, reason: 'known-identifier' };
-    if (dateField.has(i)) return { keep: true, reason: 'date-field' };
-    if (aboveResults) return { keep: false, reason: 'above-results' };
-    if (personalLine) return { keep: false, reason: 'personal-line' };
-    if (methodLine) return { keep: true, reason: 'method' };
-    if (icdAt >= 0 && i <= icdAt) return { keep: true, reason: i === icdAt ? 'icd-9' : 'test-name' };
-    if (icdAt >= 0 && i === icdAt + 1 && ICD_CODE.test(norm[i])) return { keep: true, reason: 'icd-9' };
-    switch (kinds[i]) {
-      case 'parameter':
-      case 'header':
-      case 'unit':
-        return { keep: true, reason: kinds[i] };
-      case 'flag':
-      case 'number':
-        return hasAnchor ? { keep: true, reason: kinds[i] } : { keep: false, reason: `${kinds[i]}-without-anchor` };
-      case 'date':
-      case 'time':
-        return { keep: false, reason: `${kinds[i]}-without-label` };
-      default:
-        return { keep: false, reason: 'not-allowlisted' };
-    }
+    const deny = isDenylisted(w.text);
+    if (deny) return { keep: false, reason: deny };
+    if (dates.has(i)) return { keep: true, reason: 'date-field' };
+    if (zone === 'outside') return { keep: false, reason: 'outside-table' };
+    if (f.personal) return { keep: false, reason: 'personal-line' };
+    return { keep: true, reason: 'table' };
   });
 }
 
-// Leak check on the OCR of the masked image. Any denylist hit or any
-// confidently read word outside the allowlist blocks the document.
-export function findLeaks(lines, known = [], { minConfidence = 60, resultsTop = 0 } = {}) {
+// Leak check on the OCR of the masked image, with the table found on the original.
+// Outside the table any confidently read word that is not a date field is a leak.
+// In the table only PESEL numbers, long numbers and personal or people lines are leaks.
+export function findLeaks(lines, table = null, { minConfidence = 60 } = {}) {
   const leaks = [];
   for (const words of lines) {
-    const decisions = decideLine(words, known, { resultsTop });
+    const decisions = decideLine(words, table);
     words.forEach((w, i) => {
       const d = decisions[i];
       if (d.keep) return;
-      const denylist = ['pesel', 'long-number', 'known-identifier'].includes(d.reason);
+      const denylist = ['pesel', 'long-number', 'personal-line'].includes(d.reason);
       const meaningful = /\p{L}{3,}/u.test(w.text) && (w.confidence ?? 100) >= minConfidence;
-      if (denylist || meaningful) leaks.push({ text: w.text, reason: d.reason });
+      if (denylist ? d.reason !== 'personal-line' || meaningful : meaningful) leaks.push({ text: w.text, reason: d.reason });
     });
   }
   return leaks;

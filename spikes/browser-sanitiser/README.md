@@ -8,17 +8,12 @@ If yes, the server-side sanitiser and the quarantine disappear (see [ADR-0003](.
 
 1. **Render.** PDF.js renders each page to a canvas at 200 or 300 DPI. Photos are drawn as they are.
 2. **OCR.** Tesseract.js (WebAssembly, LSTM, Polish `best_int` model) reads words with their positions.
-3. **Decide.** [rules.js](rules.js) keeps a word only if:
-   - it is a known parameter, a header word or a unit, or a number or flag on a line with a parameter, unit or ICD-9 PL code;
-   - it is a date field: a date label (registration, collection, admission, analysis, release, authorisation) with the date and time right after it. The date of birth is never kept;
-   - it is the test name and code before or in an ICD-9 PL marker, e.g. `TSH (ICD-9: L69)`, so tests missing from the dictionary are kept too;
-   - it is on a method line ("Badanie wykonano metodą … na aparacie …");
-
-   Above the results table (the first table header or result row) only date fields are kept. The patient, the referrer, the ordering clinic and the laboratory header are masked there.
-
-   Lines with personal labels (patient, PESEL, date of birth, address, doctor, order number) or with people who performed, validated or signed the result (mgr, dr, "zatwierdził", "wykonał" and similar) are masked in full, except their date fields. A valid PESEL, any number with 7 or more digits and the user's known identifiers are always masked, also in the header and on method lines.
+3. **Decide by zones** ([ADR-0006](../../docs/adr/0006-zone-based-masking.md), rules in [rules.js](rules.js)):
+   - **Results table:** from the table header (or the first result row on a page without one) to the last result row or method line. Everything in it is kept, except lines naming the patient or staff (Pacjent, PESEL, mgr, dr, Autoryzował…), valid PESEL numbers and numbers with 7 or more digits.
+   - **Outside the table:** only date fields are kept: a date label (registration, collection, admission, analysis, release…, abbreviations included) with the date and time right after it. The date of birth never.
+   - **No table found:** only date fields.
 4. **Compose (keep-only).** The output starts as a white page, and only the kept words are copied onto it. Masked words are shown as dark boxes, or left blank. The boxes are drawn on the new page, so no pixel of the masked text is ever copied. Stamps, signatures, logos, barcodes and unknown text never reach the output, without having to be detected.
-5. **Leak check.** A second OCR pass on the output. Any denylist hit or any confidently read word outside the allowlist blocks the document.
+5. **Leak check.** A second OCR pass on the output, with the table found on the original. Outside the table any confidently read word that is not a date field blocks the document. In the table, a PESEL number, a long number or a people line does.
 
 All libraries and the language model are served from this site. The page's Content Security Policy only allows requests to its own origin.
 
@@ -33,7 +28,7 @@ All libraries and the language model are served from this site. The page's Conte
 | # | Test | Pass when |
 |---|---|---|
 | T1 | Synthetic sample on a laptop and a phone | Clean; every result, unit, range and date field kept |
-| T2 | 5 or more real documents: 2 or more laboratories, 1 or more with several pages, 1 or more photo of a printout, a scan if available. Known identifiers filled in. | No personal data visible on any page marked Clean (hard requirement). A leak on a page marked Blocked is acceptable: it failed closed. |
+| T2 | 5 or more real documents: 2 or more laboratories, 1 or more with several pages, 1 or more photo of a printout, a scan if available. | No personal data visible on any page marked Clean (hard requirement). A leak on a page marked Blocked is acceptable: it failed closed. |
 | T3 | The same documents, results kept | Every value, unit and range kept on 4 of 5 documents or more |
 | T4 | The same documents, date fields kept | Every date field except the date of birth kept on 4 of 5 documents or more |
 | T5 | False blocks | At most 1 document Blocked with nothing personal left on it |
@@ -57,7 +52,6 @@ Real documents are tested only on the user's own devices and are never committed
 ## Known limitations
 
 - GitHub Pages cannot send HTTP headers, so the CSP is a `<meta>` tag. It does not apply to Web Workers. A production deployment sends the policy as a header.
-- The parameter dictionary in [rules.js](rules.js) is a starting list. An unknown parameter is masked, which is safe but loses data.
 - Up to 5 pages per document.
 - Graphics such as the laboratory logo are not kept, only text. Keeping a picture region would also keep barcodes, which often encode the order or patient number.
 - An earlier version kept the laboratory header above the first patient label. On a real document a validator's name sat in that zone and leaked, because the leak check trusted the zone. The zone was replaced by the rule above, and the leak check has no exempt areas.

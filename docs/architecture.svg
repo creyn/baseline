@@ -41,16 +41,15 @@
 <text x="844" y="156" text-anchor="start" font-weight="bold" font-size="15" fill="#1f2933">Sanitiser · Python</text>
 <text x="844" y="175" text-anchor="start" font-size="12.5" fill="#52606d">1. PDF → PNG, 300 DPI</text>
 <text x="844" y="194" text-anchor="start" font-size="12.5" fill="#52606d">2. in-house OCR (Tesseract)</text>
-<text x="844" y="213" text-anchor="start" font-size="12.5" fill="#52606d">3. allowlist masking</text>
-<text x="844" y="232" text-anchor="start" font-size="12.5" fill="#52606d">4. denylist + PESEL</text>
+<text x="844" y="213" text-anchor="start" font-size="12.5" fill="#52606d">3. zone masking: table kept</text>
+<text x="844" y="232" text-anchor="start" font-size="12.5" fill="#52606d">4. PESEL, people lines</text>
 <text x="844" y="251" text-anchor="start" font-size="12.5" fill="#52606d">5. leak check, fail-closed</text>
 <rect x="1110" y="130" width="200" height="100" rx="8" fill="#eef5ea" stroke="#2e7d32" stroke-width="2"/>
 <text x="1210" y="177" text-anchor="middle" font-weight="bold" font-size="15" fill="#1f2933">Clean blob</text>
 <text x="1210" y="196" text-anchor="middle" font-size="12.5" fill="#52606d">masked PNG only</text>
 <rect x="1110" y="290" width="200" height="80" rx="8" fill="#f3e8fd" stroke="#6a1b9a" stroke-width="2"/>
-<text x="1210" y="318" text-anchor="middle" font-weight="bold" font-size="15" fill="#1f2933">Key Vault</text>
-<text x="1210" y="337" text-anchor="middle" font-size="12.5" fill="#52606d">quarantine-kek</text>
-<text x="1210" y="356" text-anchor="middle" font-size="12.5" fill="#52606d">known identifiers</text>
+<text x="1210" y="327" text-anchor="middle" font-weight="bold" font-size="15" fill="#1f2933">Key Vault</text>
+<text x="1210" y="346" text-anchor="middle" font-size="12.5" fill="#52606d">quarantine-kek</text>
 <rect x="1380" y="130" width="270" height="130" rx="8" fill="#fff4e5" stroke="#e65100" stroke-width="2"/>
 <text x="1515" y="174" text-anchor="middle" font-weight="bold" font-size="15" fill="#1f2933">Extraction worker · Python</text>
 <text x="1515" y="193" text-anchor="middle" font-size="12.5" fill="#52606d">FastAPI · pydantic</text>

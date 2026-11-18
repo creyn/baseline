@@ -1,6 +1,5 @@
 import * as pdfjs from './vendor/pdfjs/pdf.min.mjs';
 import { sanitisePage } from './pipeline.js';
-import { prepareKnownIdentifiers } from './rules.js';
 
 const MAX_PAGES = 5;
 const url = p => new URL(p, location.href).href;
@@ -70,15 +69,15 @@ function toImage(canvas, alt) {
     }, 'image/png'));
 }
 
-function drawDecisions(source, decisions, resultsTop) {
+function drawDecisions(source, decisions, table) {
   const c = makeCanvas(source.width, source.height);
   const ctx = c.getContext('2d');
   ctx.drawImage(source, 0, 0);
   ctx.lineWidth = Math.max(2, source.width / 800);
-  if (resultsTop) { // above the results table: only date fields are kept
+  if (table) { // the results table zone
     ctx.strokeStyle = '#1565c0';
     ctx.setLineDash([24, 12]);
-    ctx.strokeRect(4, 4, source.width - 8, resultsTop - 8);
+    ctx.strokeRect(4, table.top - 8, source.width - 8, table.bottom - table.top + 16);
     ctx.setLineDash([]);
   }
   for (const d of decisions) {
@@ -99,7 +98,6 @@ async function run() {
   $('run').disabled = true;
 
   const dpi = Number($('dpi').value);
-  const known = prepareKnownIdentifiers($('known').value);
   const totals = { render: 0, ocr: 0, compose: 0, leakCheck: 0 };
   let leakCount = 0;
 
@@ -111,7 +109,7 @@ async function run() {
 
     for (const [i, source] of pages.entries()) {
       setStatus(`Page ${i + 1} of ${pages.length}: OCR, masking, leak check…`);
-      const r = await sanitisePage(worker, source, known, makeCanvas, { style: $('style').value });
+      const r = await sanitisePage(worker, source, makeCanvas, { style: $('style').value });
       for (const k of ['ocr', 'compose', 'leakCheck']) totals[k] += r.timings[k];
       leakCount += r.leaks.length;
 
@@ -119,7 +117,7 @@ async function run() {
       const section = document.createElement('section');
       section.className = 'card page';
       const { img, href } = await toImage(r.canvas, `Masked page ${i + 1}`);
-      const verdict = r.leaks.length ? `BLOCKED: ${r.leaks.length} suspicious word(s)` : 'Clean';
+      const verdict = r.leaks.length ? `BLOCKED: ${r.leaks.length} suspicious word(s)` : r.table ? 'Clean' : 'Clean, no results table found';
       section.innerHTML = `
         <h2>Page ${i + 1} <span class="badge ${r.leaks.length ? 'bad' : 'good'}">${verdict}</span></h2>
         <p class="meta">${source.width}×${source.height} px · words kept ${kept} of ${r.decisions.length} ·
@@ -135,9 +133,9 @@ async function run() {
         href, download: `page-${i + 1}-masked.png`, textContent: 'Download masked PNG', className: 'button',
       }));
       if ($('debug').checked) {
-        const dbg = await toImage(drawDecisions(source, r.decisions, r.resultsTop), `Decisions on page ${i + 1}`);
+        const dbg = await toImage(drawDecisions(source, r.decisions, r.table), `Decisions on page ${i + 1}`);
         const details = document.createElement('details');
-        details.innerHTML = '<summary>Decisions on the original: green kept, red masked, dashed blue the area above the results</summary>';
+        details.innerHTML = '<summary>Decisions on the original: green kept, red masked, dashed blue the results table</summary>';
         details.appendChild(dbg.img);
         section.appendChild(details);
       }

@@ -1,6 +1,6 @@
 // OCR → decisions → keep-only image → leak check. Works in the browser and in Node:
 // the caller passes a Tesseract worker and a canvas factory.
-import { decideLine, findResultsTop, findLeaks } from './rules.js';
+import { decideLine, findTable, findLeaks } from './rules.js';
 
 // Returns lines of words: [[{ text, confidence, bbox: { x0, y0, x1, y1 } }]]
 export async function ocrLines(worker, image) {
@@ -21,20 +21,20 @@ export async function ocrLines(worker, image) {
 
 // Keep-only composition: start from a white page and copy only the allowed words.
 // Everything else (unknown text, stamps, signatures, logos, barcodes) never reaches the output.
-// Above the results table only date fields are kept.
+// Zones (ADR-0006): the results table is kept, outside it only date fields.
 // style 'boxes' draws a dark box over each run of masked words. The boxes are drawn on the
 // new page, not over the original, so nothing of the masked pixels can show at their edges.
-export function composeKeepOnly(source, lines, known, makeCanvas, { style = 'boxes', pad = 3 } = {}) {
+export function composeKeepOnly(source, lines, makeCanvas, { style = 'boxes', pad = 3 } = {}) {
   const out = makeCanvas(source.width, source.height);
   const ctx = out.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, out.width, out.height);
-  const resultsTop = findResultsTop(lines);
+  const table = findTable(lines);
   const decisions = [];
   const kept = [];
   const boxes = [];
   for (const words of lines) {
-    const d = decideLine(words, known, { resultsTop });
+    const d = decideLine(words, table);
     let run = null;
     words.forEach((w, i) => {
       decisions.push({ ...w, ...d[i] });
@@ -54,21 +54,21 @@ export function composeKeepOnly(source, lines, known, makeCanvas, { style = 'box
     const height = Math.min(source.height - y, y1 - y0 + 2 * pad);
     ctx.drawImage(source, x, y, width, height, x, y, width, height);
   }
-  return { canvas: out, decisions, resultsTop };
+  return { canvas: out, decisions, table };
 }
 
-export async function sanitisePage(worker, source, known, makeCanvas, options = {}) {
+export async function sanitisePage(worker, source, makeCanvas, options = {}) {
   const t0 = performance.now();
   const lines = await ocrLines(worker, source);
   const t1 = performance.now();
-  const { canvas, decisions, resultsTop } = composeKeepOnly(source, lines, known, makeCanvas, options);
+  const { canvas, decisions, table } = composeKeepOnly(source, lines, makeCanvas, options);
   const t2 = performance.now();
-  const leaks = findLeaks(await ocrLines(worker, canvas), known, { resultsTop });
+  const leaks = findLeaks(await ocrLines(worker, canvas), table);
   const t3 = performance.now();
   return {
     canvas,
     decisions,
-    resultsTop,
+    table,
     leaks,
     timings: { ocr: t1 - t0, compose: t2 - t1, leakCheck: t3 - t2 },
   };

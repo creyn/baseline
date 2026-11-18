@@ -114,11 +114,11 @@
 <line x1="1067" y1="612" x2="754" y2="612" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
 <text x="909" y="605" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">10. read ciphertext</text>
 <line x1="1067" y1="650" x2="596" y2="650" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
-<text x="830" y="643" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">11. unwrapKey, read known identifiers</text>
+<text x="830" y="643" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">11. unwrapKey</text>
 <path d="M1067 688 h28 v18 h-24" fill="none" stroke="#c62828" stroke-width="2" marker-end="url(#a-raw)"/>
 <text x="1103" y="701" font-size="12.5" fill="#c62828" paint-order="stroke" stroke="#ffffff" stroke-width="4">12. decrypt in memory, PDF → PNG at 300 DPI</text>
 <path d="M1067 738 h28 v18 h-24" fill="none" stroke="#c62828" stroke-width="2" marker-end="url(#a-raw)"/>
-<text x="1103" y="751" font-size="12.5" fill="#c62828" paint-order="stroke" stroke="#ffffff" stroke-width="4">13. OCR, allowlist + denylist masking, burn into pixels</text>
+<text x="1103" y="751" font-size="12.5" fill="#c62828" paint-order="stroke" stroke="#ffffff" stroke-width="4">13. OCR, zone masking: keep table and date fields</text>
 <path d="M1067 788 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
 <text x="1103" y="801" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">14. leak check: second OCR pass on the masked image</text>
 <line x1="1067" y1="888" x2="280" y2="888" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>

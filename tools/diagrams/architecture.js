@@ -60,11 +60,11 @@ box(270, 720, 150, 80, C.store, C.storeS, 'Azure SQL', ['results · EF Core']);
 // raw zone
 box(590, 130, 200, 100, C.store, C.storeS, 'Quarantine blob', ['DEK wrapped by', 'quarantine-kek', 'deleted after masking']);
 box(590, 290, 200, 80, C.ext, C.extS, 'Service Bus', ['import queue']);
-box(830, 130, 210, 240, C.py, C.pyS, 'Sanitiser · Python', ['1. PDF → PNG, 300 DPI', '2. in-house OCR (Tesseract)', '3. allowlist masking', '4. denylist + PESEL', '5. leak check, fail-closed'], { left: true, top: true });
+box(830, 130, 210, 240, C.py, C.pyS, 'Sanitiser · Python', ['1. PDF → PNG, 300 DPI', '2. in-house OCR (Tesseract)', '3. zone masking: table kept', '4. PESEL, people lines', '5. leak check, fail-closed'], { left: true, top: true });
 
 // right side
 box(1110, 130, 200, 100, C.store, C.storeS, 'Clean blob', ['masked PNG only']);
-box(1110, 290, 200, 80, C.sec, C.secS, 'Key Vault', ['quarantine-kek', 'known identifiers']);
+box(1110, 290, 200, 80, C.sec, C.secS, 'Key Vault', ['quarantine-kek']);
 box(1380, 130, 270, 130, C.py, C.pyS, 'Extraction worker · Python', ['FastAPI · pydantic', 'structured output', 'chunks + embeddings']);
 
 // managed AI

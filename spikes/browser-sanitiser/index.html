@@ -11,7 +11,7 @@
 <body>
 <header>
   <h1>Browser sanitiser</h1>
-  <p class="lead">Spike: render a lab result, OCR it and mask everything except the results, entirely in this browser. Files never leave the device: this page has no backend, and its Content Security Policy blocks requests to other origins.</p>
+  <p class="lead">Spike: render a lab result, OCR it and mask everything except the results table and the date fields, entirely in this browser. Files never leave the device: this page has no backend, and its Content Security Policy blocks requests to other origins.</p>
 </header>
 
 <main>
@@ -19,10 +19,6 @@
     <label class="field">
       <span>Lab result (PDF or photo)</span>
       <input id="file" type="file" accept="application/pdf,image/*">
-    </label>
-    <label class="field">
-      <span>Known identifiers <small>(optional, kept in memory only): name, PESEL, address, one per line</small></span>
-      <textarea id="known" rows="3" autocomplete="off" spellcheck="false"></textarea>
     </label>
     <div class="row">
       <label class="field inline">
