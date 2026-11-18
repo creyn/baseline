@@ -15,6 +15,7 @@ Format and rules are described in [ADR-0001](0001-record-architecture-decisions.
 | 0009 | [Block personal identifiers in the user's questions](0009-personal-data-in-questions.md) | Accepted |
 | 0010 | [Store only lab results, not visits](0010-store-only-lab-results.md) | Accepted |
 | 0011 | [Deletion and retention](0011-deletion-and-retention.md) | Accepted |
+| 0012 | [Parameter dictionary: definitions in the repository, lab names in the database](0012-parameter-dictionary.md) | Accepted |
 
 ## To be written
 
@@ -29,4 +30,3 @@ Open questions found while drawing the use cases (Q1–Q8) are listed in [docs/s
 - UI framework: TypeScript (e.g. React) vs. Blazor. Depends on the browser masking proof of concept.
 - One agent with tools vs. multiple agents
 - Threat model (STRIDE)
-- LOINC codes as canonical parameter names

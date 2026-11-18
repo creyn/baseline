@@ -243,7 +243,6 @@ module.exports = [
     colW: 200,
     participants: [P.u, P.api, P.sql, P.sb, P.w, P.clean],
     steps: [
-      { note: ['Q8: where does the parameter dictionary live?', 'Masking no longer depends on it (ADR-0006). It maps names', 'to LOINC codes for trends, so a user-editable mapping', 'reveals nothing. Repository, user-editable, or both?'], over: 'sb' },
       { alt: '[extraction fix: the masked images are enough]', span: ['u', 'clean'] },
       { from: 'u', to: 'api', text: 'POST /documents/{id}/reprocess' },
       { from: 'api', to: 'sb', text: 'DocumentMasked(documentId)' },

@@ -13,7 +13,7 @@ Arrow colours: red carries the plaintext original or unmasked personal data, tea
 | 5 | [Ask a question about results](05-question.svg): agent, tools, guardrails, citations | Q5 |
 | 6 | [Prepare a pre-visit summary](06-pre-visit-summary.svg): for a chosen period, not stored | |
 | 7 | [Delete a document](07-delete-document.svg) | |
-| 8 | [Reprocess a document](08-reprocess-document.svg): after an extraction or masking fix | Q8 |
+| 8 | [Reprocess a document](08-reprocess-document.svg): after an extraction or masking fix | |
 
 ## Out of scope for now
 
@@ -34,6 +34,6 @@ Each answered question becomes an ADR or a change to an existing one.
 | Q5 | ~~The user's own question goes to Azure OpenAI unmasked and may contain personal data.~~ | Resolved by [ADR-0009](../adr/0009-personal-data-in-questions.md). |
 | Q6 | ~~Visits are not in the data model yet.~~ | Resolved by [ADR-0010](../adr/0010-store-only-lab-results.md): visits are not stored. |
 | Q7 | ~~How complete is deletion?~~ | Resolved by [ADR-0011](../adr/0011-deletion-and-retention.md). |
-| Q8 | Where does the parameter dictionary live? | Masking no longer depends on it ([ADR-0006](../adr/0006-zone-based-masking.md)). It maps parameter names to LOINC codes, so a user-editable mapping reveals nothing. |
+| Q8 | ~~Where does the parameter dictionary live?~~ | Resolved by [ADR-0012](../adr/0012-parameter-dictionary.md). |
 
 Masking in the browser instead of the server-side sanitiser is being evaluated with a proof of concept. If it is chosen, the quarantine disappears and Q2 goes with it.
