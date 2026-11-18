@@ -13,6 +13,7 @@ Format and rules are described in [ADR-0001](0001-record-architecture-decisions.
 | 0007 | [Unit normalisation: keep the original, derive a normalised value](0007-unit-normalisation.md) | Accepted |
 | 0008 | [Reference ranges are stored with each result](0008-reference-ranges.md) | Accepted |
 | 0009 | [Block personal identifiers in the user's questions](0009-personal-data-in-questions.md) | Accepted |
+| 0010 | [Store only lab results, not visits](0010-store-only-lab-results.md) | Accepted |
 
 ## To be written
 

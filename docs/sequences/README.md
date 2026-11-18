@@ -11,7 +11,7 @@ Arrow colours: red carries the plaintext original or unmasked personal data, tea
 | 3 | [Handle a blocked document](03-blocked-document.svg): the leak check stopped a document | Q2 |
 | 4 | [Browse results and trends](04-results-and-trends.svg): the most frequent read, no AI | Q3, Q4 |
 | 5 | [Ask a question about results](05-question.svg): agent, tools, guardrails, citations | Q5 |
-| 6 | [Prepare a pre-visit summary](06-pre-visit-summary.svg) | Q6 |
+| 6 | [Prepare a pre-visit summary](06-pre-visit-summary.svg): for a chosen period, not stored | |
 | 7 | [Delete a document](07-delete-document.svg) | Q7 |
 | 8 | [Reprocess a document](08-reprocess-document.svg): after an extraction or masking fix | Q8 |
 
@@ -32,7 +32,7 @@ Each answered question becomes an ADR or a change to an existing one.
 | Q3 | ~~Unit normalisation: the same parameter comes in different units (vitamin D in ng/ml or nmol/l).~~ | Resolved by [ADR-0007](../adr/0007-unit-normalisation.md). |
 | Q4 | ~~Reference ranges differ between labs and over time.~~ | Resolved by [ADR-0008](../adr/0008-reference-ranges.md). |
 | Q5 | ~~The user's own question goes to Azure OpenAI unmasked and may contain personal data.~~ | Resolved by [ADR-0009](../adr/0009-personal-data-in-questions.md). |
-| Q6 | Visits are not in the data model yet. | Visit date and specialty only. The doctor's name is personal data and is not needed. |
+| Q6 | ~~Visits are not in the data model yet.~~ | Resolved by [ADR-0010](../adr/0010-store-only-lab-results.md): visits are not stored. |
 | Q7 | How complete is deletion? Blob soft delete and SQL backups keep data for their retention period. | Set and document the retention periods. No soft delete or versions on the quarantine. |
 | Q8 | Where does the parameter dictionary live? | Masking no longer depends on it ([ADR-0006](../adr/0006-zone-based-masking.md)). It maps parameter names to LOINC codes, so a user-editable mapping reveals nothing. |
 

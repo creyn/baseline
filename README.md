@@ -16,7 +16,7 @@ Lab results are scattered across PDFs, emails, different labs' apps and paper. T
 - **Trends:** a chart for every parameter over time, with out-of-range results flagged.
 - **Questions with citations (RAG):** e.g. "When did I last test vitamin D, and what was the result?", always with a link to the source document and page.
 - **Agent with tools:** document search, trends, out-of-range results, pre-visit summary.
-- **Pre-visit summary:** changes since the last visit, out-of-range results, questions for the doctor.
+- **Pre-visit summary:** changes over a chosen period, out-of-range results, questions for the doctor. Generated on demand and not stored.
 
 ## Principles
 
