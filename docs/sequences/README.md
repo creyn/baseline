@@ -35,5 +35,6 @@ Each answered question becomes an ADR or a change to an existing one.
 | Q6 | ~~Visits are not in the data model yet.~~ | Resolved by [ADR-0010](../adr/0010-store-only-lab-results.md): visits are not stored. |
 | Q7 | ~~How complete is deletion?~~ | Resolved by [ADR-0011](../adr/0011-deletion-and-retention.md). |
 | Q8 | ~~Where does the parameter dictionary live?~~ | Resolved by [ADR-0012](../adr/0012-parameter-dictionary.md). |
+| Q9 | A paper result photographed page by page arrives as several images. How do they become one document, in the right page order? | One `Document` with several pages. The user picks several photos at once; the default order comes from the time each photo was taken, and the user can reorder the thumbnails by dragging before sending. |
 
 Masking in the browser instead of the server-side sanitiser is being evaluated with a proof of concept. If it is chosen, the quarantine disappears and Q2 goes with it.
