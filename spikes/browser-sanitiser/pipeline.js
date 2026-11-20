@@ -39,11 +39,23 @@ export function composeKeepOnly(source, lines, makeCanvas, { style = 'boxes', pa
   for (const words of rows) {
     const d = decideLine(words, table);
     const heights = words.map(w => w.bbox.y1 - w.bbox.y0).sort((a, b) => a - b);
-    const padY = Math.max(pad, Math.round(heights[heights.length >> 1] / 3));
+    const lineHeight = heights[heights.length >> 1];
+    const padY = Math.max(pad, Math.round(lineHeight / 3));
     let run = null;
+    let last = null; // the previous kept word, if the word right before was kept
     words.forEach((w, i) => {
       decisions.push({ ...w, ...d[i] });
-      if (d[i].keep) { kept.push({ ...w.bbox, padY }); run = null; return; }
+      if (d[i].keep) {
+        // Two kept neighbours close together are copied with the gap between them, so a letter that OCR
+        // did not read (e.g. a "g" crossed by an underline, read as "o" + "ólne") is not lost.
+        const gap = last ? w.bbox.x0 - last.x1 : Infinity;
+        if (gap >= 0 && gap <= lineHeight) kept.push({ x0: last.x1, y0: Math.min(last.y0, w.bbox.y0), x1: w.bbox.x0, y1: Math.max(last.y1, w.bbox.y1), padY });
+        kept.push({ ...w.bbox, padY });
+        last = w.bbox;
+        run = null;
+        return;
+      }
+      last = null;
       const b = w.bbox;
       if (run) { run.x1 = Math.max(run.x1, b.x1); run.y0 = Math.min(run.y0, b.y0); run.y1 = Math.max(run.y1, b.y1); }
       else { run = { ...b }; boxes.push(run); }

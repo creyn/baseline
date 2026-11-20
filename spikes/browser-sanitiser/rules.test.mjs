@@ -106,6 +106,11 @@ const keptOnPage = lines => {
   return rows.map(r => r.filter((_, i) => decideLine(r, t)[i].keep).map(w => w.text));
 };
 
+test('a label glued to "Data" by OCR: "Datarej:" is kept, "Dataur:" is not', () => {
+  assert.deepEqual(keptIn(at('Pacjent: Datarej: 15.03.2026 08:15:00', 400), null), ['Datarej:', '15.03.2026', '08:15:00']);
+  assert.deepEqual(keptIn(at('Adres: Dataur: 1980-01-01', 450), null), []);
+});
+
 test('three prefix words before a date label are kept: "Data i godz. pobrania"', () => {
   assert.deepEqual(keptIn(at('Data i godz. pobrania: 2026-05-28 09:36', 400), null), ['Data', 'i', 'godz.', 'pobrania:', '2026-05-28', '09:36']);
 });

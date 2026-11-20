@@ -114,7 +114,8 @@ export function classifyWord(text) {
 const bare = n => n.replace(/[.:]+$/, '');
 
 function isDateLabel(n) {
-  const w = bare(n);
+  // OCR sometimes glues the label to "Data": "Datarej:", "Dataur:"
+  const w = bare(n).replace(/^data(?=\p{L})/u, '');
   if (BIRTH_LABELS.test(w)) return false;
   return DATE_LABELS.includes(w) || DATE_LABEL_STEMS.some(s => w.startsWith(s));
 }
