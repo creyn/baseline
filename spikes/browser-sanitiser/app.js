@@ -141,6 +141,15 @@ async function run() {
         const details = document.createElement('details');
         details.innerHTML = '<summary>Decisions on the original: green kept, red masked, dashed blue the results table</summary>';
         details.appendChild(dbg.img);
+        // OCR words with positions and decisions, to compare OCR between devices. Contains the document's text.
+        const json = JSON.stringify({ page: i + 1, width: r.canvas.width, height: r.canvas.height, table: r.table, env: $('env').textContent,
+          words: r.decisions.map(d => ({ text: d.text, confidence: Math.round(d.confidence), bbox: d.bbox, keep: d.keep, reason: d.reason })) });
+        const u = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        objectUrls.push(u);
+        details.appendChild(Object.assign(document.createElement('a'), {
+          href: u, download: `${file.name.replace(/\.[^.]+$/, '')}-page-${i + 1}-decisions.json`,
+          textContent: 'Download OCR decisions (JSON, contains the document text)', className: 'button',
+        }));
         section.appendChild(details);
       }
       $('pages').appendChild(section);

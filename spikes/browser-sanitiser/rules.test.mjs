@@ -137,3 +137,20 @@ test('the table does not extend over a personal line or past a large gap', () =>
   const far = [at('Glukoza 95 mg/dl 70-99', 300), at('Kreatynina 0,9 mg/dl 0,7-1,2', 360), at('Stopka laboratorium Prosta 1', 900)];
   assert.equal(findTable(far).bottom, 400);
 });
+
+test('a header with "nr" is a header, and "Wartość referencyjna: 2.0 - 7.0" under a result is not', () => {
+  const lines = [at('Pacjent: Jan Testowy', 100), at('ICD9 Nazwa Wynik j.m. Wartość referencyjna Procedura badawcza nr', 300),
+    at('Profil: Hormony - krew', 340), at('O55 Trójjodotyronina wolna (FT3) 5.20 pmol/l', 400), at('Wartość referencyjna: 2.0 - 7.0', 440)];
+  const t = findTable(lines);
+  assert.equal(t.top, 300);
+  assert.deepEqual(keptIn(lines[1], t), lines[1].map(w => w.text));
+  assert.deepEqual(keptIn(lines[2], t), lines[2].map(w => w.text));
+});
+
+test('a tall box next to a small date field does not split the field', () => {
+  const box = { text: 'RER', confidence: 30, bbox: { x0: 0, y0: 3227, x1: 900, y1: 3268 } };
+  const small = (text, x) => ({ text, confidence: 95, bbox: { x0: x, y0: 3259, x1: x + 90, y1: 3274 } });
+  const rows = pageRows([[box, small('Data', 1000)], [small('wydruku:', 1100), small('15-03-2026', 1200), small('08:15', 1300)]]);
+  assert.deepEqual(keptOnPage([[box, small('Data', 1000)], [small('wydruku:', 1100), small('15-03-2026', 1200), small('08:15', 1300)]]).flat(), ['Data', 'wydruku:', '15-03-2026', '08:15']);
+  assert.equal(rows.length, 2);
+});

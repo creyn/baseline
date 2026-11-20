@@ -52,7 +52,8 @@ const DATE_FILLERS = ['prób', 'próbki', 'próbek', 'materiału', 'pdf/wydruku'
 
 // Words of a results table header, e.g. "Badanie Wynik Jedn. Zakres referencyjny".
 const TABLE_WORDS = ['badanie', 'badania', 'parametr', 'nazwa', 'wynik', 'wyniki', 'wartość', 'wartości', 'jednostka', 'jednostki',
-  'jedn', 'j.m', 'norma', 'normy', 'zakres', 'zakresy', 'referencyjny', 'referencyjne', 'referencyjna', 'oznaczenie', 'materiał'];
+  'jedn', 'j.m', 'norma', 'normy', 'zakres', 'zakresy', 'referencyjny', 'referencyjne', 'referencyjna', 'oznaczenie', 'materiał',
+  'min', 'max', 'flaga', 'icd9', 'icd-9', 'procedura', 'badawcza', 'metoda'];
 
 // Results given as words instead of numbers, e.g. "HBs ujemny".
 const QUALITATIVE = new Set(['ujemny', 'ujemna', 'ujemne', 'dodatni', 'dodatnia', 'dodatnie', 'nieobecny', 'nieobecna',
@@ -123,11 +124,16 @@ function describeLine(words) {
   const norm = words.map(w => normalise(w.text));
   const kinds = words.map(w => classifyWord(w.text));
   const has = k => kinds.includes(k);
+  // A header has at least two header words, they make up a good part of the line, and it holds no values.
+  // "Wartość referencyjna: 2.0 - 7.0" under a result is not a header.
+  const headerWords = norm.filter(n => TABLE_WORDS.includes(bare(n))).length;
+  const tableHeader = headerWords >= 2 && headerWords >= 0.4 * norm.length && !kinds.some(k => ['number', 'date', 'time'].includes(k));
   return {
     norm,
     kinds,
-    personal: norm.some(n => PERSONAL_LINE_LABELS.includes(bare(n))),
-    tableHeader: norm.filter(n => TABLE_WORDS.includes(bare(n))).length >= 2,
+    // "Procedura badawcza nr" in a header is not a people line
+    personal: !tableHeader && norm.some(n => PERSONAL_LINE_LABELS.includes(bare(n))),
+    tableHeader,
     // A result row: a value with a unit, a known parameter with a value, or a word result such as "ujemny".
     resultRow: ((has('number') && (has('unit') || has('parameter'))) || norm.some(n => QUALITATIVE.has(bare(n)))) && !has('date'),
     methodLine: norm.some(n => METHOD_LABELS.includes(n)) || norm.some(n => ICD_MARKER.test(n)),
@@ -140,15 +146,18 @@ const median = xs => { const s = [...xs].sort((a, b) => a - b); return s.length 
 
 // Tesseract splits a page into blocks, so one printed row (a table header with separate columns,
 // a label and its value) may come back as several lines. Rows are rebuilt from geometry instead:
-// a word joins a row when its vertical centre lies within the row's first word. Words are sorted left to right.
+// a word joins a row when its vertical centre is within 0.4 of the smaller text height from the centre
+// of the row's first word. A tall box (e.g. OCR noise on a masked run) does not swallow the small text
+// next to it. Words are sorted left to right.
 export function groupRows(lines) {
-  const words = lines.flat().filter(w => w.bbox).sort((a, b) => (a.bbox.y0 + a.bbox.y1) - (b.bbox.y0 + b.bbox.y1));
+  const centre = b => (b.y0 + b.y1) / 2;
+  const height = b => b.y1 - b.y0;
+  const words = lines.flat().filter(w => w.bbox).sort((a, b) => centre(a.bbox) - centre(b.bbox));
   const rows = [];
   for (const w of words) {
-    const c = (w.bbox.y0 + w.bbox.y1) / 2;
-    const row = rows.find(r => c >= r.y0 && c <= r.y1);
+    const row = rows.find(r => Math.abs(centre(w.bbox) - centre(r.first)) <= 0.4 * Math.min(height(w.bbox), height(r.first)));
     if (row) row.words.push(w);
-    else rows.push({ y0: w.bbox.y0, y1: w.bbox.y1, words: [w] });
+    else rows.push({ first: w.bbox, words: [w] });
   }
   return rows.map(r => r.words.sort((a, b) => a.bbox.x0 - b.bbox.x0)).sort((a, b) => a[0].bbox.y0 - b[0].bbox.y0);
 }
@@ -160,7 +169,10 @@ export function groupRows(lines) {
 export function findTable(lines) {
   const all = lines.map(describeLine).sort((a, b) => a.y0 - b.y0);
   const facts = all.filter(f => !f.personal);
-  const start = facts.find(f => f.tableHeader) ?? facts.find(f => f.resultRow);
+  // the header right above the first result row, or the first result row itself
+  const first = facts.find(f => f.resultRow);
+  if (!first) return null;
+  const start = facts.filter(f => f.tableHeader && f.y0 < first.y0).pop() ?? first;
   if (!start) return null;
   const rows = facts.filter(f => f.y0 >= start.y0 && (f.resultRow || f.methodLine));
   if (!rows.length) return null;
