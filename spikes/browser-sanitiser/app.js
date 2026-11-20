@@ -10,6 +10,7 @@ const ms = t => `${(t / 1000).toFixed(1)} s`;
 pdfjs.GlobalWorkerOptions.workerSrc = url('vendor/pdfjs/pdf.worker.min.mjs');
 
 let worker;
+let pdfWorker; // started with the page, so that PDFs open offline later (T8)
 let objectUrls = [];
 
 $('env').textContent =
@@ -17,6 +18,8 @@ $('env').textContent =
 
 async function init() {
   const t0 = performance.now();
+  pdfWorker = new pdfjs.PDFWorker();
+  await pdfWorker.promise;
   worker = await Tesseract.createWorker('pol', 1, {
     workerPath: url('vendor/tesseract/worker.min.js'),
     corePath: url('vendor/tesseract-core'),
@@ -35,6 +38,7 @@ async function loadPages(file, dpi) {
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
     const task = pdfjs.getDocument({
       data: new Uint8Array(await file.arrayBuffer()),
+      worker: pdfWorker,
       standardFontDataUrl: url('vendor/pdfjs/standard_fonts/'),
       wasmUrl: url('vendor/pdfjs/wasm/'),
       enableXfa: false,

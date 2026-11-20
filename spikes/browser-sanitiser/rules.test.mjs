@@ -1,7 +1,7 @@
 // Run with: node --test 'spikes/**/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isValidPesel, classifyWord, decideLine, findTable, findLeaks } from './rules.js';
+import { isValidPesel, classifyWord, decideLine, findTable, findLeaks, pageRows } from './rules.js';
 
 // One OCR line at height y: words 100 px apart, 40 px high.
 const at = (s, y) => s.split(' ').map((text, i) => ({ text, confidence: 95, bbox: { x0: i * 100, y0: y, x1: i * 100 + 90, y1: y + 40 } }));
@@ -96,4 +96,44 @@ test('leak check', () => {
   assert.equal(findLeaks([at('Glukoza 44051401359 95 mg/dl', 1200)], table).length, 1); // PESEL in the table
   assert.equal(findLeaks([page[10]], table).length, 4); // a people line in the table
   assert.equal(findLeaks([[{ text: 'xq', confidence: 20, bbox: { x0: 0, y0: 10, x1: 9, y1: 20 } }]], table).length, 0); // noise
+});
+
+// Words placed by hand: [text, x, y], 40 px high, 90 px wide.
+const placed = (...ws) => ws.map(([text, x, y]) => ({ text, confidence: 95, bbox: { x0: x, y0: y, x1: x + 90, y1: y + 40 } }));
+const keptOnPage = lines => {
+  const rows = pageRows(lines);
+  const t = findTable(rows);
+  return rows.map(r => r.filter((_, i) => decideLine(r, t)[i].keep).map(w => w.text));
+};
+
+test('three prefix words before a date label are kept: "Data i godz. pobrania"', () => {
+  assert.deepEqual(keptIn(at('Data i godz. pobrania: 2026-05-28 09:36', 400), null), ['Data', 'i', 'godz.', 'pobrania:', '2026-05-28', '09:36']);
+});
+
+test('a date printed a little higher than its label is attached to it', () => {
+  // OCR returns the label and the date as separate lines; the label sits 24 px (about 2 mm at 300 DPI) lower.
+  const lines = [placed(['Pacjent:', 0, 300], ['Jan', 100, 300]), placed(['Data', 0, 424], ['rej.:', 100, 424]), placed(['2026-05-28', 400, 400], ['09:36', 500, 400])];
+  assert.deepEqual(keptOnPage(lines).flat(), ['Data', 'rej.:', '2026-05-28', '09:36']);
+});
+
+test('a table header split by OCR into separate columns is still found', () => {
+  const lines = [placed(['Pacjent:', 0, 100], ['Jan', 100, 100]), placed(['Badanie', 0, 300]), placed(['Wynik', 400, 302]), placed(['Jednostka', 600, 299]),
+    placed(['Glukoza', 0, 360], ['95', 400, 360], ['mg/dl', 600, 360])];
+  assert.deepEqual(findTable(pageRows(lines)), { top: 299, bottom: 400 });
+});
+
+test('word results start and extend the table; description lines right below it stay inside', () => {
+  const lines = [at('Antygen HBs ujemny', 300), at('Glukoza 95 mg/dl 70-99', 360), at('Przeciwciała anty-HCV ujemny', 420),
+    at('Uwaga: oznaczenie wykonano z powtórzeniem', 480), at('Data wydania: 2026-05-28', 700), at('mgr Anna Walidująca', 760)];
+  const t = findTable(lines);
+  assert.deepEqual(t, { top: 300, bottom: 520 });
+  assert.deepEqual(keptIn(lines[3], t), lines[3].map(w => w.text));
+  assert.deepEqual(keptIn(lines[5], t), []);
+});
+
+test('the table does not extend over a personal line or past a large gap', () => {
+  const lines = [at('Glukoza 95 mg/dl 70-99', 300), at('Kreatynina 0,9 mg/dl 0,7-1,2', 360), at('Autoryzował: Jan Testowy', 420), at('Uwagi końcowe', 480)];
+  assert.equal(findTable(lines).bottom, 400);
+  const far = [at('Glukoza 95 mg/dl 70-99', 300), at('Kreatynina 0,9 mg/dl 0,7-1,2', 360), at('Stopka laboratorium Prosta 1', 900)];
+  assert.equal(findTable(far).bottom, 400);
 });

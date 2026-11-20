@@ -51,8 +51,12 @@ const DATE_PREFIX = /^(data|godz|godzina|data\/godz|data\/godzina|i)$/;
 const DATE_FILLERS = ['prób', 'próbki', 'próbek', 'materiału', 'pdf/wydruku', 'wydruku', 'pdf', 'godz', 'godzina', ''];
 
 // Words of a results table header, e.g. "Badanie Wynik Jedn. Zakres referencyjny".
-const TABLE_WORDS = ['badanie', 'badania', 'parametr', 'nazwa', 'wynik', 'wyniki', 'wartość', 'jednostka', 'jednostki',
-  'jedn', 'j.m', 'norma', 'normy', 'zakres', 'referencyjny', 'referencyjne'];
+const TABLE_WORDS = ['badanie', 'badania', 'parametr', 'nazwa', 'wynik', 'wyniki', 'wartość', 'wartości', 'jednostka', 'jednostki',
+  'jedn', 'j.m', 'norma', 'normy', 'zakres', 'zakresy', 'referencyjny', 'referencyjne', 'referencyjna', 'oznaczenie', 'materiał'];
+
+// Results given as words instead of numbers, e.g. "HBs ujemny".
+const QUALITATIVE = new Set(['ujemny', 'ujemna', 'ujemne', 'dodatni', 'dodatnia', 'dodatnie', 'nieobecny', 'nieobecna',
+  'nieobecne', 'obecny', 'obecna', 'obecne', 'niereaktywny', 'reaktywny', 'wykryto', 'niewykrywalny', 'niewykrywalne']);
 
 // A method line under a result, e.g. "Badanie wykonano metodą ... na aparacie Cobas ...".
 const METHOD_LABELS = ['metodą', 'metoda', 'metody', 'aparacie', 'aparat', 'aparatem', 'analizatorze', 'analizator', 'analizatora'];
@@ -124,24 +128,52 @@ function describeLine(words) {
     kinds,
     personal: norm.some(n => PERSONAL_LINE_LABELS.includes(bare(n))),
     tableHeader: norm.filter(n => TABLE_WORDS.includes(bare(n))).length >= 2,
-    // A result row: a value with a unit, or a known parameter with a value. No dates, no personal labels.
-    resultRow: has('number') && (has('unit') || has('parameter')) && !has('date'),
+    // A result row: a value with a unit, a known parameter with a value, or a word result such as "ujemny".
+    resultRow: ((has('number') && (has('unit') || has('parameter'))) || norm.some(n => QUALITATIVE.has(bare(n)))) && !has('date'),
     methodLine: norm.some(n => METHOD_LABELS.includes(n)) || norm.some(n => ICD_MARKER.test(n)),
     y0: Math.min(...words.map(w => w.bbox?.y0 ?? 0)),
     y1: Math.max(...words.map(w => w.bbox?.y1 ?? 0)),
   };
 }
 
+const median = xs => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[s.length >> 1] : 0; };
+
+// Tesseract splits a page into blocks, so one printed row (a table header with separate columns,
+// a label and its value) may come back as several lines. Rows are rebuilt from geometry instead:
+// a word joins a row when its vertical centre lies within the row's first word. Words are sorted left to right.
+export function groupRows(lines) {
+  const words = lines.flat().filter(w => w.bbox).sort((a, b) => (a.bbox.y0 + a.bbox.y1) - (b.bbox.y0 + b.bbox.y1));
+  const rows = [];
+  for (const w of words) {
+    const c = (w.bbox.y0 + w.bbox.y1) / 2;
+    const row = rows.find(r => c >= r.y0 && c <= r.y1);
+    if (row) row.words.push(w);
+    else rows.push({ y0: w.bbox.y0, y1: w.bbox.y1, words: [w] });
+  }
+  return rows.map(r => r.words.sort((a, b) => a.bbox.x0 - b.bbox.x0)).sort((a, b) => a[0].bbox.y0 - b[0].bbox.y0);
+}
+
 // The results table of a page: { top, bottom } in px, or null.
 // Top: the table header, or on a page without one (e.g. a continuation page) the first result row.
-// Bottom: the last result row or method line below the top.
+// Bottom: the last result row or method line below the top, extended over the lines right below it
+// (descriptions, word results) while they keep the table's line spacing and are neither personal nor date lines.
 export function findTable(lines) {
-  const facts = lines.map(describeLine).filter(f => !f.personal).sort((a, b) => a.y0 - b.y0);
+  const all = lines.map(describeLine).sort((a, b) => a.y0 - b.y0);
+  const facts = all.filter(f => !f.personal);
   const start = facts.find(f => f.tableHeader) ?? facts.find(f => f.resultRow);
   if (!start) return null;
   const rows = facts.filter(f => f.y0 >= start.y0 && (f.resultRow || f.methodLine));
   if (!rows.length) return null;
-  return { top: start.y0, bottom: Math.max(...rows.map(f => f.y1)) };
+  let bottom = Math.max(...rows.map(f => f.y1));
+  const inside = all.filter(f => f.y0 >= start.y0 && f.y1 <= bottom);
+  const gaps = inside.slice(1).map((f, i) => f.y0 - inside[i].y1).filter(g => g > 0);
+  const lineHeight = median(inside.map(f => f.y1 - f.y0));
+  const maxGap = Math.max(median(gaps) * 2, lineHeight);
+  for (const f of all.filter(f => f.y0 > bottom)) {
+    if (f.personal || dateFieldWords(f.norm, f.kinds).size || f.y0 - bottom > maxGap) break;
+    bottom = f.y1;
+  }
+  return { top: start.y0, bottom };
 }
 
 const inTable = (f, table) => !!table && (f.y0 + f.y1) / 2 >= table.top && (f.y0 + f.y1) / 2 <= table.bottom;
@@ -155,11 +187,54 @@ function dateFieldWords(norm, kinds) {
     while (j < norm.length && DATE_FILLERS.includes(bare(norm[j]))) j++;
     if (j >= norm.length || kinds[j] !== 'date') return; // a label without a date: nothing to keep
     keep.add(i);
-    for (let k = i - 1; k >= 0 && k >= i - 2 && DATE_PREFIX.test(bare(norm[k])); k--) keep.add(k);
+    // "Data i godz. pobrania": up to three prefix words
+    for (let k = i - 1; k >= 0 && k >= i - 3 && DATE_PREFIX.test(bare(norm[k])); k--) keep.add(k);
     for (let k = i + 1; k < j; k++) keep.add(k);
     for (let k = j; k < norm.length && (kinds[k] === 'date' || kinds[k] === 'time'); k++) keep.add(k);
   });
   return keep;
+}
+
+// A date label whose date is printed a little higher or lower than the label, so the two end up
+// in neighbouring rows: the nearest date to the right of the label, within 1.5 line heights up or down,
+// is moved (with the time after it) into the label's row, right after the label.
+export function attachOffsetDates(rows) {
+  const out = rows.map(r => [...r]);
+  out.forEach((row, ri) => {
+    const norm = row.map(w => normalise(w.text));
+    const kinds = row.map(w => classifyWord(w.text));
+    // right to left, so that moving words in does not shift the labels still to be checked
+    norm.map((n, i) => i).reverse().forEach(i => {
+      if (!isDateLabel(norm[i])) return;
+      let j = i + 1;
+      while (j < norm.length && DATE_FILLERS.includes(bare(norm[j]))) j++;
+      if (j < norm.length && kinds[j] === 'date') return; // the date is already in this row
+      const label = row[j - 1].bbox;
+      const h = label.y1 - label.y0;
+      const next = row[j]?.bbox.x0 ?? Infinity;
+      const centre = b => (b.y0 + b.y1) / 2;
+      let best = null;
+      out.forEach((other, oi) => {
+        if (oi === ri) return;
+        other.forEach((w, wi) => {
+          const dy = Math.abs(centre(w.bbox) - centre(label));
+          const dx = w.bbox.x0 - label.x1;
+          if (classifyWord(w.text) !== 'date' || dy > 1.5 * h || dx <= 0 || dx > 15 * h || w.bbox.x0 >= next) return;
+          if (!best || dx + dy < best.d) best = { other, wi, d: dx + dy };
+        });
+      });
+      if (!best) return;
+      let end = best.wi + 1;
+      while (end < best.other.length && classifyWord(best.other[end].text) === 'time') end++;
+      row.splice(j, 0, ...best.other.splice(best.wi, end - best.wi));
+    });
+  });
+  return out.filter(r => r.length);
+}
+
+// OCR lines → printed rows, with offset dates attached to their labels. Use before findTable and decideLine.
+export function pageRows(lines) {
+  return attachOffsetDates(groupRows(lines));
 }
 
 function isDenylisted(text) {

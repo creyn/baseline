@@ -8,12 +8,13 @@ If yes, the server-side sanitiser and the quarantine disappear (see [ADR-0003](.
 
 1. **Render.** PDF.js renders each page to a canvas at 200 or 300 DPI. Photos are drawn as they are.
 2. **OCR.** Tesseract.js (WebAssembly, LSTM, Polish `best_int` model) reads words with their positions.
-3. **Decide by zones** ([ADR-0006](../../docs/adr/0006-zone-based-masking.md), rules in [rules.js](rules.js)):
-   - **Results table:** from the table header (or the first result row on a page without one) to the last result row or method line. Everything in it is kept, except lines naming the patient or staff (Pacjent, PESEL, mgr, dr, Autoryzował…), valid PESEL numbers and numbers with 7 or more digits.
-   - **Outside the table:** only date fields are kept: a date label (registration, collection, admission, analysis, release…, abbreviations included) with the date and time right after it. The date of birth never.
+3. **Rebuild printed rows.** Tesseract splits a page into blocks, so one printed row (a table header with separate columns, a date label and its value) can come back as several lines. Rows are rebuilt from word positions. A date printed slightly higher or lower than its label is attached to the label.
+4. **Decide by zones** ([ADR-0006](../../docs/adr/0006-zone-based-masking.md), rules in [rules.js](rules.js)):
+   - **Results table:** from the table header (or the first result row on a page without one) to the last result row or method line, extended over the lines right below it (descriptions, word results such as "ujemny") while they keep the table's line spacing and are neither people lines nor date fields. Everything in it is kept, except lines naming the patient or staff (Pacjent, PESEL, mgr, dr, Autoryzował…), valid PESEL numbers and numbers with 7 or more digits.
+   - **Outside the table:** only date fields are kept: a date label (with up to three prefix words, e.g. "Data i godz.") (registration, collection, admission, analysis, release…, abbreviations included) with the date and time right after it. The date of birth never.
    - **No table found:** only date fields.
-4. **Compose (keep-only).** The output starts as a white page, and only the kept words are copied onto it. Masked words are shown as dark boxes, or left blank. The boxes are drawn on the new page, so no pixel of the masked text is ever copied. Stamps, signatures, logos, barcodes and unknown text never reach the output, without having to be detected.
-5. **Leak check.** A second OCR pass on the output, with the table found on the original. Outside the table any confidently read word that is not a date field blocks the document. In the table, a PESEL number, a long number or a people line does.
+5. **Compose (keep-only).** The output starts as a white page, and only the kept words are copied onto it. Kept words get a vertical margin of a third of the text height, so descenders and accents are not cut. Masked words are shown as dark boxes, or left blank. The boxes are drawn on the new page, so no pixel of the masked text is ever copied. Stamps, signatures, logos, barcodes and unknown text never reach the output, without having to be detected.
+6. **Leak check.** A second OCR pass on the output, with the table found on the original. Outside the table any confidently read word that is not a date field blocks the document. In the table, a PESEL number, a long number or a people line does.
 
 All libraries and the language model are served from this site. The page's Content Security Policy only allows requests to its own origin.
 
@@ -46,6 +47,7 @@ Results are recorded per document as: laboratory, kind (text PDF, scan, photo), 
 |---|---|---|---|---|---|---|---|
 | 2026-11-17 | server, Node 22, 1 vCPU | synthetic sample, 1 page | 300 | 10.4 s (OCR 5.8, compose 1.9, leak check 2.7) | 0 | 0 | after adding OCR variants of µ in units |
 | 2026-11-17 | server, headless Chromium, 1 vCPU | real result, text PDF, 1 page | 300 | 13.9 s (OCR 8.9, leak check 4.3) | 0 | units, fixed | the PDF failed on mobile browsers until PDF.js was switched to its legacy build; units with a footnote marker (pg/ml*) were masked until markers were stripped |
+| 2026-11-20 | laptop, Chrome and Edge | 9 real results, 2 labs: 7 text PDFs, 1 scan, 1 photo, 1 to 4 pages | 300 | 4.3–16.9 s | 0 | on 5 of 9; date fields lost on 7 of 9 | round 1. Causes: "Data i godz." kept only two prefix words; header columns and offset date values split into separate OCR lines; word results ("ujemny") did not count as result rows, so the end of a table fell outside it; descenders cut at the box edge; the PDF.js worker was loaded only with the first PDF, so offline failed. Fixes applied, round 2 pending |
 
 Real documents are tested only on the user's own devices and are never committed.
 
