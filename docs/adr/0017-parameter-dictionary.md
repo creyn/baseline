@@ -1,16 +1,16 @@
-# 12. Parameter dictionary: definitions in the repository, lab names in the database
+# 17. Parameter dictionary: definitions in the repository, lab names in the database
 
-Date: 2026-11-18
+Date: 2026-11-22
 
 ## Status
 
-Accepted
+Proposed. Carried over unchanged from the earlier set of decisions (2026-11-18).
 
 ## Context
 
-Laboratories name the same parameter differently: "TSH", "Tyreotropina (TSH) III generacji", "Hormon tyreotropowy". A trend is continuous, and the conversions from [ADR-0007](0007-unit-normalisation.md) apply, only if all of them map to the same parameter. Every new laboratory brings new names.
+Laboratories name the same parameter differently: "TSH", "Tyreotropina (TSH) III generacji", "Hormon tyreotropowy". A trend is continuous, and the conversions from [ADR-0015](0015-unit-normalisation.md) apply, only if all of them map to the same parameter. Every new laboratory brings new names.
 
-Since [ADR-0006](0006-zone-based-masking.md), the dictionary has nothing to do with masking. Changing it cannot reveal personal data.
+Since [ADR-0004](0004-zone-based-masking.md), the dictionary has nothing to do with masking. Changing it cannot reveal personal data.
 
 Two findings shaped the model:
 - **One parameter can have several LOINC codes.** LOINC separates the property measured, e.g. glucose in mg/dl (mass concentration) and in mmol/l (substance concentration) have different codes. Our parameter is a broader concept, so that conversions can join them.
@@ -43,7 +43,7 @@ We choose option 4.
    - a cycle phase,
    - unspecified.
 
-   **Every condition is a separate series**, with the reference ranges of its own results ([ADR-0008](0008-reference-ranges.md)). "Unspecified" is drawn on the same chart as "fasting" with a different marker. On review, the user can set the condition with one click.
+   **Every condition is a separate series**, with the reference ranges of its own results ([ADR-0016](0016-reference-ranges.md)). "Unspecified" is drawn on the same chart as "fasting" with a different marker. On review, the user can set the condition with one click.
 4. **Tolerance tests get their own view.** The 0, 1 and 2 hour points of one day form a small curve, and curves from different days can be compared.
 5. **Suggestions for a new name, in this order:**
    1. an exact alias from the database,

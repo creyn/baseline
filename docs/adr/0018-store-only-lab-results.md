@@ -1,10 +1,10 @@
-# 10. Store only lab results, not visits
+# 18. Store only lab results, not visits
 
-Date: 2026-11-18
+Date: 2026-11-22
 
 ## Status
 
-Accepted
+Proposed. Carried over unchanged from the earlier set of decisions (2026-11-18).
 
 ## Context
 
@@ -12,13 +12,13 @@ The pre-visit summary shows changes in the results, out-of-range results and que
 
 Storing visits raises further questions:
 - **What to record:** date, specialty, purpose, doctor, clinic, recommendations.
-- **The doctor's name and the clinic** are personal data of other people. Masking ([ADR-0006](0006-zone-based-masking.md)) removes exactly this kind of data from documents.
+- **The doctor's name and the clinic** are personal data of other people. Masking ([ADR-0004](0004-zone-based-masking.md)) removes exactly this kind of data from documents.
 - **Notes and purposes are free text.** They reach the model when a summary is generated.
 
 ### Considered options
 
 1. **No visits. The summary covers a period the user chooses.** Nothing beyond lab results is stored. The user picks the period each time.
-2. **Visits with date, specialty and a short purpose.** "Since the last visit" works by itself, per specialty, and summaries and questions are kept with the visit. However, it stores free text that needs the checks from [ADR-0009](0009-personal-data-in-questions.md), and a history of the user's medical appointments.
+2. **Visits with date, specialty and a short purpose.** "Since the last visit" works by itself, per specialty, and summaries and questions are kept with the visit. However, it stores free text that needs the checks from [ADR-0014](0014-personal-data-in-questions.md), and a history of the user's medical appointments.
 3. **Option 2 plus the doctor's name and the clinic.** Stores personal data of other people, for little gain: the user knows whom they visited.
 4. **Import visits** from a calendar or the national patient portal (IKP). No typing, but integrations and consents. Too much for the first version.
 

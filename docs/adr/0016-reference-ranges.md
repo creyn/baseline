@@ -1,10 +1,10 @@
-# 8. Reference ranges are stored with each result
+# 16. Reference ranges are stored with each result
 
-Date: 2026-11-18
+Date: 2026-11-22
 
 ## Status
 
-Accepted
+Proposed. Carried over unchanged from the earlier set of decisions (2026-11-18).
 
 ## Context
 
@@ -40,7 +40,7 @@ We choose option 2 now. Option 4 is in the backlog.
    - We compute a flag only when the report has none, and mark it as computed.
    - If both exist and disagree, the review screen shows it, because it often means an extraction error.
 3. **On the chart, the range is a band that can change at every point.** A change of ranges by the laboratory is visible. Each point is coloured against the range of its own result.
-4. **The range is converted together with the value** ([ADR-0007](0007-unit-normalisation.md)).
+4. **The range is converted together with the value** ([ADR-0015](0015-unit-normalisation.md)).
 5. **The agent judges "in range" or "out of range" only against the range of the result itself**, never against the model's general knowledge. This becomes part of the agent guardrails.
 
 ## Consequences

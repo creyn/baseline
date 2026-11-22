@@ -1,10 +1,10 @@
-# 7. Unit normalisation: keep the original, derive a normalised value
+# 15. Unit normalisation: keep the original, derive a normalised value
 
-Date: 2026-11-18
+Date: 2026-11-22
 
 ## Status
 
-Accepted
+Proposed. Carried over unchanged from the earlier set of decisions (2026-11-18).
 
 ## Context
 
@@ -39,7 +39,7 @@ We combine options 1, 2 and 3.
 3. **Kind 1 is handled by UCUM, kind 2 by a small table per LOINC code.** The table starts with the parameters found in the user's own results and grows when new ones appear. Every factor and formula has a test with known values.
 4. **The reference range is converted with the same factor** as the value.
 5. **No conversion, no guessing.** If no conversion is known, the chart shows two series with a note that the units differ.
-6. **A change of method or analyser is marked on the chart**, with a note that the values may not be comparable. This is the answer to kind 3. The method and analyser are kept by masking ([ADR-0006](0006-zone-based-masking.md)).
+6. **A change of method or analyser is marked on the chart**, with a note that the values may not be comparable. This is the answer to kind 3. The method and analyser are kept by masking ([ADR-0004](0004-zone-based-masking.md)).
 7. **Normalisation lives in the .NET domain** and runs when a result is approved. Trends and the agent's tools are in .NET; Python only extracts ([ADR-0002](0002-split-between-dotnet-and-python.md)).
 8. **The chart uses the unit of the most recent result by default**, i.e. the unit the doctor sees on the current report. The user can switch the unit per parameter.
 

@@ -1,63 +1,41 @@
-# 5. No archive of original documents in the first version
+# 5. No archive of original documents
 
-Date: 2026-11-17
+Date: 2026-11-22
 
 ## Status
 
-Accepted
+Proposed
 
 ## Context
 
-After [ADR-0003](0003-mask-personal-data-before-ai.md) and [ADR-0004](0004-rasterise-pdf-to-png.md), the system works on masked page images only. The question is whether to keep the 1:1 original as well.
+The original document never leaves the user's device ([ADR-0003](0003-mask-in-the-browser-check-again-on-the-server.md)). The system keeps the masked pages. The question is whether to offer an archive of originals anyway, uploaded separately.
 
-An archived original would serve two purposes:
-- **Reprocessing.** If masking or extraction had a bug, the document could be processed again.
-- **Provenance.** Proof of where every number came from.
+An archive would serve two purposes:
+- **Reprocessing** after a masking bug, e.g. a result that was masked by mistake.
+- **Provenance:** proof of where every number came from.
 
-Without an archive, both are mostly covered:
-- The masked page images are kept, and every value is shown next to its source on the page. This is sufficient provenance.
-- Extraction can be rerun from the masked images. A new model or a fixed prompt does not need the original.
-- Only a masking bug, e.g. an unknown parameter painted black, needs the original. The user keeps their original files (email, the lab's portal, local disk) and can upload the document again.
+Both are mostly covered without it. Every value is shown next to its place on the masked page, and extraction can be rerun from the masked pages. Only a masking bug needs the original, and the user keeps it (e-mail, the lab's portal, their disk) and can import it again.
 
-The original contains full personal and health data, so an archive must be protected as strongly as possible. Standard Azure Storage encryption protects against stolen disks, not against anyone with read permissions in Azure, including a compromised application.
+Standard storage encryption protects against stolen disks, not against anyone with read access in Azure, including a compromised application.
 
 ### Considered options
 
-1. **Keep the original with Azure Storage encryption only.** No work, but the application and the subscription administrator can read every original.
-2. **Envelope encryption with the key encryption key (KEK) in Key Vault.** Every decryption is logged, but the key lives in the same cloud as the data, so compromising an identity with key access exposes everything.
-3. **Envelope encryption with an offline key pair.** Each file is encrypted with its own data encryption key (DEK, AES-256-GCM), and the DEK is encrypted with the user's public key. The private key exists only offline, e.g. on a YubiKey. The cloud can write but never read the archive. This needs a separate storage account, a write-only custom role, a list of public keys with key rotation, and a regular restore test, because a wrong key or a bug would make the archive silently unreadable.
-4. **Do not keep the original.** Keep only the masked page images. The user keeps their own copy.
+1. **Keep originals with storage encryption only.** The application and the subscription administrator can read every original. Weakens G1 and G5.
+2. **Envelope encryption with the key in Key Vault.** Every decryption is logged, but the key lives in the same cloud as the data.
+3. **Envelope encryption with an offline key pair.** Each file has its own data key, encrypted with the user's public key; the private key exists only offline. The cloud can write but never read. Needs a separate storage account, a write-only role, key rotation and regular restore tests.
+4. **No archive.** Keep the masked pages only. The user keeps the original.
 
 ## Decision
 
-We choose option 4 for the first version.
+We choose option 4.
 
-The plaintext original exists only while it is being masked. If masking runs on the server, this is a short-lived working copy:
-
-| | Working copy |
-|---|---|
-| Location | the application's Storage account, `quarantine` container |
-| Encryption | DEK per file, encrypted with the `quarantine-kek` key in Key Vault |
-| Who writes | the API |
-| Who reads | the sanitiser only (Managed Identity, `unwrapKey` on `quarantine-kek`) |
-| Retention | deleted right after successful masking. A lifecycle policy removes leftovers after 24 hours |
-| Data protection | no soft delete, no blob versions, so a deleted copy is really gone |
-
-Whether masking runs on the server or in the browser is still open. If it runs in the browser, the working copy disappears too.
-
-For every document we store the SHA-256 hash of the original. It recognises a repeated upload of the same file, so new results replace the old ones instead of duplicating them.
-
-### How to add an archive later
-
-Option 3 is the intended design if an archive is ever needed. Two things prepare for it now, at almost no cost:
-- **The SHA-256 hash of every original.** Old originals that the user still has can be uploaded again and matched to existing documents by their hash, so the archive can be backfilled, not only filled with new documents.
-- **Upload as a sequence of steps.** Archiving becomes one more step after validation.
-
-Adding it then means: a storage account in Bicep, encryption with the active public key, a file in the repository listing public keys (id, algorithm, key, fingerprint, created, retired), two columns on the document (archive location, key id), a local decryption script and a monthly restore test. Key rotation re-encrypts only the DEKs, not the files.
+1. **No original is stored or sent.** The system cannot archive one even by mistake.
+2. **The SHA-256 of the original is stored** with every document. It recognises the same document imported again ([ADR-0008](0008-document-lifecycle-and-identifiers.md)), and would let a future archive be filled with old originals and matched to existing documents.
+3. **If an archive is ever needed, option 3 is the design**, added as one more step of the upload.
 
 ## Consequences
 
-- Much less infrastructure and key management: no archive storage account, no key pair, no write-only role, no restore tests.
-- No copy of the original is kept in the cloud, so there is nothing to leak from storage, backups or logs.
-- Fixing a masking bug for an existing document requires the user to upload the original again. This is a deliberate trade-off.
-- If the user loses their own copy, the masked images and the approved results remain. The original cannot be recovered from Baseline.
+- No archive storage, no key pair, no write-only role, no restore tests.
+- Nothing of the original can leak from storage, backups or logs.
+- Fixing a masking bug for an existing document needs the user to import the original again. This is deliberate.
+- If the user loses their copy, the masked pages and the approved results remain; the original cannot be recovered from Baseline.
