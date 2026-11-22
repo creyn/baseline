@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const out = process.argv[2] || path.join(__dirname, '../../docs');
-const W = 1700, H = 1060;
+const W = 2000, H = 1170;
 const C = {
   ink: '#1f2933', muted: '#52606d', line: '#3e4c59',
   net: '#e3f2fd', netS: '#1565c0',
@@ -45,66 +45,101 @@ function arrow(pts, label, opts = {}) {
 // ---- content (shifted down by 60 for the title) ----
 s.push('<g transform="translate(0,60)">');
 
-zone(250, 30, 1430, 900, C.extS, 'Azure subscription · EU region · private endpoints · Managed Identity', '4 4');
-zone(560, 90, 500, 310, C.raw, 'Raw zone · plaintext original · no internet');
-zone(560, 650, 1100, 250, C.masked, 'Managed AI services · masked data only');
+zone(330, 40, 1650, 760, C.extS, 'Azure subscription · Sweden Central · Managed Identity, no keys · everything scales to zero', '4 4');
+zone(15, 100, 295, 400, C.raw, 'User device · raw zone');
+zone(1705, 110, 265, 330, C.masked, 'Managed AI · masked data only');
+zone(740, 545, 940, 200, C.storeS, 'Blob Storage · paths {userId}/{docId}/{verId}');
+zone(15, 850, 1965, 200, C.extS, 'Development · outside Azure', '4 4');
 
-// outside Azure
-box(30, 440, 180, 100, C.ext, C.extS, 'User', ['browser']);
-box(30, 700, 180, 110, C.py, C.pyS, 'Evals', ['Python · pytest', 'GitHub Actions', 'API as a black box']);
+// user device: the original never leaves it
+box(30, 140, 265, 340, C.ext, C.extS, 'UI · browser', ['React + TypeScript', 'the original stays here', '1. PDF → PNG (PDF.js)', '2. OCR (Tesseract.js)', '3. zone masking, leak check', '4. user approves the masks', '5. ZIP of masked pages', 'results, trends, review, chat', 'chat history: this tab only'], { left: true, top: true });
+box(30, 560, 265, 110, C.sec, C.secS, 'Entra External ID', ['sign-in: Google, Microsoft', 'free up to 50k users/month']);
 
-// .NET core
-box(290, 430, 210, 130, C.net, C.netS, 'Baseline API + UI', ['.NET 10 · ASP.NET Core', 'Entra ID sign-in', 'Agent: Agent Framework', '+ MEAI · RAG']);
-box(270, 720, 150, 80, C.store, C.storeS, 'Azure SQL', ['results · EF Core']);
+// API
+box(370, 110, 310, 360, C.net, C.netS, 'Baseline API', ['.NET 10 · Container App', 'serves the UI (BFF, one domain)', 'OIDC sign-in (cert. in Key Vault)', 'consent: stored, revocable', 'upload, review, results', 'agent: Agent Framework + MEAI', '  tools: SQL, vector search', '  guardrails: numbers, citations', 'status consumer, sweeper', 'deletion of documents, account'], { left: true, top: true });
+box(370, 560, 310, 160, C.store, C.storeS, 'Azure SQL', ['serverless, free offer, auto-pause', 'users, consent, documents,', 'versions, results, vectors', 'Row-Level Security by userId']);
 
-// raw zone
-box(590, 130, 200, 100, C.store, C.storeS, 'Quarantine blob', ['DEK wrapped by', 'quarantine-kek', 'deleted after masking']);
-box(590, 290, 200, 80, C.ext, C.extS, 'Service Bus', ['import queue']);
-box(830, 130, 210, 240, C.py, C.pyS, 'Sanitiser · Python', ['1. PDF → PNG, 300 DPI', '2. in-house OCR (Tesseract)', '3. zone masking: table kept', '4. PESEL, people lines', '5. leak check, fail-closed'], { left: true, top: true });
+// pipeline
+box(735, 150, 135, 70, C.ext, C.extS, 'queue: check', ['Service Bus Basic']);
+box(925, 110, 265, 200, C.py, C.pyS, 'Checker', ['Python · Container App', 'no role on AI services (RBAC)', 'verify page hashes', 'shape check, OCR + zone rules', 'fail-closed, nothing stored', 'scales on the queue'], { left: true, top: true });
+box(1245, 150, 135, 70, C.ext, C.extS, 'queue: extract', ['Service Bus Basic']);
+box(1435, 110, 245, 200, C.py, C.pyS, 'Extractor', ['Python · Container App', 'ZIP → PDF in memory', 'DI layout + LLM → JSON', 'pydantic validation', 'results saved for resume', 'scales on the queue'], { left: true, top: true });
+box(1100, 390, 160, 70, C.ext, C.extS, 'queue: status', ['Service Bus Basic']);
 
-// right side
-box(1110, 130, 200, 100, C.store, C.storeS, 'Clean blob', ['masked PNG only']);
-box(1110, 290, 200, 80, C.sec, C.secS, 'Key Vault', ['quarantine-kek']);
-box(1380, 130, 270, 130, C.py, C.pyS, 'Extraction worker · Python', ['FastAPI · pydantic', 'structured output', 'chunks + embeddings']);
+// storage
+box(765, 590, 270, 130, C.store, C.storeS, 'incoming', ['masked ZIP from the API', 'deleted after the check', 'lifecycle: 24 h']);
+box(1075, 590, 270, 130, C.store, C.storeS, 'clean', ['checked masked ZIP', 'review, sources']);
+box(1385, 590, 270, 130, C.store, C.storeS, 'text', ['words + bbox, results', 'highlighting, resume']);
 
 // managed AI
-box(600, 720, 240, 90, C.ai, C.aiS, 'Azure OpenAI', ['EU Data Zone']);
-box(900, 720, 240, 90, C.ai, C.aiS, 'Azure AI Search', ['chunks + embeddings']);
-box(1380, 720, 240, 90, C.ai, C.aiS, 'Document Intelligence', ['layout + tables']);
+box(1725, 150, 225, 100, C.ai, C.aiS, 'Document Intelligence', ['prebuilt-layout, S0']);
+box(1725, 280, 225, 140, C.ai, C.aiS, 'Azure OpenAI', ['gpt-5.4 mini', 'text-embedding-3-small', 'Data Zone EU']);
 
-// arrows
-arrow([[210, 490], [288, 490]], 'HTTPS', { at: [250, 480] });
-arrow([[500, 445], [530, 445], [530, 180], [588, 180]], 'upload copy', { at: [522, 300], anchor: 'end' });
-arrow([[500, 480], [545, 480], [545, 330], [588, 330]], 'message', { at: [520, 410] , anchor: 'end'});
-arrow([[340, 560], [340, 718]], null);
-arrow([[790, 180], [828, 180]], null);
-arrow([[790, 330], [828, 330]], null);
-arrow([[1040, 180], [1108, 180]], null);
-arrow([[1040, 330], [1108, 330]], 'unwrap', { at: [1075, 320] });
-arrow([[1310, 180], [1378, 180]], null);
-arrow([[1420, 260], [1420, 520], [502, 520]], 'results → status: pending review', { at: [960, 510] });
-arrow([[1460, 260], [1460, 580], [780, 580], [780, 718]], 'masked text → extraction', { at: [1120, 570] });
-arrow([[1500, 260], [1500, 600], [1080, 600], [1080, 718]], 'index', { at: [1290, 616] });
-arrow([[1580, 260], [1580, 718]], 'masked PNG', { at: [1590, 480], anchor: 'start' });
-arrow([[440, 560], [440, 765], [598, 765]], 'chat · tools', { at: [520, 755] });
-arrow([[470, 560], [470, 850], [1020, 850], [1020, 812]], 'retrieval with citations', { at: [745, 868] });
-arrow([[210, 750], [240, 750], [240, 535], [288, 535]], null);
+// operations
+box(1725, 545, 225, 110, C.ext, C.extS, 'Application Insights', ['all services', 'ids only, no content', 'tokens and cost']);
+box(1725, 675, 225, 100, C.sec, C.secS, 'Key Vault', ['sign-in certificate for', 'Entra External ID (API)']);
+
+// development
+box(40, 900, 320, 120, C.ext, C.extS, 'VPS · Claude Code', ['writes code, no local build', 'hook: PII and secrets scan', 'subagent: code review']);
+box(420, 900, 320, 120, C.ext, C.extS, 'MCP server · project docs', ['local (stdio), no health data', 'ADRs, use cases, criteria']);
+box(820, 900, 520, 120, C.ext, C.extS, 'GitHub', ['repo · PR to main merged by the owner', 'Actions: build, tests on emulators, evals,', 'PII scan, deploy with azd + Bicep (OIDC, no secrets)', 'GHCR: container images'], { left: true });
+
+// arrows: user and identity
+arrow([[295, 300], [368, 300]], 'masked ZIP', { at: [332, 290], color: C.masked });
+arrow([[368, 330], [297, 330]], 'pages, results', { at: [332, 350] });
+arrow([[160, 480], [160, 558]], 'sign-in', { at: [170, 525], anchor: 'start' });
+arrow([[370, 450], [340, 450], [340, 615], [297, 615]], 'OIDC', { at: [345, 540], anchor: 'start' });
+
+// pipeline
+arrow([[680, 185], [733, 185]], null);
+arrow([[870, 185], [923, 185]], null);
+arrow([[1190, 185], [1243, 185]], 'if clean', { at: [1217, 175] });
+arrow([[1380, 185], [1433, 185]], null);
+arrow([[1170, 310], [1170, 388]], 'Blocked, Failed', { at: [1160, 360], anchor: 'end' });
+arrow([[1500, 310], [1500, 425], [1262, 425]], 'Extracted, Failed', { at: [1380, 415] });
+arrow([[1100, 440], [682, 440]], 'status events', { at: [890, 430] });
+
+// API and storage
+arrow([[525, 470], [525, 558]], 'EF Core', { at: [535, 520], anchor: 'start' });
+arrow([[680, 400], [712, 400], [712, 655], [763, 655]], 'PUT', { at: [738, 647], color: C.masked });
+arrow([[620, 470], [620, 510], [1210, 510], [1210, 588]], 'GET pages and words (review, sources); DELETE on deletion', { at: [915, 502], color: C.masked });
+arrow([[1210, 510], [1520, 510], [1520, 588]], null, { color: C.masked });
+
+// checker and extractor with storage
+arrow([[980, 310], [980, 588]], 'GET, DELETE', { at: [990, 528], anchor: 'start', color: C.masked });
+arrow([[1060, 310], [1060, 480], [1120, 480], [1120, 588]], 'PUT', { at: [1128, 528], anchor: 'start', color: C.masked });
+arrow([[1460, 310], [1460, 480], [1300, 480], [1300, 588]], 'GET', { at: [1308, 528], anchor: 'start', color: C.masked });
+arrow([[1620, 310], [1620, 588]], 'PUT', { at: [1630, 528], anchor: 'start', color: C.masked });
+
+// managed AI
+arrow([[1680, 200], [1723, 200]], null, { color: C.masked });
+arrow([[1680, 290], [1723, 290]], null, { color: C.masked });
+arrow([[525, 110], [525, 85], [1712, 85], [1712, 380], [1723, 380]], 'agent: chat, embeddings (masked results only; questions checked for identifiers)', { at: [1110, 77], color: C.masked });
+
+// development
+arrow([[360, 960], [418, 960]], null);
+arrow([[420, 980], [362, 980]], null);
+arrow([[200, 900], [200, 880], [1080, 880], [1080, 898]], 'push a branch, open a PR', { at: [640, 872] });
+arrow([[1340, 960], [1500, 960], [1500, 802]], 'deploy (OIDC)', { at: [1510, 900], anchor: 'start' });
 
 s.push('</g>');
 
 // title + legend
 const head = `<text x="30" y="40" font-size="24" font-weight="bold" fill="${C.ink}">Baseline · architecture</text>
-<text x="380" y="40" font-size="14" fill="${C.muted}">see docs/adr for the decisions behind each part</text>`;
+<text x="380" y="40" font-size="14" fill="${C.muted}">the decisions behind each part are in docs/adr</text>`;
 const lg = [];
 let lx = 30, ly = H - 25;
-const items = [[C.net, C.netS, '.NET'], [C.py, C.pyS, 'Python'], [C.store, C.storeS, 'storage'], [C.sec, C.secS, 'keys and secrets'], [C.ai, C.aiS, 'managed AI service']];
+const items = [[C.net, C.netS, '.NET'], [C.py, C.pyS, 'Python'], [C.store, C.storeS, 'storage'], [C.sec, C.secS, 'identity, keys'], [C.ai, C.aiS, 'managed AI service'], [C.ext, C.extS, 'queue, operations, tools']];
+lg.push(`<line x1="${lx}" y1="${ly - 4}" x2="${lx + 36}" y2="${ly - 4}" stroke="${C.masked}" stroke-width="2"/>`);
+lg.push(`<text x="${lx + 44}" y="${ly + 1}" font-size="13" fill="${C.ink}">masked data only</text>`);
+lx += 200;
 for (const [f, st, t] of items) {
   lg.push(`<rect x="${lx}" y="${ly - 13}" width="18" height="18" rx="3" fill="${f}" stroke="${st}" stroke-width="2"/>`);
   lg.push(`<text x="${lx + 26}" y="${ly + 1}" font-size="13" fill="${C.ink}">${t}</text>`);
   lx += 40 + t.length * 8;
 }
 
-const markers = [C.line, C.secS].map(c => `<marker id="arr${c === C.line ? '' : '-' + c.slice(1)}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${c}"/></marker>`).join('');
+const markers = [C.line, C.secS, C.masked].map(c => `<marker id="arr${c === C.line ? '' : '-' + c.slice(1)}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${c}"/></marker>`).join('');
 
 const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated by tools/diagrams/architecture.js. Edit the script, not this file. -->
