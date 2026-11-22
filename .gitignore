@@ -5,3 +5,4 @@ obj/
 # Real lab results are never committed.
 *.pdf
 private/
+__pycache__/

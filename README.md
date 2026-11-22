@@ -54,6 +54,10 @@ The split between .NET and Python is explained in [ADR-0002](docs/adr/0002-split
 Proofs of concept that inform open decisions live in [spikes/](spikes/), one folder each, and are published on GitHub Pages:
 - [browser-sanitiser](spikes/browser-sanitiser/README.md): masking lab results entirely in the browser.
 
+## Working with AI coding agents
+
+The code is written with AI coding agents. The rules they follow, the privacy gates every change must pass and the tooling that enforces them (a privacy scan in a Git hook, a Claude Code hook and CI, and a review subagent) are in [AGENTS.md](AGENTS.md).
+
 ## Tech stack
 
 - **.NET:** ASP.NET Core (.NET 10), Microsoft Agent Framework, Microsoft.Extensions.AI, EF Core, .NET Aspire
