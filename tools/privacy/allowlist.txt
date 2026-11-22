@@ -1,0 +1,3 @@
+# Fictional or public example values that the scanner accepts. One per line, with a reason.
+# Never add real data here.
+44051401359  # public example PESEL, used in tests and synthetic documents
