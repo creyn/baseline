@@ -19,5 +19,6 @@
 
 ## 4. After merge
 
-- [x] 4.1 The documents are published on GitHub Pages; the owner checks them and runs some through the masking spike
-- [x] 4.2 Archive the change
+- [x] 4.1 The documents are published on GitHub Pages
+- [ ] 4.2 The owner looks at them and runs some through the masking spike (outside the repository; not done yet when the change was archived)
+- [x] 4.3 Archive the change
