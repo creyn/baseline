@@ -12,7 +12,7 @@ The layouts follow the structure of real laboratory results (column order, date 
   - `scan`: an image PDF, slightly turned, with noise;
   - `photo`: JPEG pages with perspective, shadow and blur.
 
-  It also writes `truth.json` next to them. The same descriptions give byte-identical files.
+  It also writes `truth.json` next to them: the expected results, what masking must remove (text, and the boxes of the barcode, stamp and signature) and what it must keep. The same descriptions give byte-identical files in the same environment; `sha256.json` records the library versions and the font.
 - **[describe.py](describe.py)** reads the descriptions and derives the truth. The generator and the evals both use it.
 
 PDFs and photos are never committed ([AGENTS.md](../../AGENTS.md)). CI generates them on every pull request (artifact `synthetic-documents`), and GitHub Pages publishes them under `synthetic/`.
