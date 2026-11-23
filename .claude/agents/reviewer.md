@@ -16,3 +16,4 @@ Check, in this order:
 4. **Failure handling.** For every external call and every message: what happens if it fails, if it runs twice, or if the process stops in between. Receivers are idempotent (Service Bus Basic has no duplicate detection). Status changes are forward-only `UPDATE … WHERE status = …`. No database transaction spans an external call.
 5. **Tests.** New behaviour has a test that runs in CI without Azure.
 6. **Language.** Everything in the repository is in English, in plain, short sentences.
+7. **Design changes** (ADRs, diagrams, use cases): follow the "Design review" section of `AGENTS.md`. Check the ADRs against each other and against the diagram generators in `tools/diagrams`, walk the life of each document, result, user and message, and look for anything an earlier version left behind.

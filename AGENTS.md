@@ -27,6 +27,16 @@ The gates G1 to G6 are defined once, in [docs/decision-criteria.md](docs/decisio
 - **Review:** before opening a pull request, run the `reviewer` subagent on the branch.
 - **Language:** everything in the repository is in English, in plain, short sentences. The only exception is the text the family sees in the UI, including the consent text: it is Polish and lives in the UI's locale files ([ADR-0002](docs/adr/0002-languages-dotnet-python-and-typescript.md)).
 
+## Design review
+
+Before a design change (an ADR, a diagram, a use case) is shown to the owner or goes into a pull request:
+
+1. **Review it twice.** First as an architect: check the gates, the ADRs against each other and the ADRs against the diagrams. Then as the tech lead of a team that must build it: check that nobody has to guess. Look for the data model, the message and API contracts, migrations, deployment, security, alerts and tests.
+2. **Follow each document, result, user and message through its life.** Create it, read it, change it, delete it, retry it, run it twice at once, and delete it while it is in use. For a service that scales to zero, ask what wakes it up. For background work, ask on whose behalf it runs, because Row-Level Security depends on it.
+3. **After every decision, look for what the old version left behind** in the ADRs, the diagrams, [docs/use-cases.md](docs/use-cases.md) (including costs), README.md and this file.
+4. **Fix every finding of the `reviewer` subagent**, or explain in the pull request why it stays.
+5. **Check facts in the documentation before they go into an ADR:** prices, limits and which features are available. Write the date of the check next to the fact. Mark what is not checked yet as "to check", and numbers without a source as "starting values".
+
 ## Tools in this repository
 
 | Tool | What it does |
