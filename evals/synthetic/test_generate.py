@@ -22,7 +22,7 @@ except (ImportError, SystemExit) as e:  # no reportlab, Pillow, pypdfium2 or fon
 def pdf_text(path):
     doc = pypdfium2.PdfDocument(path)
     try:
-        return ['\n'.join(doc[i].get_textpage().get_text_range().split()) for i in range(len(doc))], len(doc)
+        return ['\n'.join(doc[i].get_textpage().get_text_bounded().split()) for i in range(len(doc))], len(doc)
     finally:
         doc.close()
 

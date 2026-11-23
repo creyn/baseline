@@ -250,7 +250,7 @@ def page_b(pen, doc, page, page_no, pages):
 def page_c(pen, doc, page, page_no, pages):
     lab, p = doc['lab'], doc['patient']
     pen.text(W / 2, 805, lab['name'], 12, bold=True, centre=True)
-    pen.text(W / 2, 793, lab['address'], 8, centre=True)
+    pen.text(W / 2, 793, f'{lab["address"]}, {lab["phone"]}', 8, centre=True)
     pen.text(W - 40, 770, f'Nr zlecenia: {doc["order_no"]}', 8, right=True)
     pen.barcode(W - 160, 740, doc['order_no'])
     y = 760
