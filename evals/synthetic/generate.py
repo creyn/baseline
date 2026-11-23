@@ -62,6 +62,11 @@ class Pen:
         else:
             self.c.drawString(x, y, s)
 
+    def fit(self, x, y, s, width, size=8):
+        """Text shrunk to fit a column, so neighbouring columns never overlap."""
+        w = pdfmetrics.stringWidth(s, FONT, size)
+        self.text(x, y, s, size if w <= width else size * width / w)
+
     def wrap(self, x, y, s, width, size=8, leading=10, bold=False):
         for line in simpleSplit(s, BOLD if bold else FONT, size, width):
             self.text(x, y, line, size, bold)
@@ -165,7 +170,7 @@ def page_a(pen, doc, page, page_no, pages):
                 continue
             pen.text(46, y, r['name'], 9)
             pen.text(250, y, r['value'], 9, bold=bool(r.get('flag')))
-            pen.text(318, y, r['unit'], 8.5)
+            pen.fit(318, y, r['unit'], 58, 8.5)
             if r.get('min') is not None:
                 pen.text(380, y, r['min'], 8.5)
                 pen.text(430, y, r['max'], 8.5)
@@ -223,11 +228,11 @@ def page_b(pen, doc, page, page_no, pages):
                 pen.text(78, ny, line, 8.5)
                 ny -= 10
             pen.text(262, y, r['value'], 8.5, bold=bool(r.get('flag')))
-            pen.text(312, y, r['unit'], 8)
+            pen.fit(312, y, r['unit'], 46, 8)
             ry = y
-            first = range_text(r)
-            if first and not r.get('range_lines'):
-                pen.text(362, ry, first + (f'  {r["flag"]}' if r.get('flag') else ''), 8)
+            first = range_text(r) if (r.get('min') is not None or not r.get('range_lines')) else ''
+            if first or r.get('flag'):
+                pen.text(362, ry, (first + (f'  {r["flag"]}' if r.get('flag') else '')).strip(), 8)
                 ry -= 10
             for line in r.get('range_lines', []):
                 ry = pen.wrap(362, ry, line, 128, 7, 8.5)
@@ -273,7 +278,7 @@ def page_c(pen, doc, page, page_no, pages):
         for r in sec['results']:
             pen.text(40, y, f'{r["name"]} (ICD-9: {r["icd9"]})', 9)
             pen.text(238, y, r['value'], 9, bold=bool(r.get('flag')))
-            pen.text(296, y, r['unit'] + ('*' if r['unit'] else ''), 8.5)
+            pen.fit(296, y, r['unit'] + ('*' if r['unit'] else ''), 58, 8.5)
             if r.get('min') is not None:
                 pen.text(358, y, r['min'], 8.5)
                 pen.text(420, y, r['max'], 8.5)
