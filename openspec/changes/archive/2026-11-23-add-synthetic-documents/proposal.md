@@ -2,7 +2,7 @@
 
 ## Why
 
-Masking, the second check, extraction and their evals need lab results to work on. Real results must never enter the repository ([AGENTS.md](../../../AGENTS.md)). We need fictional documents that look like real ones: the same table layouts, the same date labels, the same traps for masking, in the same forms (a text PDF, a scan, a phone photo).
+Masking, the second check, extraction and their evals need lab results to work on. Real results must never enter the repository ([AGENTS.md](../../../../AGENTS.md)). We need fictional documents that look like real ones: the same table layouts, the same date labels, the same traps for masking, in the same forms (a text PDF, a scan, a phone photo).
 
 ## What Changes
 

@@ -2,7 +2,7 @@
 
 ## Context
 
-The owner's real results show three families of layouts. Each has a block of personal data and the laboratory's header above the table, a results table, date fields in different places, and a footer with staff names. Masking keeps the table and the date fields ([ADR-0003](../../../docs/adr/0003-masking-in-the-browser-and-a-second-check.md)), and extraction reads the masked table ([ADR-0007](../../../docs/adr/0007-extraction-with-document-intelligence-and-an-llm.md)).
+The owner's real results show three families of layouts. Each has a block of personal data and the laboratory's header above the table, a results table, date fields in different places, and a footer with staff names. Masking keeps the table and the date fields ([ADR-0003](../../../../docs/adr/0003-masking-in-the-browser-and-a-second-check.md)), and extraction reads the masked table ([ADR-0007](../../../../docs/adr/0007-extraction-with-document-intelligence-and-an-llm.md)).
 
 ## Goals / Non-Goals
 
