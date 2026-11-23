@@ -11,7 +11,8 @@ Baseline keeps personal lab results, extracts them into structured data with AI,
 1. **No real personal or health data in the repository.** No real lab results, names, PESEL numbers, addresses, e-mails, screenshots of real documents or their file names, not even masked. Use fictional data ("Jan Testowy", the public example PESEL in [tools/privacy/allowlist.txt](tools/privacy/allowlist.txt)).
 2. **No keys, secrets or connection strings.** Services use Managed Identity.
 3. **No `--no-verify`.** The privacy scan runs before every commit and push; fix the finding instead.
-4. **No direct push to `main`.** Work on a branch (`feat/…`, `fix/…`) and open a pull request. The owner merges after CI is green.
+4. **No PDF, scan or photo of a document in the repository, not even a synthetic one.** The privacy scan cannot read binary files. Test documents are described in text in [evals/synthetic](evals/synthetic/README.md) and generated in CI. The only exception is the spike's sample PNG, rendered from the SVG next to it.
+5. **No direct push to `main`.** Work on a branch (`feat/…`, `fix/…`) and open a pull request. The owner merges after CI is green.
 
 ## Gates every change must pass
 
@@ -52,5 +53,6 @@ Running the tests:
 ```sh
 python3 -m unittest discover -s tools/privacy
 python3 -m unittest discover -s tools/docs-mcp
+python3 -m unittest discover -s evals/synthetic   # the generator tests need requirements.txt; CI has it
 node --test 'spikes/**/*.test.mjs'   # the quotes are needed on Node 22
 ```

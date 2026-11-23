@@ -1,0 +1,135 @@
+{
+  "id": "a2-urinalysis",
+  "layout": "A",
+  "forms": [
+    "text",
+    "photo"
+  ],
+  "lab": {
+    "name": "Laboratorium Alfa sp. z o.o.",
+    "address": "ul. Fikcyjna 10, 00-100 Przykładowo",
+    "phone": "tel. 22 000 00 00"
+  },
+  "patient": {
+    "name": "Jan Testowy",
+    "pesel": "44051401359",
+    "birth_date": "14.05.1944",
+    "sex": "M",
+    "address": "ul. Przykładowa 1/2, 00-001 Testowo"
+  },
+  "orderer": "lek. Anna Fikcyjna",
+  "order_no": "2603020458",
+  "dates": [
+    {
+      "label": "Data rejestracji",
+      "value": "2026-03-02 07:43",
+      "where": "header"
+    }
+  ],
+  "staff": [
+    {
+      "role": "Wykonał",
+      "name": "mgr Ewa Przykładowa",
+      "in_table": false
+    },
+    {
+      "role": "Autoryzował",
+      "name": "mgr Piotr Wzorcowy",
+      "in_table": false
+    }
+  ],
+  "printed": "2026-03-02 13:10",
+  "pages": [
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "Badanie ogólne moczu",
+          "icd9": "A01",
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-03-02 07:20:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "02.03.2026 09:05:00"
+            }
+          ],
+          "results": [
+            {
+              "name": "Przejrzystość",
+              "value": "przejrzysty",
+              "unit": "",
+              "range": "przejrzysty",
+              "material": "mocz"
+            },
+            {
+              "name": "Barwa",
+              "value": "jasnożółty",
+              "unit": "",
+              "range": "",
+              "material": "mocz"
+            },
+            {
+              "name": "Ciężar właściwy",
+              "value": "1,018",
+              "unit": "g/ml",
+              "min": "1,005",
+              "max": "1,030",
+              "material": "mocz"
+            },
+            {
+              "name": "pH",
+              "value": "6,0",
+              "unit": "",
+              "min": "5,0",
+              "max": "7,0",
+              "material": "mocz"
+            },
+            {
+              "name": "Glukoza",
+              "value": "nie wykryto",
+              "unit": "mg/dl",
+              "range": "nie wykryto",
+              "material": "mocz"
+            },
+            {
+              "name": "Ketony",
+              "value": "nie wykryto",
+              "unit": "mg/dl",
+              "range": "nie wykryto",
+              "material": "mocz"
+            },
+            {
+              "name": "Białko",
+              "value": "nie wykryto",
+              "unit": "mg/dl",
+              "range": "nie wykryto",
+              "material": "mocz"
+            },
+            {
+              "name": "Leukocyty",
+              "value": "nie wykryto",
+              "unit": "",
+              "range": "nie wykryto",
+              "material": "mocz"
+            },
+            {
+              "name": "Azotyny",
+              "value": "nie wykryto",
+              "unit": "",
+              "range": "nie wykryto",
+              "material": "mocz"
+            }
+          ],
+          "method": "Badanie wykonano na aparacie Sysmex UC-3500.",
+          "notes": []
+        }
+      ]
+    }
+  ],
+  "traps": [
+    "qualitative"
+  ]
+}

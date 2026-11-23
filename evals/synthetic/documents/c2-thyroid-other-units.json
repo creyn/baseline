@@ -1,0 +1,95 @@
+{
+  "id": "c2-thyroid-other-units",
+  "layout": "C",
+  "forms": [
+    "text"
+  ],
+  "lab": {
+    "name": "Centrum Diagnostyki Gamma",
+    "address": "pl. Próbny 3, 00-300 Makietowo",
+    "phone": "tel. 12 000 00 00"
+  },
+  "patient": {
+    "name": "Jan Testowy",
+    "pesel": "44051401359",
+    "birth_date": "14.05.1944",
+    "sex": "M",
+    "address": "ul. Przykładowa 1/2, 00-001 Testowo"
+  },
+  "orderer": "lek. Anna Fikcyjna",
+  "order_no": "5509123302",
+  "dates": [
+    {
+      "label": "Data rejestracji",
+      "value": "2026-07-01",
+      "where": "patient"
+    },
+    {
+      "label": "Data/godz. pobrania",
+      "value": "2026-07-01 08:05",
+      "where": "patient"
+    }
+  ],
+  "staff": [
+    {
+      "role": "Autoryzował",
+      "name": "mgr Anna Makietowa",
+      "in_table": false
+    }
+  ],
+  "printed": "2026-07-01 14:10",
+  "pages": [
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "results": [
+            {
+              "name": "TSH",
+              "value": "3,95",
+              "unit": "mIU/l",
+              "icd9": "L69",
+              "min": "0,35",
+              "max": "4,94",
+              "material": "surowica",
+              "method": "Badanie wykonano metodą CMIA na aparacie Alinity i."
+            },
+            {
+              "name": "Przeciwciała anty-TPO",
+              "value": "<1,0",
+              "unit": "IU/ml",
+              "icd9": "O81",
+              "range": "<5,6",
+              "material": "surowica",
+              "method": "Badanie wykonano metodą CMIA na aparacie Alinity i."
+            }
+          ]
+        }
+      ],
+      "samples": [
+        {
+          "material": "Surowica",
+          "dates": [
+            {
+              "label": "Data/godz. przyjęcia prób.",
+              "value": "2026-07-01 09:10"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "2026-07-01"
+            },
+            {
+              "label": "Data/godz. wydania",
+              "value": "2026-07-01 13:44:02"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "traps": [
+    "unit_change",
+    "less_than_range"
+  ],
+  "unit_note": "TSH in mIU/l here and in µIU/ml in c1-thyroid: the same value scale, factor 1."
+}

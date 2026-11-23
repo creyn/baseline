@@ -1,10 +1,10 @@
 name: Spikes on GitHub Pages
 
-# Publishes only the spikes/ folder. Each spike is a static page in its own subfolder.
+# Publishes the spikes/ folder and the synthetic documents. Each spike is a static page in its own subfolder.
 on:
   push:
     branches: [main]
-    paths: ['spikes/**', '.github/workflows/pages.yml']
+    paths: ['spikes/**', 'evals/synthetic/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -35,6 +35,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate the synthetic documents
+        run: |
+          sudo apt-get install -y -q fonts-dejavu-core
+          python -m pip install -q -r evals/synthetic/requirements.txt
+          python evals/synthetic/generate.py --out _site/synthetic
       - name: Build site
         run: |
           mkdir -p _site
@@ -46,6 +54,7 @@ jobs:
             echo '<title>Baseline spikes</title></head><body style="font-family:system-ui;max-width:700px;margin:2rem auto;padding:0 16px">'
             echo '<h1>Baseline spikes</h1><ul>'
             for d in spikes/*/; do n=$(basename "$d"); echo "<li><a href=\"spikes/$n/\">$n</a></li>"; done
+            echo '<li><a href="synthetic/">synthetic lab results (fictional)</a></li>'
             echo '</ul></body></html>'
           } > _site/index.html
       - uses: actions/configure-pages@v5

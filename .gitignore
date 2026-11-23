@@ -2,7 +2,11 @@ node_modules/
 .venv/
 bin/
 obj/
-# Real lab results are never committed.
+# Real lab results are never committed, and no document file is, not even a synthetic one.
 *.pdf
+*.jpg
+*.jpeg
+*.heic
+evals/synthetic/out/
 private/
 __pycache__/

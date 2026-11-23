@@ -1,0 +1,115 @@
+{
+  "id": "b3-glucose-tolerance",
+  "layout": "B",
+  "forms": [
+    "text"
+  ],
+  "lab": {
+    "name": "Pracownia Diagnostyczna Beta",
+    "address": "al. Testowa 5, 00-950 Wzorowo",
+    "phone": "tel. 58 000 00 00"
+  },
+  "patient": {
+    "name": "Jan Testowy",
+    "pesel": "44051401359",
+    "birth_date": "14.05.1944",
+    "sex": "M",
+    "address": "ul. Przykładowa 1/2, 00-001 Testowo"
+  },
+  "orderer": "lek. Anna Fikcyjna",
+  "order_no": "7710442097",
+  "dates": [
+    {
+      "label": "Data i godz. rejestracji",
+      "value": "20-10-2026 07:30",
+      "where": "middle"
+    },
+    {
+      "label": "Data i godz. pobrania",
+      "value": "20-10-2026 07:35",
+      "where": "middle"
+    },
+    {
+      "label": "Data i godz. przyjęcia materiału",
+      "value": "20-10-2026 10:00",
+      "where": "middle"
+    }
+  ],
+  "staff": [
+    {
+      "role": "Wykonał",
+      "name": "mgr Ewa Przykładowa",
+      "in_table": false
+    },
+    {
+      "role": "Autoryzował",
+      "name": "dr n. med. Tomasz Makieta",
+      "in_table": false
+    }
+  ],
+  "printed": "20-10-2026 15:44",
+  "pages": [
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "Profil: Krzywa cukrowa 75 g glukozy",
+          "results": [
+            {
+              "name": "Glukoza na czczo",
+              "value": "92",
+              "unit": "mg/dl",
+              "icd9": "L43",
+              "min": "70",
+              "max": "99",
+              "material": "osocze",
+              "condition": "na czczo",
+              "procedure": "A V2.1"
+            },
+            {
+              "name": "Glukoza 1 h po obciążeniu 75 g glukozy",
+              "value": "168",
+              "unit": "mg/dl",
+              "icd9": "L43",
+              "range": "brak ustalonych wartości",
+              "material": "osocze",
+              "condition": "1 h po 75 g glukozy",
+              "procedure": "A V2.1"
+            },
+            {
+              "name": "Glukoza 2 h po obciążeniu 75 g glukozy",
+              "value": "151",
+              "unit": "mg/dl",
+              "icd9": "L43",
+              "range": "<140",
+              "flag": "H",
+              "material": "osocze",
+              "condition": "2 h po 75 g glukozy",
+              "procedure": "A V2.1",
+              "range_lines": [
+                "<140 prawidłowa tolerancja glukozy",
+                "140-199 nieprawidłowa tolerancja glukozy",
+                ">=200 cukrzyca"
+              ]
+            },
+            {
+              "name": "Insulina na czczo",
+              "value": "9,4",
+              "unit": "µIU/ml",
+              "icd9": "M41",
+              "min": "2,6",
+              "max": "24,9",
+              "material": "surowica",
+              "condition": "na czczo",
+              "method": "metoda ECLIA, analizator Cobas pro"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "traps": [
+    "condition",
+    "text_range"
+  ]
+}

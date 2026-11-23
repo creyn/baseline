@@ -1,0 +1,111 @@
+{
+  "id": "c3-iron-traps-in-table",
+  "layout": "C",
+  "forms": [
+    "text",
+    "scan"
+  ],
+  "lab": {
+    "name": "Centrum Diagnostyki Gamma",
+    "address": "pl. Próbny 3, 00-300 Makietowo",
+    "phone": "tel. 12 000 00 00"
+  },
+  "patient": {
+    "name": "Jan Testowy",
+    "pesel": "44051401359",
+    "birth_date": "14.05.1944",
+    "sex": "M",
+    "address": "ul. Przykładowa 1/2, 00-001 Testowo"
+  },
+  "orderer": "lek. Anna Fikcyjna",
+  "order_no": "5509123303",
+  "dates": [
+    {
+      "label": "Data rejestracji",
+      "value": "2026-04-10",
+      "where": "patient"
+    },
+    {
+      "label": "Data/godz. pobrania",
+      "value": "2026-04-10 07:25",
+      "where": "patient"
+    }
+  ],
+  "staff": [
+    {
+      "role": "Autoryzował",
+      "name": "dr n. med. Ewa Przykładowa",
+      "in_table": true
+    }
+  ],
+  "printed": "2026-04-10 12:00",
+  "pages": [
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "results": [
+            {
+              "name": "Ferrytyna",
+              "value": "18",
+              "unit": "ng/ml",
+              "icd9": "O15",
+              "min": "30",
+              "max": "400",
+              "flag": null,
+              "material": "surowica",
+              "method": "Badanie wykonano metodą ECLIA na aparacie Cobas 8000."
+            },
+            {
+              "name": "Żelazo",
+              "value": "64",
+              "unit": "µg/dl",
+              "icd9": "O45",
+              "min": "65",
+              "max": "175",
+              "flag": "L",
+              "material": "surowica",
+              "method": "Badanie wykonano metodą kolorymetryczną na aparacie Cobas 8000."
+            }
+          ],
+          "comment": [
+            "Nr próbki: 26041007251",
+            "Materiał dostarczył Jan Testowy"
+          ]
+        }
+      ],
+      "samples": [
+        {
+          "material": "Surowica",
+          "dates": [
+            {
+              "label": "Data/godz. przyjęcia prób.",
+              "value": "2026-04-10 08:01"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "2026-04-10"
+            },
+            {
+              "label": "Data/godz. wydania",
+              "value": "2026-04-10 11:52:40"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "traps": [
+    "staff_in_table",
+    "long_number_in_table",
+    "name_in_table_comment",
+    "flag_disagrees"
+  ],
+  "must_remove_extra": [
+    "26041007251"
+  ],
+  "known_gaps": [
+    "Jan Testowy"
+  ],
+  "flag_note": "Ferritin 18 against 30-400 has no laboratory flag: the computed flag must say low."
+}

@@ -1,0 +1,105 @@
+{
+  "id": "b2-infections",
+  "layout": "B",
+  "forms": [
+    "text"
+  ],
+  "lab": {
+    "name": "Pracownia Diagnostyczna Beta",
+    "address": "al. Testowa 5, 00-950 Wzorowo",
+    "phone": "tel. 58 000 00 00"
+  },
+  "patient": {
+    "name": "Jan Testowy",
+    "pesel": "44051401359",
+    "birth_date": "14.05.1944",
+    "sex": "M",
+    "address": "ul. Przykładowa 1/2, 00-001 Testowo"
+  },
+  "orderer": "lek. Anna Fikcyjna",
+  "order_no": "7710442096",
+  "dates": [
+    {
+      "label": "Data i godz. rejestracji",
+      "value": "12-09-2026 08:05",
+      "where": "middle"
+    },
+    {
+      "label": "Data i godz. pobrania",
+      "value": "12-09-2026 07:58",
+      "where": "middle"
+    },
+    {
+      "label": "Data i godz. przyjęcia materiału",
+      "value": "12-09-2026 08:30",
+      "where": "middle"
+    }
+  ],
+  "staff": [
+    {
+      "role": "Wykonał",
+      "name": "mgr Ewa Przykładowa",
+      "in_table": false
+    },
+    {
+      "role": "Autoryzował",
+      "name": "dr n. med. Tomasz Makieta",
+      "in_table": false
+    }
+  ],
+  "printed": "13-09-2026 10:12",
+  "pages": [
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "Profil: Infekcje",
+          "results": [
+            {
+              "name": "Antygen HBs (HBsAg)",
+              "value": "ujemny",
+              "unit": "",
+              "icd9": "V39",
+              "range": "ujemny",
+              "procedure": "A V2.1",
+              "material": "surowica",
+              "method": "metoda ECLIA, analizator Cobas pro"
+            },
+            {
+              "name": "Przeciwciała anty HCV",
+              "value": "ujemny",
+              "unit": "",
+              "icd9": "V48",
+              "range": "ujemny",
+              "procedure": "A V2.1",
+              "material": "surowica",
+              "method": "metoda CLIA, analizator LIAISON XL"
+            },
+            {
+              "name": "Przeciwciała przeciwko wirusowi cytomegalii w klasie IgG (CMV IgG)",
+              "value": "<5,00",
+              "unit": "IU/ml",
+              "icd9": "F31",
+              "range": "ujemny: <12,0 IU/ml",
+              "material": "surowica",
+              "range_lines": [
+                "Wartość referencyjna/decyzyjna: ujemny: <12,0 IU/ml",
+                "niejednoznaczny: 12,0-14,0 IU/ml",
+                "dodatni: >=14,0 IU/ml"
+              ],
+              "method": "metoda CLIA, analizator MAGLUMI X8"
+            }
+          ],
+          "comment": [
+            "W przypadku wątpliwości dotyczących interpretacji wyniku należy skonsultować się z lekarzem."
+          ]
+        }
+      ]
+    }
+  ],
+  "traps": [
+    "qualitative",
+    "less_than_range",
+    "text_range"
+  ]
+}
