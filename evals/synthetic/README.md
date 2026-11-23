@@ -2,7 +2,7 @@
 
 Fictional documents for testing masking, the second check, extraction and their evals. Every person, laboratory and number is invented: the patient is always Jan Testowy, with the public example PESEL from [tools/privacy/allowlist.txt](../../tools/privacy/allowlist.txt).
 
-The layouts follow the structure of real laboratory results (column order, date labels, where blocks sit), never their names or data. The spec is in [openspec/changes/add-synthetic-documents](../../openspec/changes/add-synthetic-documents/proposal.md).
+The layouts follow the structure of real laboratory results (column order, date labels, where blocks sit), never their names or data. The spec is [openspec/specs/synthetic-documents](../../openspec/specs/synthetic-documents/spec.md); the change that added it is in the OpenSpec archive.
 
 ## How it works
 
