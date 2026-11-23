@@ -61,7 +61,7 @@
               "name": "Witamina D metabolit 25(OH)",
               "value": "18,40",
               "unit": "ng/ml",
-              "range": "30-50 ng/ml (stężenie optymalne)",
+              "range": ">30-50 ng/ml Stężenie optymalne",
               "flag": "L",
               "material": "surowica",
               "range_lines": [

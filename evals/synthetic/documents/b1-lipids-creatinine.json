@@ -86,7 +86,8 @@
                 "Wartość referencyjna/decyzyjna: Wartość oczekiwana: <190",
                 "wg PTL/KLRWP/PTK/PTDL/PTD/PTNT 2024"
               ],
-              "method": "metoda spektrofotometryczna, analizator Cobas pro"
+              "method": "metoda spektrofotometryczna, analizator Cobas pro",
+              "computed_flag": "H"
             },
             {
               "name": "Cholesterol HDL w surowicy",
@@ -107,7 +108,7 @@
               "unit": "mg/dl",
               "icd9": "K03",
               "procedure": "A V2.4",
-              "range": "<115 (umiarkowane ryzyko)",
+              "range": "<115 - dla osób o niskim ryzyku",
               "material": "surowica",
               "range_lines": [
                 "Wartości oczekiwane: kategorie ryzyka sercowo-naczyniowego",

@@ -101,7 +101,9 @@
               "max": "24,9",
               "material": "surowica",
               "condition": "na czczo",
-              "method": "metoda ECLIA, analizator Cobas pro"
+              "method": "metoda ECLIA, analizator Cobas pro",
+              "flag": "H",
+              "computed_flag": null
             }
           ]
         }
@@ -110,6 +112,8 @@
   ],
   "traps": [
     "condition",
-    "text_range"
-  ]
+    "text_range",
+    "flag_disagrees"
+  ],
+  "flag_note": "The laboratory printed H for insulin 9,4 inside 2,6-24,9: the computed flag must say normal."
 }

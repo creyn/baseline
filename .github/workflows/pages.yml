@@ -40,7 +40,7 @@ jobs:
           python-version: '3.12'
       - name: Generate the synthetic documents
         run: |
-          sudo apt-get install -y -q fonts-dejavu-core
+          sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
           python -m pip install -q -r evals/synthetic/requirements.txt
           python evals/synthetic/generate.py --out _site/synthetic
       - name: Build site

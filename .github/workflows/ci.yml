@@ -48,7 +48,7 @@ jobs:
           python-version: '3.12'
       - name: Install the generator's dependencies and font
         run: |
-          sudo apt-get install -y -q fonts-dejavu-core
+          sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
           python -m pip install -q -r evals/synthetic/requirements.txt
       - name: Tests (descriptions and generated files)
         run: python -m unittest discover -s evals/synthetic -v

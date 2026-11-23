@@ -50,8 +50,14 @@ def seed(doc_id, form):
 
 # ------------------------------------------------------------------ drawing helpers
 class Pen:
-    def __init__(self, c):
+    def __init__(self, c, page):
         self.c = c
+        self.page = page
+        self.marks = []  # non-text personal marks: masking must remove them, text cannot show it
+
+    def mark(self, kind, x0, y0, x1, y1):
+        # PDF points, origin at the top left of the A4 page, so they map directly onto a rendered image.
+        self.marks.append({'kind': kind, 'page': self.page, 'box': [round(x0), round(H - y1), round(x1), round(H - y0)]})
 
     def text(self, x, y, s, size=9, bold=False, right=False, centre=False):
         self.c.setFont(BOLD if bold else FONT, size)
@@ -78,7 +84,9 @@ class Pen:
         self.c.line(x0, y, x1, y)
 
     def barcode(self, x, y, value):
-        code128.Code128(value, barHeight=22, barWidth=0.75, humanReadable=False).drawOn(self.c, x, y)
+        bc = code128.Code128(value, barHeight=22, barWidth=0.75, humanReadable=False)
+        bc.drawOn(self.c, x, y)
+        self.mark('barcode', x, y, x + bc.width, y + 22)
 
     def stamp(self, x, y, lab):
         c = self.c
@@ -94,6 +102,7 @@ class Pen:
         c.setFont(FONT, 5)
         c.drawCentredString(x, y - 4, 'DIAGNOSTA LAB.')
         c.restoreState()
+        self.mark('stamp', x - 31, y - 31, x + 31, y + 31)
 
     def signature(self, x, y):
         c = self.c
@@ -106,6 +115,7 @@ class Pen:
         p.curveTo(x + 50, y + 16, x + 58, y - 8, x + 75, y + 3)
         c.drawPath(p)
         c.restoreState()
+        self.mark('signature', x - 2, y - 14, x + 77, y + 20)
 
 
 def range_text(r):
@@ -316,14 +326,17 @@ LAYOUT = {'A': page_a, 'B': page_b, 'C': page_c}
 
 
 # ------------------------------------------------------------------ forms
-def text_pdf(doc):
+def text_pdf(doc, marks=None):
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
     c.setTitle('Wynik badania laboratoryjnego')
     c.setAuthor(doc['lab']['name'])
     pages = doc['pages']
     for i, page in enumerate(pages, 1):
-        LAYOUT[doc['layout']](Pen(c), doc, page, i, len(pages))
+        pen = Pen(c, i)
+        LAYOUT[doc['layout']](pen, doc, page, i, len(pages))
+        if marks is not None:
+            marks += pen.marks
         c.showPage()
     c.save()
     return buf.getvalue()
@@ -409,10 +422,11 @@ def photos(doc, pdf):
 
 
 # ------------------------------------------------------------------ output
-def truth(doc):
-    return {'id': doc['id'], 'layout': doc['layout'], 'pages': len(doc['pages']),
+def truth(doc, marks):
+    return {'id': doc['id'], 'layout': doc['layout'], 'pages': len(doc['pages']), 'page_size_pt': [round(W), round(H)],
             'results': describe.expected_extraction(doc), 'must_remove': describe.must_remove(doc),
-            'must_keep': describe.must_keep(doc), 'known_gaps': doc.get('known_gaps', []), 'traps': doc['traps']}
+            'must_keep': describe.must_keep(doc), 'known_gaps': doc.get('known_gaps', []),
+            'marks_to_remove': marks, 'traps': doc['traps']}
 
 
 def build(doc, folder):
@@ -424,7 +438,8 @@ def build(doc, folder):
             f.write(data)
         written[name] = hashlib.sha256(data).hexdigest()
 
-    pdf = text_pdf(doc)
+    marks = []
+    pdf = text_pdf(doc, marks)
     if 'text' in doc['forms']:
         put('text.pdf', pdf)
     if 'scan' in doc['forms']:
@@ -432,7 +447,7 @@ def build(doc, folder):
     if 'photo' in doc['forms']:
         for i, data in enumerate(photos(doc, pdf), 1):
             put(f'photo-{i}.jpg', data)
-    put('truth.json', (json.dumps(truth(doc), ensure_ascii=False, indent=2) + '\n').encode())
+    put('truth.json', (json.dumps(truth(doc, marks), ensure_ascii=False, indent=2) + '\n').encode())
     return written
 
 
@@ -453,6 +468,17 @@ def index(docs, built):
             + ''.join(rows) + '</table></body></html>\n')
 
 
+def environment():
+    """What the output depends on besides the descriptions. Byte-identical output holds only when this is equal."""
+    import PIL
+    import reportlab
+    font = pdfmetrics.getFont(FONT).face.filename
+    with open(font, 'rb') as f:
+        font_sha = hashlib.sha256(f.read()).hexdigest()
+    return {'reportlab': reportlab.Version, 'pillow': PIL.__version__, 'pypdfium2': pypdfium2.V_PYPDFIUM2,
+            'font_sha256': font_sha}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--out', default=os.path.join(describe.HERE, 'out'))
@@ -464,7 +490,7 @@ def main(argv=None):
     with open(os.path.join(args.out, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(index(docs, built))
     with open(os.path.join(args.out, 'sha256.json'), 'w', encoding='utf-8') as f:
-        json.dump(built, f, indent=2, sort_keys=True)
+        json.dump({'documents': built, 'environment': environment()}, f, indent=2, sort_keys=True)
     print(f'{sum(len(v) for v in built.values())} files for {len(docs)} documents in {args.out}')
 
 

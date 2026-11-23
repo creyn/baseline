@@ -54,7 +54,8 @@
               "max": "400",
               "flag": null,
               "material": "surowica",
-              "method": "Badanie wykonano metodą ECLIA na aparacie Cobas 8000."
+              "method": "Badanie wykonano metodą ECLIA na aparacie Cobas 8000.",
+              "computed_flag": "L"
             },
             {
               "name": "Żelazo",
@@ -105,7 +106,7 @@
     "26041007251"
   ],
   "known_gaps": [
-    "Jan Testowy"
+    "Materiał dostarczył Jan Testowy"
   ],
   "flag_note": "Ferritin 18 against 30-400 has no laboratory flag: the computed flag must say low."
 }

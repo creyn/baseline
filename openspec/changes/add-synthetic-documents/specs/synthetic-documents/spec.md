@@ -33,10 +33,15 @@ The repository MUST NOT contain a PDF, a scan or a photo of a document, syntheti
 
 The generator SHALL render each description in its layout (A, B or C) and in each of its forms: `text` (a PDF with real text), `scan` (an image PDF with a slight rotation and noise) and `photo` (JPEG pages with perspective, shadow and blur).
 
-#### Scenario: A text PDF
+#### Scenario: The rendered page holds the whole truth
 
-- **WHEN** a description with the form `text` is generated
-- **THEN** the text of the PDF contains every value, unit and date field of the description, and every string masking must remove
+- **WHEN** any description is rendered (the scan and the photo are made from the same page)
+- **THEN** the page text contains every name, value, unit, range and date field of the description, and every string masking must remove
+
+#### Scenario: Marks that are not text
+
+- **WHEN** a page is rendered
+- **THEN** its truth lists the box of its barcode, stamp and signature
 
 #### Scenario: Several pages
 

@@ -19,8 +19,8 @@ except (ImportError, SystemExit) as e:  # no reportlab, Pillow, pypdfium2 or fon
     MISSING = str(e) or 'dependencies missing'
 
 
-def pdf_text(path):
-    doc = pypdfium2.PdfDocument(path)
+def pdf_text(path_or_bytes):
+    doc = pypdfium2.PdfDocument(path_or_bytes)
     try:
         return ['\n'.join(doc[i].get_textpage().get_text_bounded().split()) for i in range(len(doc))], len(doc)
     finally:
@@ -58,24 +58,29 @@ class GenerateTest(unittest.TestCase):
             photos = [f for f in files if f.startswith('photo-')]
             self.assertEqual(len(photos), len(d['pages']) if 'photo' in d['forms'] else 0, d['id'])
 
-    def test_text_pdf_holds_every_value_date_and_trap(self):
+    def test_rendered_page_holds_the_whole_truth(self):
+        # The text PDF of every document, also of those published only as a scan or a photo,
+        # because the scan and the photo are rendered from it.
         for d in self.docs:
-            path = os.path.join(self.out1, d['id'], 'text.pdf')
-            if not os.path.exists(path):
-                continue
-            pages, count = pdf_text(path)
+            pages, count = pdf_text(generate.text_pdf(d))
             self.assertEqual(count, len(d['pages']), d['id'])
             text = squash(''.join(pages))
             for s in describe.must_keep(d) + describe.must_remove(d) + d.get('known_gaps', []):
                 self.assertIn(squash(s), text, f'{d["id"]}: {s}')
+            for r in describe.results(d):
+                self.assertIn(squash(r['name']), text, f'{d["id"]}: {r["name"]}')
+
+    def test_every_page_lists_its_barcode_stamp_and_signature(self):
+        for d in self.docs:
+            with open(os.path.join(self.out1, d['id'], 'truth.json'), encoding='utf-8') as f:
+                marks = json.load(f)['marks_to_remove']
+            for p in range(1, len(d['pages']) + 1):
+                self.assertEqual(sorted(m['kind'] for m in marks if m['page'] == p), ['barcode', 'signature', 'stamp'], d['id'])
 
     def test_continuation_page_has_no_table_header(self):
         header_word = {'A': 'FLAGA', 'B': 'Procedura/', 'C': 'Zakresreferencyjny'}
         for d in self.docs:
-            path = os.path.join(self.out1, d['id'], 'text.pdf')
-            if not os.path.exists(path):
-                continue
-            pages, _ = pdf_text(path)
+            pages, _ = pdf_text(generate.text_pdf(d))
             for page, text in zip(d['pages'], pages):
                 self.assertEqual(header_word[d['layout']] in squash(text), page['table_header'], d['id'])
 
