@@ -1,10 +1,10 @@
-# 20. Development with AI coding agents: specs first, CI as the build, privacy checks everywhere
+# 14. Development with AI coding agents: specs first, CI as the build, privacy checks everywhere
 
 Date: 2026-11-22
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 

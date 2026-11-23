@@ -21,7 +21,7 @@ export async function ocrLines(worker, image) {
 
 // Keep-only composition: start from a white page and copy only the allowed words.
 // Everything else (unknown text, stamps, signatures, logos, barcodes) never reaches the output.
-// Zones (ADR-0006): the results table is kept, outside it only date fields.
+// Zones (docs/adr/0003-masking-in-the-browser-and-a-second-check.md): the results table is kept, outside it only date fields.
 // style 'boxes' draws a dark box over each run of masked words. The boxes are drawn on the
 // new page, not over the original, so nothing of the masked pixels can show at their edges.
 // Kept words get a vertical margin of a third of the row's text height, so that descenders

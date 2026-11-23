@@ -28,9 +28,10 @@
 <text x="44" y="318" text-anchor="start" font-size="12.5" fill="#52606d">results, trends, review, chat</text>
 <text x="44" y="337" text-anchor="start" font-size="12.5" fill="#52606d">chat history: this tab only</text>
 <rect x="30" y="560" width="265" height="110" rx="8" fill="#f3e8fd" stroke="#6a1b9a" stroke-width="2"/>
-<text x="162.5" y="603" text-anchor="middle" font-weight="bold" font-size="15" fill="#1f2933">Entra External ID</text>
-<text x="162.5" y="622" text-anchor="middle" font-size="12.5" fill="#52606d">sign-in: Google, Microsoft</text>
-<text x="162.5" y="641" text-anchor="middle" font-size="12.5" fill="#52606d">free up to 50k users/month</text>
+<text x="162.5" y="594" text-anchor="middle" font-weight="bold" font-size="15" fill="#1f2933">Entra External ID</text>
+<text x="162.5" y="613" text-anchor="middle" font-size="12.5" fill="#52606d">sign-in: Google or e-mail code</text>
+<text x="162.5" y="632" text-anchor="middle" font-size="12.5" fill="#52606d">by invitation; sign-up disabled</text>
+<text x="162.5" y="651" text-anchor="middle" font-size="12.5" fill="#52606d">free up to 50k users/month</text>
 <rect x="370" y="110" width="310" height="360" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
 <text x="384" y="136" text-anchor="start" font-weight="bold" font-size="15" fill="#1f2933">Baseline API</text>
 <text x="384" y="155" text-anchor="start" font-size="12.5" fill="#52606d">.NET 10 · Container App</text>

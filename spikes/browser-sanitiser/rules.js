@@ -1,5 +1,5 @@
 // Masking rules for the browser sanitiser spike. Pure functions, no DOM.
-// Zones (docs/adr/0006-zone-based-masking.md):
+// Zones (docs/adr/0003-masking-in-the-browser-and-a-second-check.md):
 // - the results table is kept, except personal and people lines, PESEL numbers and long numbers;
 // - outside the table only labelled date fields are kept (never the date of birth);
 // - without a table, only date fields are kept.

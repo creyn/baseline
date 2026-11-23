@@ -53,7 +53,7 @@ zone(15, 850, 1965, 200, C.extS, 'Development · outside Azure', '4 4');
 
 // user device: the original never leaves it
 box(30, 140, 265, 340, C.ext, C.extS, 'UI · browser', ['React + TypeScript', 'the original stays here', '1. PDF → PNG (PDF.js)', '2. OCR (Tesseract.js)', '3. zone masking, leak check', '4. user approves the masks', '5. ZIP of masked pages', 'results, trends, review, chat', 'chat history: this tab only'], { left: true, top: true });
-box(30, 560, 265, 110, C.sec, C.secS, 'Entra External ID', ['sign-in: Google, Microsoft', 'free up to 50k users/month']);
+box(30, 560, 265, 110, C.sec, C.secS, 'Entra External ID', ['sign-in: Google or e-mail code', 'by invitation; sign-up disabled', 'free up to 50k users/month']);
 
 // API
 box(370, 110, 310, 360, C.net, C.netS, 'Baseline API', ['.NET 10 · Container App', 'serves the UI (BFF, one domain)', 'OIDC sign-in (cert. in Key Vault)', 'consent: stored, revocable', 'upload, review, results', 'agent: Agent Framework + MEAI', '  tools: SQL, vector search', '  guardrails: numbers, citations', 'status consumer, sweeper', 'deletion of documents, account'], { left: true, top: true });

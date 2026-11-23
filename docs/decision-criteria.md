@@ -12,7 +12,7 @@ The workload behind these criteria is described in [use-cases.md](use-cases.md).
 | G2 | Data and AI processing stay in the EU (EU region, Data Zone EU). |
 | G3 | Every user sees only their own data, and a test proves it. |
 | G4 | Model output is saved at once, as `PendingReview`, so it is not lost. Only the user sets `Approved`. Trends, the agent and summaries read only approved results. Out-of-range flags are computed by code, and every answer cites its source. |
-| G5 | Deleting a document or an account reaches every store, and a test proves it. |
+| G5 | Deleting a document or an account reaches every store the system controls, and a test proves it. The sign-in account in Entra is removed by the owner after an alert ([ADR-0010](adr/0010-identity-users-and-consent.md)). |
 | G6 | No keys or passwords in code or configuration (Managed Identity, Entra ID). |
 
 ## Weighted criteria
@@ -31,4 +31,4 @@ K3 (reliability) was merged into K1; the number is not reused.
 **Why these weights:**
 - **K1 is the highest** because one person maintains the system in their spare time. Simplicity and self-healing are one goal.
 - **K2 is high** because the system is idle most of the day. A fixed charge is paid for nothing.
-- **K7 is the lowest** because a long cold start after idle time is accepted ([ADR-0006](adr/0006-serverless-hosting-on-azure.md)).
+- **K7 is the lowest** because a long cold start after idle time is accepted ([ADR-0004](adr/0004-serverless-hosting-and-operations.md)).

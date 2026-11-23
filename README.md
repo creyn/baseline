@@ -27,13 +27,13 @@ Lab results are scattered across PDFs, emails, different labs' apps and paper. T
 
 ## Privacy and security
 
-- **The original never leaves the device.** The browser renders each page to an image, masks all personal data (the patient's, the doctor's, stamps, signatures, barcodes) and sends masked pages only. The server checks every page again before any AI service sees it. See [ADR-0003](docs/adr/0003-mask-in-the-browser-check-again-on-the-server.md) and [ADR-0004](docs/adr/0004-zone-based-masking.md).
-- **Each person sees only their own data**, enforced in the code and again by Row-Level Security in the database. Sign-in with an existing Google or Microsoft account; no passwords. See [ADR-0013](docs/adr/0013-identity-users-and-consent.md).
+- **The original never leaves the device.** The browser renders each page to an image, masks all personal data (the patient's, the doctor's, stamps, signatures, barcodes) and sends masked pages only. The server checks every page again before any AI service sees it. See [ADR-0003](docs/adr/0003-masking-in-the-browser-and-a-second-check.md).
+- **Each person sees only their own data**, enforced in the code and again by Row-Level Security in the database. Sign-in with a Google account or an e-mail with a one-time code; no passwords. See [ADR-0010](docs/adr/0010-identity-users-and-consent.md).
 - **Consent** is recorded at first sign-in. Withdrawing it deletes the account and all its data.
 - **No keys in code.** Services authenticate with Managed Identity.
 - **Region:** Sweden Central; Azure OpenAI models in the EU Data Zone.
 - **Telemetry:** identifiers, tokens, latency and errors only; never document content, prompts or answers.
-- **Deletion:** deleted from the application at once, from database backups after 7 days. Masked data may stay in the managed AI services for up to 30 days (Azure OpenAI abuse monitoring) or 24 hours (Document Intelligence). See [ADR-0019](docs/adr/0019-deletion-and-retention.md).
+- **Deletion:** deleted from the application at once, from database backups after 7 days. Masked data may stay in the managed AI services for up to 30 days (Azure OpenAI abuse monitoring) or 24 hours (Document Intelligence). See [ADR-0012](docs/adr/0012-deletion-and-retention.md).
 
 ## Architecture
 
@@ -41,8 +41,8 @@ Lab results are scattered across PDFs, emails, different labs' apps and paper. T
 
 - **User device (red):** the only place where the original document exists.
 - **Managed AI services (teal):** see masked pages and masked text only.
-- **Import** is a pipeline of Service Bus queues: check, extract, status ([ADR-0007](docs/adr/0007-asynchronous-import-pipeline.md)). The full sequence, with every alternative path and the state after a failure at each step, is in [docs/adr/0007](docs/adr/0007/c-pipeline-without-outbox.svg).
-- **Everything scales to zero**: about 3 USD a month for 10 people ([ADR-0006](docs/adr/0006-serverless-hosting-on-azure.md), [use-cases.md](docs/use-cases.md)).
+- **Import** is a pipeline of Service Bus queues: check, extract, status ([ADR-0005](docs/adr/0005-asynchronous-import-pipeline.md)). The full sequence, with every alternative path and the state after a failure at each step, is in [docs/adr/0005](docs/adr/0005/c-pipeline-without-outbox.svg).
+- **Everything scales to zero**: about 3.50 USD a month for 10 people ([ADR-0004](docs/adr/0004-serverless-hosting-and-operations.md), [use-cases.md](docs/use-cases.md)).
 
 All diagrams are generated from code in [tools/diagrams](tools/diagrams/). Edit the scripts, not the SVG files.
 
@@ -57,7 +57,7 @@ Proofs of concept that inform decisions live in [spikes/](spikes/), one folder e
 
 ## Working with AI coding agents
 
-The code is written with AI coding agents. The rules they follow, the privacy gates every change must pass and the tooling that enforces them (a privacy scan in a Git hook, a Claude Code hook and CI, and a review subagent) are in [AGENTS.md](AGENTS.md) and [ADR-0020](docs/adr/0020-development-with-ai-agents.md).
+The code is written with AI coding agents. The rules they follow, the privacy gates every change must pass and the tooling that enforces them (a privacy scan in a Git hook, a Claude Code hook and CI, and a review subagent) are in [AGENTS.md](AGENTS.md) and [ADR-0014](docs/adr/0014-development-with-ai-agents.md).
 
 ## Tech stack
 
@@ -73,4 +73,4 @@ Evals run in CI on every prompt or model change:
 - **Extraction:** numeric values and units must be 100% correct. Normalised parameter names and reference ranges target at least 95%.
 - **Answers:** numbers match the stored results and every claim cites the right document.
 - **Safety:** questions like "am I sick?" never get a diagnosis.
-- **Masking:** no personal data survives masking. Only the results table and labelled date fields remain visible ([ADR-0004](docs/adr/0004-zone-based-masking.md)).
+- **Masking:** no personal data survives masking. Only the results table and labelled date fields remain visible ([ADR-0003](docs/adr/0003-masking-in-the-browser-and-a-second-check.md)).

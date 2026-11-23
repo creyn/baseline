@@ -1,21 +1,21 @@
-# 7. Asynchronous import: a pipeline of queues, without an outbox
+# 5. Asynchronous import: a pipeline of queues, without an outbox
 
 Date: 2026-11-22
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
-After the browser masks a document ([ADR-0003](0003-mask-in-the-browser-check-again-on-the-server.md)), the server has to check it again, extract the results, and let the user review them. The check (OCR) and the extraction (Document Intelligence and an LLM) take from seconds to a minute or more. The user can close the browser after the upload and come back later.
+After the browser masks a document ([ADR-0003](0003-masking-in-the-browser-and-a-second-check.md)), the server has to check it again, extract the results, and let the user review them. The check (OCR) and the extraction (Document Intelligence and an LLM) take from seconds to a minute or more. The user can close the browser after the upload and come back later.
 
 Constraints:
-- Only the API writes to the database ([ADR-0002](0002-split-between-dotnet-and-python.md)).
+- Only the API writes to the database ([ADR-0002](0002-languages-dotnet-python-and-typescript.md)).
 - There is no transaction across SQL, Blob Storage and Service Bus. Every step that writes to two of them must survive a crash between the two writes.
 - Service Bus Basic has queues only (no topics, no sessions, no transactions) and **no duplicate detection**. A message can arrive twice, so every receiver must be idempotent.
 - A Service Bus message carries at most 256 KB on Basic and Standard.
-- Everything scales to zero ([ADR-0006](0006-serverless-hosting-on-azure.md)).
+- Everything scales to zero ([ADR-0004](0004-serverless-hosting-and-operations.md)).
 
 A multi-page result means several masked pages. Sending or storing them one by one means one request per page at every step, with more places to fail and partial states ("3 of 5 pages written").
 
@@ -29,9 +29,9 @@ A multi-page result means several masked pages. Sending or storing them one by o
 6. **C: a pipeline without an outbox.** Like B, but the API sends the first message itself after COMMIT. If it crashes in between, the document stays `Uploaded` and a sweeper sends the message again.
 
 Options 4, 5 and 6 are drawn in full, with arguments on every arrow, every alternative path and the state after a failure at every step:
-- [A: the API orchestrates](0007/a-api-orchestrates.svg)
-- [B: a pipeline with an outbox](0007/b-pipeline-with-outbox.svg)
-- [C: a pipeline without an outbox](0007/c-pipeline-without-outbox.svg)
+- [A: the API orchestrates](0005/a-api-orchestrates.svg)
+- [B: a pipeline with an outbox](0005/b-pipeline-with-outbox.svg)
+- [C: a pipeline without an outbox](0005/c-pipeline-without-outbox.svg)
 
 Each diagram also shows the most frequent reads (browsing results, asking the agent), which are the same in all three.
 
@@ -45,7 +45,7 @@ Each diagram also shows the most frequent reads (browsing results, asking the ag
 | K7 performance (5) | 3 | 4 | 4 | 4 | 4 |
 | **Result** | **63** | **71** | **69** | **82** | **89** |
 
-C wins on K1. With nothing indexed after approval ([ADR-0011](0011-retrieval-without-ai-search.md)), the only message the outbox would protect is the first one, and the sweeper protects it too, at the price of minutes of delay in a rare failure.
+C wins on K1. With nothing indexed after approval ([ADR-0008](0008-retrieval-without-ai-search.md)), the only message the outbox would protect is the first one, and the sweeper protects it too, at the price of minutes of delay in a rare failure.
 
 ## Decision
 
@@ -62,21 +62,25 @@ We choose option 6 (C).
    - `status`: from the checker and the extractor to the API (`Blocked`, `Extracted`, `Failed`).
 
    A version gets exactly one of `Blocked`, `Extracted` or `Failed`. There is no message for "checked and clean": it tells the user nothing.
-4. **Messages carry identifiers and small payloads.** `Blocked` carries the suspicious regions (page and rectangle, never text). `Extracted` carries the results with their page hashes and positions.
+4. **Messages carry identifiers and small payloads.** `Blocked` carries the suspicious regions (page and rectangle, never text). `Extracted` carries identifiers only: the API reads the results from `text` (the claim check) before its transaction, so a document with many results never hits the 256 KB limit.
 5. **Every receiver is idempotent and resumes from what is already stored** (drawn as alternative paths in diagram C):
    - the checker finds the incoming ZIP gone and the clean ZIP present: it sends `ExtractRequested` again;
    - the extractor finds its results already in `text`: it sends `Extracted` again without calling Document Intelligence or the LLM;
    - the API applies a status event with a forward-only update; zero rows changed means a duplicate, an old version or a deleted document, and the event is completed and ignored.
-6. **Retries:** an error with `deliveryCount` below 5 abandons the message, so Service Bus delivers it again later. On the fifth try the service sends `Failed` with a reason code. Queues allow more deliveries than that, so a crash on the last try ends in the dead-letter queue, which raises an alert.
-7. **The sweeper** in the API runs every 5 minutes. A version still `Uploaded` after 3 minutes gets `CheckRequested` again, up to 3 times, then `Failed (timeout)`. The UI then offers "Retry".
+6. **Retries:** a receiver renews the message lock while it works, because a lock lasts at most 5 minutes and a long extraction would otherwise be delivered again in parallel. An error with `deliveryCount` below 5 abandons the message, so Service Bus delivers it again later. On the fifth try the service sends `Failed` with a reason code. Queues allow more deliveries than that, so a crash on the last try ends in the dead-letter queue, which raises an alert.
+7. **The sweeper** runs in the API every 5 minutes while the API is awake, and once a day, when a cron scale rule wakes the API ([ADR-0004](0004-serverless-hosting-and-operations.md)). No separate service is needed.
+   - A version still `Uploaded` after 10 minutes gets its first message again (`CheckRequested`, or `ExtractRequested` for a version made from a checked ZIP), up to 3 times, then `Failed (timeout)`. The UI then offers "Retry" ([ADR-0006](0006-document-lifecycle-and-review.md)).
+   - The threshold is above the 3-minute target, so a cold start does not cause a second, parallel run.
+   - A pipeline that is down for more than about 30 minutes while the API is awake ends its imports in `Failed (timeout)`. Accepted: the user presses "Retry".
+   - It also finishes deletions and removes orphan blobs ([ADR-0012](0012-deletion-and-retention.md)).
 8. **Managed Identity only**, with keys disabled on the namespace. Service Bus Basic has no private endpoint, so the namespace is reached over its public endpoint with Entra ID.
 
 ## Consequences
 
 - **No status is lost** while the API is asleep or being deployed: events wait in the status queue.
 - **Each stage can be tested alone** against emulators (Azurite, the Service Bus emulator).
-- **A crash between the API's COMMIT and its send delays a document by up to a few minutes**, until the sweeper. Accepted for a rare failure.
+- **A crash between the API's COMMIT and its send delays a document** until the sweeper: minutes while the API is awake, up to a day otherwise. Accepted for a rare failure.
 - **Duplicate messages are expected** and handled by the receivers, not by Service Bus.
-- **Statuses, versions and identifiers** are defined in [ADR-0008](0008-document-lifecycle-and-identifiers.md).
+- **Statuses, versions and identifiers** are defined in [ADR-0006](0006-document-lifecycle-and-review.md).
 - **The user sees progress by polling** the document status every few seconds.
 - **A blocked document leaves nothing on the server** except its version row and the suspicious regions.

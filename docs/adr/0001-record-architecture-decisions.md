@@ -4,13 +4,13 @@ Date: 2026-11-22
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
 Baseline keeps the lab results of one family. One person builds and maintains it. It processes health data, so most decisions are trade-offs between privacy, cost and simplicity. Decisions must outlive memory: months later we need to know what we chose, why, and what we rejected.
 
-This set replaces an earlier one (ADR-0001 to ADR-0014 of 2026-11-17 to 2026-11-20). Those decisions were written before the workload, the costs and the import flow were known, and the choice of import flow changed most of them. They remain in the Git history.
+This set replaces an earlier one (ADR-0001 to ADR-0009 of 2026-11-17 to 2026-11-20). Those decisions were written before the workload, the costs and the import flow were known, and the choice of import flow changed most of them. They remain in the Git history.
 
 ### Considered options
 

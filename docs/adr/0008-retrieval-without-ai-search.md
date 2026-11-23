@@ -1,14 +1,14 @@
-# 11. Retrieval without Azure AI Search: SQL queries and vectors in Azure SQL
+# 8. Retrieval without Azure AI Search: SQL queries and vectors in Azure SQL
 
 Date: 2026-11-22
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
-The agent answers questions with citations ([ADR-0012](0012-one-agent-with-tools-and-guardrails.md)). Most questions are about values: "When did I last test vitamin D, and what was the result?", "Which results were out of range this year?". Results are structured data in SQL (parameter, value, unit, range, dates, source page), so these questions are answered exactly by queries.
+The agent answers questions with citations ([ADR-0009](0009-agent-questions-and-summaries.md)). Most questions are about values: "When did I last test vitamin D, and what was the result?", "Which results were out of range this year?". Results are structured data in SQL (parameter, value, unit, range, dates, source page), so these questions are answered exactly by queries.
 
 Some questions are about text: a laboratory's comment on a sample, a note under the table, a descriptive result. They need search by meaning (retrieval-augmented generation with vectors), but they are a small share of questions ([use-cases.md](../use-cases.md)).
 
@@ -39,7 +39,7 @@ We choose option 2.
 
 1. **Values are retrieved with SQL** through the agent's tools: a trend of a parameter, out-of-range results, the last value, a period summary. The same queries serve the charts.
 2. **Descriptive text is retrieved by vectors in Azure SQL.** On approval, the API first reads the text fragments of the version (from the `text` blob) and computes their embeddings (text-embedding-3-small, EU Data Zone), outside any transaction. Then one transaction sets `Approved` and inserts the fragments into a table with a `vector` column. A tool searches them with `VECTOR_DISTANCE`.
-3. **Every query filters by the signed-in user and by `Approved`.** Row-Level Security enforces the user filter again ([ADR-0013](0013-identity-users-and-consent.md)).
+3. **Every query filters by the signed-in user and by `Approved`.** Row-Level Security enforces the user filter again ([ADR-0010](0010-identity-users-and-consent.md)).
 4. **Every fragment and result keeps its document, version and page hash**, so every answer can cite its source.
 5. **AI Search is reconsidered only if evals show** that questions about text fail with this approach.
 

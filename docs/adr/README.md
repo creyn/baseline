@@ -2,32 +2,25 @@
 
 Format and rules: [ADR-0001](0001-record-architecture-decisions.md). Every option is checked against the gates and weighted criteria in [docs/decision-criteria.md](../decision-criteria.md), for the workload and costs in [docs/use-cases.md](../use-cases.md).
 
-This set replaces an earlier one (2026-11-17 to 2026-11-20), which is in the Git history.
+This set replaces an earlier one (2026-11-17 to 2026-11-20), which is in the Git history. Related decisions were merged on 2026-11-23, while all of them were still proposed, so that each topic is read in one place.
 
 | # | Decision | Status |
 |---|---|---|
-| 0001 | [Record architecture decisions](0001-record-architecture-decisions.md) | Proposed |
-| 0002 | [Split between .NET and Python](0002-split-between-dotnet-and-python.md) | Proposed |
-| 0003 | [Mask in the browser, check again on the server](0003-mask-in-the-browser-check-again-on-the-server.md) | Proposed |
-| 0004 | [Zone-based masking: keep the results table, mask the rest](0004-zone-based-masking.md) | Proposed |
-| 0005 | [No archive of original documents](0005-no-archive-of-originals.md) | Proposed |
-| 0006 | [Serverless hosting on Azure, everything scales to zero](0006-serverless-hosting-on-azure.md) | Proposed |
-| 0007 | [Asynchronous import: a pipeline of queues, without an outbox](0007-asynchronous-import-pipeline.md) | Proposed |
-| 0008 | [Document lifecycle, identifiers and status changes](0008-document-lifecycle-and-identifiers.md) | Proposed |
-| 0009 | [Every extracted value is reviewed before it is used](0009-mandatory-review-of-extracted-values.md) | Proposed |
-| 0010 | [Extraction with Document Intelligence and an LLM](0010-extraction-with-document-intelligence-and-an-llm.md) | Proposed |
-| 0011 | [Retrieval without Azure AI Search: SQL queries and vectors in Azure SQL](0011-retrieval-without-ai-search.md) | Proposed |
-| 0012 | [One agent with tools and guardrails](0012-one-agent-with-tools-and-guardrails.md) | Proposed |
-| 0013 | [Sign-in, users and consent](0013-identity-users-and-consent.md) | Proposed |
-| 0014 | [Block personal identifiers in the user's questions](0014-personal-data-in-questions.md) | Proposed |
-| 0015 | [Unit normalisation: keep the original, derive a normalised value](0015-unit-normalisation.md) | Proposed |
-| 0016 | [Reference ranges are stored with each result](0016-reference-ranges.md) | Proposed |
-| 0017 | [Parameter dictionary: definitions in the repository, lab names in the database](0017-parameter-dictionary.md) | Proposed |
-| 0018 | [Store only lab results, not visits](0018-store-only-lab-results.md) | Proposed |
-| 0019 | [Deletion of documents and accounts, and retention](0019-deletion-and-retention.md) | Proposed |
-| 0020 | [Development with AI coding agents](0020-development-with-ai-agents.md) | Proposed |
-| 0021 | [UI in TypeScript and React](0021-ui-in-typescript-and-react.md) | Proposed |
+| 0001 | [Record architecture decisions](0001-record-architecture-decisions.md) | Accepted |
+| 0002 | [Languages: .NET, Python, and TypeScript with React](0002-languages-dotnet-python-and-typescript.md) | Accepted |
+| 0003 | [Masking in the browser, zone rules, a second check on the server, no archive of originals](0003-masking-in-the-browser-and-a-second-check.md) | Accepted |
+| 0004 | [Serverless hosting on Azure, one environment, deployment and operations](0004-serverless-hosting-and-operations.md) | Accepted |
+| 0005 | [Asynchronous import: a pipeline of queues, without an outbox](0005-asynchronous-import-pipeline.md) | Accepted |
+| 0006 | [Document lifecycle, identifiers, statuses and the mandatory review](0006-document-lifecycle-and-review.md) | Accepted |
+| 0007 | [Extraction with Document Intelligence and an LLM](0007-extraction-with-document-intelligence-and-an-llm.md) | Accepted |
+| 0008 | [Retrieval without Azure AI Search: SQL queries and vectors in Azure SQL](0008-retrieval-without-ai-search.md) | Accepted |
+| 0009 | [One agent with tools and guardrails: questions and pre-visit summaries](0009-agent-questions-and-summaries.md) | Accepted |
+| 0010 | [Sign-in, users and consent](0010-identity-users-and-consent.md) | Accepted |
+| 0011 | [Lab parameters: dictionary, units and reference ranges](0011-lab-parameters-units-and-ranges.md) | Accepted |
+| 0012 | [Deletion of documents and accounts, and retention](0012-deletion-and-retention.md) | Accepted |
+| 0013 | [Application security baseline](0013-application-security-baseline.md) | Accepted |
+| 0014 | [Development with AI coding agents: specs first, CI as the build, privacy checks everywhere](0014-development-with-ai-agents.md) | Accepted |
 
 ## Order of dependence
 
-Masking (0003, 0004, 0005) decides what the server may receive. Hosting and cost (0006) rule out always-on services. Together they shape the import pipeline (0007), which defines the lifecycle (0008) and the review (0009). Extraction (0010), retrieval (0011) and the agent (0012) build on the approved results. Identity (0013) and deletion (0019) cut across all of them.
+Masking (0003) decides what the server may receive. Hosting and operations (0004) rule out always-on services. Together they shape the import pipeline (0005), which defines the lifecycle and the review (0006). Extraction (0007), retrieval (0008), the agent (0009) and the lab parameters (0011) build on the approved results. Identity and consent (0010), deletion (0012) and the security baseline (0013) cut across all of them. Languages (0002) and the way of working (0014) apply to every part.
