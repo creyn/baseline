@@ -1,0 +1,80 @@
+{
+  "id": "a4-glucose-mmol-scan",
+  "layout": "A",
+  "forms": [
+    "scan"
+  ],
+  "lab": {
+    "name": "Laboratorium Alfa sp. z o.o.",
+    "address": "ul. Fikcyjna 10, 00-100 Przykładowo",
+    "phone": "tel. 22 000 00 00"
+  },
+  "patient": {
+    "name": "Jan Testowy",
+    "pesel": "44051401359",
+    "birth_date": "14.05.1944",
+    "sex": "M",
+    "address": "ul. Przykładowa 1/2, 00-001 Testowo"
+  },
+  "orderer": "lek. Anna Fikcyjna",
+  "order_no": "2611230460",
+  "dates": [
+    {
+      "label": "Data rejestracji",
+      "value": "2026-11-23 07:39",
+      "where": "header"
+    }
+  ],
+  "staff": [
+    {
+      "role": "Wykonał",
+      "name": "mgr Ewa Przykładowa",
+      "in_table": false
+    },
+    {
+      "role": "Autoryzował",
+      "name": "mgr Piotr Wzorcowy",
+      "in_table": false
+    }
+  ],
+  "printed": "2026-11-23 11:15",
+  "pages": [
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "Glukoza",
+          "icd9": "L43",
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-11-23 07:32:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "23.11.2026 08:45:00"
+            }
+          ],
+          "results": [
+            {
+              "name": "Glukoza",
+              "value": "5,4",
+              "unit": "mmol/l",
+              "min": "3,9",
+              "max": "5,5",
+              "material": "osocze",
+              "condition": "na czczo"
+            }
+          ],
+          "method": "Badanie wykonano metodą enzymatyczną (heksokinaza).",
+          "notes": []
+        }
+      ]
+    }
+  ],
+  "traps": [
+    "unit_change",
+    "condition"
+  ],
+  "unit_note": "Glucose 5,4 mmol/l is about 97 mg/dl (factor 18,016)."
+}

@@ -1,0 +1,92 @@
+{
+  "id": "a1-vitamin-d",
+  "layout": "A",
+  "forms": [
+    "text",
+    "scan"
+  ],
+  "lab": {
+    "name": "Laboratorium Alfa sp. z o.o.",
+    "address": "ul. Fikcyjna 10, 00-100 Przykładowo",
+    "phone": "tel. 22 000 00 00"
+  },
+  "patient": {
+    "name": "Jan Testowy",
+    "pesel": "44051401359",
+    "birth_date": "14.05.1944",
+    "sex": "M",
+    "address": "ul. Przykładowa 1/2, 00-001 Testowo"
+  },
+  "orderer": "lek. Anna Fikcyjna",
+  "order_no": "2603020457",
+  "dates": [
+    {
+      "label": "Data rejestracji",
+      "value": "2026-03-02 07:41",
+      "where": "header"
+    }
+  ],
+  "staff": [
+    {
+      "role": "Wykonał",
+      "name": "mgr Ewa Przykładowa",
+      "in_table": false
+    },
+    {
+      "role": "Autoryzował",
+      "name": "mgr Piotr Wzorcowy",
+      "in_table": false
+    }
+  ],
+  "printed": "2026-03-02 14:05",
+  "pages": [
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "Witamina D metabolit 25(OH)",
+          "icd9": "O65",
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-03-02 07:35:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "02.03.2026 11:20:00"
+            }
+          ],
+          "results": [
+            {
+              "name": "Witamina D metabolit 25(OH)",
+              "value": "18,40",
+              "unit": "ng/ml",
+              "range": ">30-50 ng/ml Stężenie optymalne",
+              "flag": "L",
+              "material": "surowica",
+              "range_lines": [
+                "Zgodnie z zaleceniami Polskiego Towarzystwa Endokrynologicznego:",
+                "0-20 ng/ml Deficyt",
+                ">20-30 ng/ml Stężenie suboptymalne",
+                ">30-50 ng/ml Stężenie optymalne",
+                ">50-100 ng/ml Stężenie wysokie",
+                ">100 ng/ml Stężenie potencjalnie toksyczne"
+              ]
+            }
+          ],
+          "method": "Badanie wykonano metodą CLIA na analizatorze Liaison.",
+          "notes": [
+            "Dot. materiału SUROWICA ŻEL: surowicę uzyskano z krwi żylnej pobranej do probówki z żelem separującym."
+          ]
+        }
+      ]
+    }
+  ],
+  "traps": [
+    "name_outside_table",
+    "pesel_outside_table",
+    "address_outside_table",
+    "birth_date_outside_table",
+    "text_range"
+  ]
+}

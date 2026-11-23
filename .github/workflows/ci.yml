@@ -38,6 +38,28 @@ jobs:
           python-version: '3.12'
       - run: python -m unittest discover -s tools/docs-mcp -v
 
+  synthetic:
+    name: Synthetic documents
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the generator's dependencies and font
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
+          python -m pip install -q -r evals/synthetic/requirements.txt
+      - name: Tests (descriptions and generated files)
+        run: python -m unittest discover -s evals/synthetic -v
+      - name: Generate
+        run: python evals/synthetic/generate.py --out synthetic
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-documents
+          path: synthetic
+          retention-days: 14
+
   spikes:
     name: Spike tests
     runs-on: ubuntu-latest

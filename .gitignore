@@ -2,7 +2,18 @@ node_modules/
 .venv/
 bin/
 obj/
-# Real lab results are never committed.
+# Real lab results are never committed, and no document file is, not even a synthetic one.
+# Any image may be a scan or a photo of a document, so images are ignored too. A needed image
+# that is not a document gets its own exception line below.
 *.pdf
+*.jpg
+*.jpeg
+*.heic
+*.png
+*.tif
+*.tiff
+*.webp
+evals/synthetic/out/
+!spikes/browser-sanitiser/samples/synthetic-lab-result.png
 private/
 __pycache__/
