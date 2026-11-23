@@ -3,14 +3,16 @@
 
 It speaks the Model Context Protocol over stdio (one JSON-RPC message per line)
 and only reads Markdown and YAML files of this repository: README.md, AGENTS.md,
-docs/ and openspec/. It holds no health data, makes no network calls and writes
-nothing. Standard library only, so it runs wherever Python 3.10+ runs.
+docs/ and openspec/. Files that Git ignores (for example private/) are never
+served. It holds no health data, makes no network calls and writes nothing.
+Standard library and the git command only, so it runs wherever Python 3.10+ runs.
 
 Usage: python3 tools/docs-mcp/server.py [--root PATH]
 """
 import json
 import os
 import re
+import subprocess
 import sys
 
 SERVER_INFO = {'name': 'baseline-docs', 'version': '1.0.0'}
@@ -20,6 +22,7 @@ ALLOWED_TOP_FILES = {'README.md', 'AGENTS.md'}
 ALLOWED_DIRS = ('docs', 'openspec')
 ALLOWED_SUFFIXES = ('.md', '.yaml')
 MAX_RESULTS = 50
+MAX_FILE_BYTES = 1_000_000
 
 INSTRUCTIONS = (
     'Project documentation of Baseline: architecture decisions (ADRs), gates, use cases, '
@@ -37,39 +40,68 @@ class Docs:
 
     # ---------------------------------------------------------------- files
     def _allowed(self, rel):
-        parts = rel.replace('\\', '/').split('/')
+        parts = rel.split('/')
         if not rel.endswith(ALLOWED_SUFFIXES):
             return False
         if len(parts) == 1:
             return parts[0] in ALLOWED_TOP_FILES
         return parts[0] in ALLOWED_DIRS
 
-    def path(self, rel):
-        """Resolve a repository-relative path; refuse anything outside the allowed files."""
-        if not isinstance(rel, str) or not rel or rel.startswith('/') or '\x00' in rel:
-            raise ToolError('Give a path relative to the repository root, e.g. docs/use-cases.md.')
+    def _candidates(self):
+        """Files Git tracks or would track: ignored files (e.g. private/) are left out. No Git, no files."""
+        try:
+            out = subprocess.run(['git', '-C', self.root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard'],
+                                 capture_output=True, timeout=10, check=True).stdout
+        except (OSError, subprocess.SubprocessError):
+            raise ToolError('The documentation is served only from a Git working tree, and Git failed here.')
+        return sorted({f for f in out.decode('utf-8', 'replace').split('\0') if f})
+
+    def _resolved(self, rel):
+        """The real path of rel if it and its link target are allowed documentation files, else None."""
+        if '\\' in rel or '\x00' in rel or rel.startswith('/'):
+            return None
         full = os.path.realpath(os.path.join(self.root, rel))
-        inside = os.path.relpath(full, self.root)
-        if inside.startswith('..') or not self._allowed(inside):
-            raise ToolError(f'Not readable: {rel}. Only README.md, AGENTS.md and .md or .yaml files under docs/ and openspec/ are.')
-        if not os.path.isfile(full):
-            raise ToolError(f'No such file: {rel}. Use list_docs to see what exists.')
+        inside = os.path.relpath(full, self.root).replace(os.sep, '/')
+        if inside.startswith('..') or not self._allowed(inside) or not self._allowed(rel):
+            return None
+        return full if os.path.isfile(full) else None
+
+    def files(self):
+        return [rel for rel in self._candidates() if self._resolved(rel)]
+
+    def path(self, rel):
+        """Resolve a repository-relative path; refuse anything that is not served documentation."""
+        if not isinstance(rel, str) or not rel:
+            raise ToolError('Give a path relative to the repository root, e.g. docs/use-cases.md.')
+        rel = os.path.normpath(rel).replace(os.sep, '/')
+        full = self._resolved(rel)
+        if full is None or rel not in self._candidates():
+            raise ToolError(f'Not readable: {rel}. Only README.md, AGENTS.md and .md or .yaml files under docs/ and openspec/ '
+                            'that Git does not ignore are. Use list_docs to see them.')
         return full
 
     def read(self, rel):
-        with open(self.path(rel), encoding='utf-8') as f:
-            return f.read()
+        return self._load(rel, self.path(rel))
 
-    def files(self):
-        out = [f for f in sorted(ALLOWED_TOP_FILES) if os.path.isfile(os.path.join(self.root, f))]
-        for d in ALLOWED_DIRS:
-            for dirpath, dirnames, filenames in os.walk(os.path.join(self.root, d)):
-                dirnames.sort()
-                for name in sorted(filenames):
-                    rel = os.path.relpath(os.path.join(dirpath, name), self.root).replace(os.sep, '/')
-                    if self._allowed(rel) and os.path.realpath(os.path.join(self.root, rel)).startswith(self.root + os.sep):
-                        out.append(rel)
-        return out
+    def _load(self, rel, full):
+        if os.path.getsize(full) > MAX_FILE_BYTES:
+            raise ToolError(f'{rel} is larger than {MAX_FILE_BYTES} bytes.')
+        try:
+            with open(full, encoding='utf-8') as f:
+                return f.read().replace('\r\n', '\n')
+        except UnicodeDecodeError:
+            raise ToolError(f'{rel} is not valid UTF-8.')
+
+    def _readable(self):
+        """(path, text) of every served file; a file that cannot be read is skipped, not fatal."""
+        for rel in self._candidates():
+            full = self._resolved(rel)
+            if full is None:
+                continue
+            try:
+                yield rel, self._load(rel, full)
+            except ToolError:
+                continue
 
     # ---------------------------------------------------------------- tools
     def list_docs(self):
@@ -80,11 +112,10 @@ class Docs:
 
     def list_decisions(self):
         rows = ['| # | Decision | Status | File |', '|---|---|---|---|']
-        for rel in self.files():
+        for rel, text in self._readable():
             m = re.fullmatch(r'docs/adr/(\d{4})-[^/]+\.md', rel)
             if not m:
                 continue
-            text = self.read(rel)
             title = re.search(r'^# \d+\. (.*)$', text, re.M)
             status = re.search(r'^## Status\s*\n+(\S[^\n]*)', text, re.M)
             rows.append(f'| {m.group(1)} | {title.group(1) if title else "?"} | {status.group(1).split(".")[0] if status else "?"} | {rel} |')
@@ -93,7 +124,7 @@ class Docs:
     def get_decision(self, number):
         try:
             n = int(str(number).upper().replace('ADR-', ''))
-        except ValueError:
+        except (ValueError, OverflowError):
             raise ToolError('Give the ADR number, e.g. 5 or "ADR-0005".')
         for rel in self.files():
             if re.fullmatch(rf'docs/adr/{n:04d}-[^/]+\.md', rel):
@@ -102,7 +133,7 @@ class Docs:
 
     def get_gates(self):
         text = self.read('docs/decision-criteria.md')
-        m = re.search(r'^## Gates\n(.*?)(?=^## )', text, re.S | re.M)
+        m = re.search(r'^## Gates[ \t]*\n(.*?)(?=^## |\Z)', text, re.S | re.M)
         if not m:
             raise ToolError('docs/decision-criteria.md has no "## Gates" section.')
         return '## Gates (from docs/decision-criteria.md)\n' + m.group(1).strip()
@@ -127,13 +158,12 @@ class Docs:
         words = [w.lower() for w in str(query).split() if w]
         if not words:
             raise ToolError('Give one or more words to search for.')
-        try:
-            limit = max(1, min(int(limit), MAX_RESULTS))
-        except (TypeError, ValueError):
-            raise ToolError('limit must be a number.')
+        if isinstance(limit, bool) or not isinstance(limit, int):
+            raise ToolError(f'limit must be a whole number from 1 to {MAX_RESULTS}.')
+        limit = max(1, min(limit, MAX_RESULTS))
         hits = []
-        for rel in self.files():
-            for no, line in enumerate(self.read(rel).splitlines(), 1):
+        for rel, text in self._readable():
+            for no, line in enumerate(text.splitlines(), 1):
                 low = line.lower()
                 if all(w in low for w in words):
                     hits.append(f'{rel}:{no}: {line.strip()[:300]}')
@@ -179,9 +209,13 @@ def handle(docs, msg):
     if not isinstance(msg, dict) or msg.get('jsonrpc') != '2.0' or not isinstance(msg.get('method'), str):
         return {'jsonrpc': '2.0', 'id': msg.get('id') if isinstance(msg, dict) else None,
                 'error': {'code': -32600, 'message': 'Invalid request'}}
-    method, params, mid = msg['method'], msg.get('params') or {}, msg.get('id')
+    method, params, mid = msg['method'], msg.get('params'), msg.get('id')
     if 'id' not in msg:
         return None  # notifications, e.g. notifications/initialized: nothing to answer
+    if params is None:
+        params = {}
+    if not isinstance(params, dict):
+        return {'jsonrpc': '2.0', 'id': mid, 'error': {'code': -32602, 'message': 'params must be an object'}}
 
     def ok(result):
         return {'jsonrpc': '2.0', 'id': mid, 'result': result}
@@ -203,11 +237,17 @@ def handle(docs, msg):
         tool = next((t for t in TOOLS if t['name'] == name), None)
         if tool is None:
             return err(-32602, f'Unknown tool: {name}')
-        if not isinstance(args, dict) or set(args) - set(tool['inputSchema']['properties']):
-            return err(-32602, f'Invalid arguments for {name}')
+        # Input validation errors are tool execution errors, so the model can correct the call.
+        def bad(text):
+            return ok({'content': [{'type': 'text', 'text': text}], 'isError': True})
+        if not isinstance(args, dict):
+            return bad('arguments must be an object.')
+        unknown = sorted(set(args) - set(tool['inputSchema']['properties']))
+        if unknown:
+            return bad(f'Unknown argument: {", ".join(unknown)}. Allowed: {", ".join(tool["inputSchema"]["properties"]) or "none"}.')
         missing = [k for k in tool['inputSchema'].get('required', []) if k not in args]
         if missing:
-            return ok({'content': [{'type': 'text', 'text': f'Missing argument: {", ".join(missing)}'}], 'isError': True})
+            return bad(f'Missing argument: {", ".join(missing)}')
         try:
             text = getattr(docs, name)(**args)
             return ok({'content': [{'type': 'text', 'text': text}], 'isError': False})
@@ -220,16 +260,24 @@ def handle(docs, msg):
 
 
 def serve(docs, stdin, stdout):
-    for line in stdin:
-        line = line.strip()
+    """stdin yields bytes lines; stdout takes str. One bad message never ends the session."""
+    for raw in stdin:
+        if isinstance(raw, bytes):
+            raw = raw.decode('utf-8', 'replace')
+        line = raw.strip()
         if not line:
             continue
         try:
             msg = json.loads(line)
-        except json.JSONDecodeError:
+        except (ValueError, RecursionError):
             reply = {'jsonrpc': '2.0', 'id': None, 'error': {'code': -32700, 'message': 'Parse error'}}
         else:
-            reply = handle(docs, msg)
+            try:
+                reply = handle(docs, msg)
+            except Exception as e:
+                print(f'request failed: {type(e).__name__}', file=sys.stderr)
+                reply = {'jsonrpc': '2.0', 'id': msg.get('id') if isinstance(msg, dict) else None,
+                         'error': {'code': -32603, 'message': 'Internal error'}}
         if reply is not None:
             # One message per line: json.dumps never emits a raw newline.
             stdout.write(json.dumps(reply, ensure_ascii=False) + '\n')
@@ -243,9 +291,8 @@ def main(argv):
     elif len(argv) != 1:
         print(__doc__, file=sys.stderr)
         return 2
-    sys.stdin.reconfigure(encoding='utf-8')
     sys.stdout.reconfigure(encoding='utf-8')
-    serve(Docs(root), sys.stdin, sys.stdout)
+    serve(Docs(root), sys.stdin.buffer, sys.stdout)
     return 0
 
 

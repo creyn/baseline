@@ -20,6 +20,11 @@ The server SHALL read only `README.md`, `AGENTS.md`, and `.md` or `.yaml` files 
 - **WHEN** an agent calls `list_docs`
 - **THEN** only allowed files are listed
 
+#### Scenario: A file Git ignores
+
+- **WHEN** `docs/private/note.md` exists and `private/` is in `.gitignore`
+- **THEN** it is neither listed, searched nor read
+
 ### Requirement: Decisions, gates and use cases
 
 The server SHALL provide tools that list the ADRs with number, title and status, return one ADR in full, return the gates from `docs/decision-criteria.md`, and return a use case with its workload, target, diagram and decisions.
@@ -56,3 +61,8 @@ The server MUST speak MCP over stdio: one JSON-RPC message per line on stdout, l
 
 - **WHEN** a client sends `initialize`, `notifications/initialized` and `tools/call`
 - **THEN** it receives exactly one reply for each request and none for the notification
+
+#### Scenario: A bad message
+
+- **WHEN** a client sends invalid JSON, invalid UTF-8 or `params` that are not an object
+- **THEN** it receives a JSON-RPC error and the session goes on
