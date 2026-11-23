@@ -57,7 +57,7 @@ Proofs of concept that inform decisions live in [spikes/](spikes/), one folder e
 
 ## Working with AI coding agents
 
-The code is written with AI coding agents. The rules they follow, the privacy gates every change must pass and the tooling that enforces them (a privacy scan in a Git hook, a Claude Code hook and CI, and a review subagent) are in [AGENTS.md](AGENTS.md) and [ADR-0014](docs/adr/0014-development-with-ai-agents.md).
+The code is written with AI coding agents. The rules they follow, the privacy gates every change must pass and the tooling that enforces them (a privacy scan in a Git hook, a Claude Code hook and CI, a review subagent, and a local MCP server that gives agents the decisions, gates and use cases) are in [AGENTS.md](AGENTS.md) and [ADR-0014](docs/adr/0014-development-with-ai-agents.md).
 
 ## Tech stack
 
@@ -65,7 +65,7 @@ The code is written with AI coding agents. The rules they follow, the privacy ga
 - **Python:** pydantic, Tesseract, pytest
 - **TypeScript:** React, PDF.js, Tesseract.js
 - **Azure:** Azure OpenAI, Document Intelligence, Azure SQL (with vectors), Blob Storage, Service Bus, Container Apps, Entra External ID, Key Vault, Application Insights
-- **Delivery:** GitHub Actions, azd, Bicep, OpenSpec
+- **Delivery:** GitHub Actions, azd, Bicep, OpenSpec, a Model Context Protocol server for the documentation
 
 ## Quality
 

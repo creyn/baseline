@@ -1,0 +1,14 @@
+# OpenSpec settings for Baseline. Changes are written by hand in the OpenSpec format;
+# the CLI is not required to read or review them.
+schema: spec-driven
+context: |
+  Baseline keeps one family's lab results, extracts them with AI, shows trends and
+  answers questions with citations. It never diagnoses.
+  Read AGENTS.md first. Every change must pass the gates in docs/decision-criteria.md
+  and agree with the decisions in docs/adr. Use cases and targets: docs/use-cases.md.
+  Sequence diagrams: docs/sequences.
+rules:
+  - Write in English, in plain, short sentences.
+  - Use SHALL or MUST in requirements. Every requirement has at least one scenario.
+  - No real personal or health data in specs, examples or tests. Use "Jan Testowy".
+  - A change that needs a new architecture decision adds an ADR in the same pull request.
