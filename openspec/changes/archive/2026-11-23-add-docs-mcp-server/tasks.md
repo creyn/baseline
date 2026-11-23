@@ -14,4 +14,4 @@
 
 ## 3. After merge
 
-- [ ] 3.1 Archive the change: move it to `openspec/changes/archive/` and add the requirements to `openspec/specs/docs-mcp-server/spec.md`
+- [x] 3.1 Archive the change: move it to `openspec/changes/archive/` and add the requirements to `openspec/specs/docs-mcp-server/spec.md`

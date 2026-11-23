@@ -2,7 +2,7 @@
 
 ## Context
 
-The server runs on the developer's machine and in CI. The development server has Python 3.12 and Node 22, but no package should be installed on it without need ([ADR-0014](../../../docs/adr/0014-development-with-ai-agents.md)).
+The server runs on the developer's machine and in CI. The development server has Python 3.12 and Node 22, but no package should be installed on it without need ([ADR-0014](../../../../docs/adr/0014-development-with-ai-agents.md)).
 
 ## Goals / Non-Goals
 
