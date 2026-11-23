@@ -1,40 +1,37 @@
-# Use cases
+# Sequence diagrams
 
-Sequence diagrams for every use case. They are generated from [tools/diagrams/sequences.js](../../tools/diagrams/sequences.js), so edit the script, not the SVG files.
+Sequence diagrams are generated from scripts in [tools/diagrams](../../tools/diagrams/). Edit the scripts, never the SVG files.
 
-Arrow colours: red carries the plaintext original or unmasked personal data, teal carries masked data only. Yellow notes are open questions, listed below.
+## Conventions
 
-| # | Use case | Open questions |
-|---|---|---|
-| 1 | [One-time setup](01-setup.svg): sign-in | |
-| 2 | [Import a lab result](02-import.svg): upload, masking, extraction, review, indexing | |
-| 3 | [Handle a blocked document](03-blocked-document.svg): the leak check stopped a document | Q2 |
-| 4 | [Browse results and trends](04-results-and-trends.svg): the most frequent read, no AI | Q3, Q4 |
-| 5 | [Ask a question about results](05-question.svg): agent, tools, guardrails, citations | Q5 |
-| 6 | [Prepare a pre-visit summary](06-pre-visit-summary.svg): for a chosen period, not stored | |
-| 7 | [Delete a document](07-delete-document.svg) | |
-| 8 | [Reprocess a document](08-reprocess-document.svg): after an extraction or masking fix | |
+- **Every actor has its own column**, including each Blob container and each queue, so every arrow is unambiguous.
+- **Arrows carry their arguments:** requests, messages with their fields, blob paths, SQL with its conditions.
+- **Alternative paths are `alt` frames with arrows**, never a description. The success path in a frame has a green background.
+- **A red "✗" note under an arrow** says what state the system is left in if that step fails because of an infrastructure failure (a service is down, a process stops before it acknowledges a message).
+- **Arrow colours:** red carries the original or unmasked personal data, teal carries masked data only.
+- **Grey notes** state facts (what happens when the user closes the browser, states that do not exist on purpose). Yellow notes are open questions.
+- **Sections** carry the target time (p95) and the frequency from [use-cases.md](../use-cases.md).
 
-## Out of scope for now
+## Diagrams
 
-- **Reminders for periodic tests.** They need a notification channel that carries no health data. Postponed.
-- **MCP server.** It would expose health data to external MCP clients and their models, outside our Azure boundary.
-- **Archive of original documents.** See [ADR-0005](../adr/0005-no-archive-of-originals.md).
+One diagram per use case of [use-cases.md](../use-cases.md), for the chosen architecture.
+
+| # | Use case | Diagram | Decisions |
+|---|---|---|---|
+| U1 | Account, sign in and consent | [01-sign-in-and-consent](01-sign-in-and-consent.svg) | [ADR-0010](../adr/0010-identity-users-and-consent.md) |
+| U2 | Import a lab result | [02-import](02-import.svg) | [ADR-0003](../adr/0003-masking-in-the-browser-and-a-second-check.md), [ADR-0005](../adr/0005-asynchronous-import-pipeline.md), [ADR-0006](../adr/0006-document-lifecycle-and-review.md) |
+| U3 | Review and approve the extracted values | [03-review](03-review.svg) | [ADR-0006](../adr/0006-document-lifecycle-and-review.md), [ADR-0008](../adr/0008-retrieval-without-ai-search.md) |
+| U4 | Fix a blocked document and send it again | [04-blocked-document](04-blocked-document.svg) | [ADR-0003](../adr/0003-masking-in-the-browser-and-a-second-check.md) |
+| U5 | Browse results and trends | [05-browse-results](05-browse-results.svg) | [ADR-0008](../adr/0008-retrieval-without-ai-search.md) |
+| U6 | Ask the agent a question | [06-ask-the-agent](06-ask-the-agent.svg) | [ADR-0009](../adr/0009-agent-questions-and-summaries.md) |
+| U7 | Pre-visit summary | [07-pre-visit-summary](07-pre-visit-summary.svg) | [ADR-0009](../adr/0009-agent-questions-and-summaries.md) |
+| U8 | Delete a document | [08-delete-document](08-delete-document.svg) | [ADR-0012](../adr/0012-deletion-and-retention.md) |
+| U9 | Reprocess or retry a document | [09-reprocess-document](09-reprocess-document.svg) | [ADR-0006](../adr/0006-document-lifecycle-and-review.md) |
+| U10 | Delete the account or withdraw consent | [10-delete-account](10-delete-account.svg) | [ADR-0010](../adr/0010-identity-users-and-consent.md), [ADR-0012](../adr/0012-deletion-and-retention.md) |
+| U11 | Export my data | [11-export](11-export.svg) | [ADR-0012](../adr/0012-deletion-and-retention.md) |
+
+The import flows A and B, compared with the chosen C, are in [ADR-0005](../adr/0005-asynchronous-import-pipeline.md).
 
 ## Open questions
 
-Each answered question becomes an ADR or a change to an existing one.
-
-| # | Question | Proposal |
-|---|---|---|
-| Q1 | ~~Who writes the known identifiers to Key Vault?~~ | Resolved by [ADR-0006](../adr/0006-zone-based-masking.md): masking needs no known identifiers. |
-| Q2 | Blocked documents vs. the 24-hour quarantine lifecycle, which would delete them before the user acts. | A separate lifecycle rule by blob index tag (`blocked`), e.g. 7 days. The preview is served by the sanitiser, so the API still cannot read the quarantine. |
-| Q3 | ~~Unit normalisation: the same parameter comes in different units (vitamin D in ng/ml or nmol/l).~~ | Resolved by [ADR-0007](../adr/0007-unit-normalisation.md). |
-| Q4 | ~~Reference ranges differ between labs and over time.~~ | Resolved by [ADR-0008](../adr/0008-reference-ranges.md). |
-| Q5 | ~~The user's own question goes to Azure OpenAI unmasked and may contain personal data.~~ | Resolved by [ADR-0009](../adr/0009-personal-data-in-questions.md). |
-| Q6 | ~~Visits are not in the data model yet.~~ | Resolved by [ADR-0010](../adr/0010-store-only-lab-results.md): visits are not stored. |
-| Q7 | ~~How complete is deletion?~~ | Resolved by [ADR-0011](../adr/0011-deletion-and-retention.md). |
-| Q8 | ~~Where does the parameter dictionary live?~~ | Resolved by [ADR-0012](../adr/0012-parameter-dictionary.md). |
-| Q9 | A paper result photographed page by page arrives as several images. How do they become one document, in the right page order? | One `Document` with several pages. The user picks several photos at once; the default order comes from the time each photo was taken, and the user can reorder the thumbnails by dragging before sending. |
-
-Masking in the browser instead of the server-side sanitiser is being evaluated with a proof of concept. If it is chosen, the quarantine disappears and Q2 goes with it.
+None at the moment.

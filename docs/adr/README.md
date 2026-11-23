@@ -1,32 +1,26 @@
 # Architecture Decision Records
 
-Format and rules are described in [ADR-0001](0001-record-architecture-decisions.md).
+Format and rules: [ADR-0001](0001-record-architecture-decisions.md). Every option is checked against the gates and weighted criteria in [docs/decision-criteria.md](../decision-criteria.md), for the workload and costs in [docs/use-cases.md](../use-cases.md).
+
+This set replaces an earlier one (2026-11-17 to 2026-11-20), which is in the Git history. Related decisions were merged on 2026-11-23, while all of them were still proposed, so that each topic is read in one place.
 
 | # | Decision | Status |
 |---|---|---|
 | 0001 | [Record architecture decisions](0001-record-architecture-decisions.md) | Accepted |
-| 0002 | [Split between .NET and Python](0002-split-between-dotnet-and-python.md) | Accepted |
-| 0003 | [Mask all personal data before any AI service](0003-mask-personal-data-before-ai.md) | Accepted, amended by 0006 |
-| 0004 | [Rasterise incoming PDFs to PNG](0004-rasterise-pdf-to-png.md) | Accepted |
-| 0005 | [No archive of original documents in the first version](0005-no-archive-of-originals.md) | Accepted |
-| 0006 | [Zone-based masking: keep the results table, mask the rest](0006-zone-based-masking.md) | Accepted |
-| 0007 | [Unit normalisation: keep the original, derive a normalised value](0007-unit-normalisation.md) | Accepted |
-| 0008 | [Reference ranges are stored with each result](0008-reference-ranges.md) | Accepted |
-| 0009 | [Block personal identifiers in the user's questions](0009-personal-data-in-questions.md) | Accepted |
-| 0010 | [Store only lab results, not visits](0010-store-only-lab-results.md) | Accepted |
-| 0011 | [Deletion and retention](0011-deletion-and-retention.md) | Accepted |
-| 0012 | [Parameter dictionary: definitions in the repository, lab names in the database](0012-parameter-dictionary.md) | Accepted |
+| 0002 | [Languages: .NET, Python, and TypeScript with React](0002-languages-dotnet-python-and-typescript.md) | Accepted |
+| 0003 | [Masking in the browser, zone rules, a second check on the server, no archive of originals](0003-masking-in-the-browser-and-a-second-check.md) | Accepted |
+| 0004 | [Serverless hosting on Azure, one environment, deployment and operations](0004-serverless-hosting-and-operations.md) | Accepted |
+| 0005 | [Asynchronous import: a pipeline of queues, without an outbox](0005-asynchronous-import-pipeline.md) | Accepted |
+| 0006 | [Document lifecycle, identifiers, statuses and the mandatory review](0006-document-lifecycle-and-review.md) | Accepted |
+| 0007 | [Extraction with Document Intelligence and an LLM](0007-extraction-with-document-intelligence-and-an-llm.md) | Accepted |
+| 0008 | [Retrieval without Azure AI Search: SQL queries and vectors in Azure SQL](0008-retrieval-without-ai-search.md) | Accepted |
+| 0009 | [One agent with tools and guardrails: questions and pre-visit summaries](0009-agent-questions-and-summaries.md) | Accepted |
+| 0010 | [Sign-in, users and consent](0010-identity-users-and-consent.md) | Accepted |
+| 0011 | [Lab parameters: dictionary, units and reference ranges](0011-lab-parameters-units-and-ranges.md) | Accepted |
+| 0012 | [Deletion of documents and accounts, and retention](0012-deletion-and-retention.md) | Accepted |
+| 0013 | [Application security baseline](0013-application-security-baseline.md) | Accepted |
+| 0014 | [Development with AI coding agents: specs first, CI as the build, privacy checks everywhere](0014-development-with-ai-agents.md) | Accepted |
 
-## To be written
+## Order of dependence
 
-Open questions found while drawing the use cases (Q1–Q8) are listed in [docs/sequences](../sequences/README.md#open-questions).
-
-- Azure AI Search vs. pgvector or Cosmos DB as the vector store
-- Extraction: Document Intelligence plus an LLM vs. an LLM with vision only
-- Asynchronous import via Service Bus vs. a synchronous endpoint. Includes: the sanitiser reports status (Masked, Blocked) to the API, which stays the only owner of the database.
-- Human review of results: why approval is mandatory. Includes: results are indexed in AI Search only after approval, so unverified data never reaches search or the agent.
-- Agent guardrails: every number in an answer must match a tool result and every claim must be cited. If a check fails, the user gets the raw results table and a suggestion to ask a doctor instead of the generated answer.
-- UI hosting: served by the ASP.NET Core API as a backend-for-frontend (one origin, session cookie, tokens on the server) vs. Azure Static Web Apps vs. GitHub Pages
-- UI framework: TypeScript (e.g. React) vs. Blazor. Depends on the browser masking proof of concept.
-- One agent with tools vs. multiple agents
-- Threat model (STRIDE)
+Masking (0003) decides what the server may receive. Hosting and operations (0004) rule out always-on services. Together they shape the import pipeline (0005), which defines the lifecycle and the review (0006). Extraction (0007), retrieval (0008), the agent (0009) and the lab parameters (0011) build on the approved results. Identity and consent (0010), deletion (0012) and the security baseline (0013) cut across all of them. Languages (0002) and the way of working (0014) apply to every part.

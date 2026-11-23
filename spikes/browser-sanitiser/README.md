@@ -2,14 +2,14 @@
 
 **Question:** can the browser render a lab result, OCR it and mask all personal data well and fast enough, so that the plaintext original never leaves the user's device?
 
-If yes, the server-side sanitiser and the quarantine disappear (see [ADR-0003](../../docs/adr/0003-mask-personal-data-before-ai.md), [ADR-0004](../../docs/adr/0004-rasterise-pdf-to-png.md) and [ADR-0005](../../docs/adr/0005-no-archive-of-originals.md)).
+If yes, the server-side sanitiser and the quarantine disappear. The answer was yes: see [ADR-0003](../../docs/adr/0003-masking-in-the-browser-and-a-second-check.md).
 
 ## How it works
 
 1. **Render.** PDF.js renders each page to a canvas at 200 or 300 DPI. Photos are drawn as they are.
 2. **OCR.** Tesseract.js (WebAssembly, LSTM, Polish `best_int` model) reads words with their positions.
 3. **Rebuild printed rows.** Tesseract splits a page into blocks, so one printed row (a table header with separate columns, a date label and its value) can come back as several lines. Rows are rebuilt from word positions. A date printed slightly higher or lower than its label is attached to the label.
-4. **Decide by zones** ([ADR-0006](../../docs/adr/0006-zone-based-masking.md), rules in [rules.js](rules.js)):
+4. **Decide by zones** ([ADR-0003](../../docs/adr/0003-masking-in-the-browser-and-a-second-check.md), rules in [rules.js](rules.js)):
    - **Results table:** from the table header (or the first result row on a page without one) to the last result row or method line, extended over the lines right below it (descriptions, word results such as "ujemny") while they keep the table's line spacing and are neither people lines nor date fields. Everything in it is kept, except lines naming the patient or staff (Pacjent, PESEL, mgr, dr, Autoryzował…), valid PESEL numbers and numbers with 7 or more digits.
    - **Outside the table:** only date fields are kept: a date label (with up to three prefix words, e.g. "Data i godz.") (registration, collection, admission, analysis, release…, abbreviations included) with the date and time right after it. The date of birth never.
    - **No table found:** only date fields.

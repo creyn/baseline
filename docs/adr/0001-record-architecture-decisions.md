@@ -1,6 +1,6 @@
 # 1. Record architecture decisions
 
-Date: 2026-11-17
+Date: 2026-11-22
 
 ## Status
 
@@ -8,28 +8,30 @@ Accepted
 
 ## Context
 
-Baseline is a private tool for organising one's own lab test results. One person builds and maintains it for their own use. The system processes health data, so many decisions are trade-offs around security and privacy. Decisions need to outlive memory: six months from now we must know not only what we chose, but also why, and what we rejected.
+Baseline keeps the lab results of one family. One person builds and maintains it. It processes health data, so most decisions are trade-offs between privacy, cost and simplicity. Decisions must outlive memory: months later we need to know what we chose, why, and what we rejected.
+
+This set replaces an earlier one (ADR-0001 to ADR-0012 of 2026-11-17 to 2026-11-20, accepted on `main`). Those decisions were written before the workload, the costs and the import flow were known, and the choice of import flow changed most of them. The owner decided on 2026-11-22 to replace the whole set at once instead of superseding each ADR, because almost every one of them changed. They remain in the Git history.
 
 ### Considered options
 
-1. Decisions in the project README. One place, but the context and alternatives get lost with each edit.
-2. MADR (Markdown Any Decision Records). Its minimal variant is just as short: context and problem statement, considered options, decision outcome. Considered options are a required section, which is its strongest point. Status and consequences are optional, and most other sections (decision drivers, pros and cons per option, confirmation) are optional too.
-3. Michael Nygard's template: title, status, context, decision, consequences. Short and focused on context. Every section is required, including status and consequences. Alternatives are not a separate section, so they are easy to skip.
+1. **Decisions in the README.** One place, but the context and the alternatives are lost with each edit.
+2. **MADR.** Considered options are required, which is its best part. Status and consequences are optional.
+3. **Michael Nygard's template:** title, status, context, decision, consequences. Every section is required. Alternatives are easy to skip.
+4. **Nygard's template, plus required considered options from MADR, plus fixed decision criteria.** Options are compared against the same gates and weighted criteria in every ADR.
 
 ## Decision
 
-We use Michael Nygard's template with one extension borrowed from MADR: the "Context" section contains a required "Considered options" subsection.
+We choose option 4.
 
-Both formats would work, and the difference is small. Nygard's template wins because it makes status and consequences mandatory: every decision has to say what it costs, not just what it gains. MADR's best idea, explicit considered options, is added on top, because the rejected alternatives are the most valuable knowledge later on.
-
-Rules:
-- One file per decision: `NNNN-short-title.md`, numbered sequentially. Numbers are never reused.
-- Statuses: Proposed, Accepted, Rejected, Superseded by ADR-NNNN.
-- An accepted ADR is not rewritten. Changing a decision means a new ADR that supersedes the old one.
-- ADRs are written in English.
+1. **One file per decision:** `NNNN-short-title.md`, numbered in order. Numbers are never reused. The replacement of the earlier set, which restarted the numbers at 0001, is the only exception.
+2. **Sections:** Status, Context (with a required "Considered options" subsection), Decision, Consequences.
+3. **Options are checked against [docs/decision-criteria.md](../decision-criteria.md):** gates first, then the weighted criteria when the choice is close. The workload and costs behind them are in [docs/use-cases.md](../use-cases.md).
+4. **Statuses:** Proposed, Accepted, Rejected, Superseded by ADR-NNNN. An ADR is accepted when the owner merges the pull request that sets its status to Accepted.
+5. **An accepted ADR is not rewritten.** A changed decision is a new ADR that supersedes the old one.
+6. **ADRs are written in English**, in plain, short sentences.
 
 ## Consequences
 
-- Each significant decision takes a few minutes of writing.
-- When returning to the project after a break, or when someone else reads the code, the reasons behind decisions are visible, not just their outcome.
-- The list of ADRs is in [README.md](README.md).
+- Each decision takes some writing, and the comparison of options is explicit.
+- The same criteria make decisions comparable and show which trade-off was made.
+- The criteria themselves can change. A change of weights is recorded in the criteria file, and old ADRs keep the scores they were made with.
