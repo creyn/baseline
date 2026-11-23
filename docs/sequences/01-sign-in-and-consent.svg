@@ -109,7 +109,7 @@
 <line x1="845" y1="1151" x2="388" y2="1151" stroke="#3e4c59" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a-normal)"/>
 <text x="615" y="1144" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">16. 400, nothing stored</text>
 <line x1="845" y1="1229" x2="1302" y2="1229" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
-<text x="853" y="1222" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">17. SELECT User, Consent(current text version) WHERE externalId=@oid</text>
+<text x="853" y="1222" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">17. SELECT User, Consent(current text version) WHERE oid=@oid</text>
 <line x1="845" y1="1311" x2="388" y2="1311" stroke="#3e4c59" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a-normal)"/>
 <text x="615" y="1304" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">18. page "Your account is being deleted"; no session</text>
 <line x1="845" y1="1389" x2="388" y2="1389" stroke="#3e4c59" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a-normal)"/>

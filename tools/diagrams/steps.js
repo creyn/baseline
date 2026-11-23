@@ -224,12 +224,12 @@ const browse = (last) => [
 ];
 const ask = (last) => [
   { section: 'U6 · Ask the agent (~5 questions per import) · target: full answer < 15 s when warm; the UI shows progress' },
-  { self: 'ui', text: 'check the question: PESEL, e-mail, phone, address' },
+  { self: 'ui', text: 'check the question: a valid PESEL, a number of 7+ digits (also phones), an e-mail, a street address; ≤ 2,000 characters' },
   { alt: '[identifier found]', span: ['ui', last] },
   { self: 'ui', text: 'block, explain what to remove (nothing sent)' },
   { else: '[clean question]', ok: true },
   { from: 'ui', to: 'api', text: 'POST /chat { question, history[] }  (one JSON answer, not a stream; the history lives in the browser tab only)', labelAt: 'start', fail: 'network error: nothing stored anywhere, the user asks again' },
-  { self: 'api', text: 'the same identifier check (the browser is not trusted); today\'s questions < 50, else 429' },
+  { self: 'api', text: 'the same identifier check (the browser is not trusted); ≤ 2,000 characters, history ≤ 20 messages; today\'s questions < 50, else 429' },
   { alt: '[identifier found]', span: ['ui', last] },
   { from: 'api', to: 'ui', text: '422 (nothing sent to AI)', ret: true },
   { else: '[clean]', ok: true },

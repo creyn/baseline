@@ -35,7 +35,7 @@ Branches and pull requests; tests in CI only; OpenSpec; a local MCP server for d
 
 1. **Agents never push to `main`.** They push to `feat/…` or `fix/…` branches and open a pull request. The owner merges after CI is green.
 2. **Before every push the diff is checked for personal data.** [tools/privacy/scan.py](../../tools/privacy/scan.py) runs in three places: a Claude Code hook before an agent commits or pushes (which also blocks `--no-verify`), a Git pre-commit hook, and CI on every pull request and on `main`. A deny list of real names kept outside the repository can be added locally.
-3. **CI is the build.** GitHub Actions builds and tests every part, with emulators in containers (Azurite, the Service Bus emulator, SQL Server), runs the evals and the privacy scan, and deploys with azd and Bicep using OIDC, without stored secrets.
+3. **CI is the build.** GitHub Actions builds and tests every part, with emulators in containers (Azurite, the Service Bus emulator, SQL Server), runs the privacy scan and, when extraction, prompts or the agent change, the evals ([ADR-0004](0004-serverless-hosting-and-operations.md)), and deploys with azd and Bicep using OIDC, without stored secrets.
 4. **Features start as OpenSpec change proposals** in `openspec/changes/`, reviewed in the same pull request as their code. Living specs in `openspec/specs/` describe the current system.
 5. **A review subagent** checks every branch before its pull request: privacy, the gates, consistency with the ADRs, failure handling and tests ([.claude/agents/reviewer.md](../../.claude/agents/reviewer.md)).
 6. **A local MCP server exposes the project documentation** to coding agents. It reads files from the repository only.

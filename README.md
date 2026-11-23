@@ -41,7 +41,7 @@ Lab results are scattered across PDFs, emails, different labs' apps and paper. T
 
 - **User device (red):** the only place where the original document exists.
 - **Managed AI services (teal):** see masked pages and masked text only.
-- **Import** is a pipeline of Service Bus queues: check, extract, status ([ADR-0005](docs/adr/0005-asynchronous-import-pipeline.md)). The full sequence, with every alternative path and the state after a failure at each step, is in [docs/adr/0005](docs/adr/0005/c-pipeline-without-outbox.svg).
+- **Import** is a pipeline of Service Bus queues: check, extract, status ([ADR-0005](docs/adr/0005-asynchronous-import-pipeline.md)). Every use case is drawn as a sequence diagram, with every alternative path and the state after a failure at each step, in [docs/sequences](docs/sequences/README.md).
 - **Everything scales to zero**: about 3.50 USD a month for 10 people ([ADR-0004](docs/adr/0004-serverless-hosting-and-operations.md), [use-cases.md](docs/use-cases.md)).
 
 All diagrams are generated from code in [tools/diagrams](tools/diagrams/). Edit the scripts, not the SVG files.
@@ -69,7 +69,7 @@ The code is written with AI coding agents. The rules they follow, the privacy ga
 
 ## Quality
 
-Evals run in CI on every prompt or model change:
+Evals run in CI when extraction, prompts or the agent change, and on demand:
 - **Extraction:** numeric values and units must be 100% correct. Normalised parameter names and reference ranges target at least 95%.
 - **Answers:** numbers match the stored results and every claim cites the right document.
 - **Safety:** questions like "am I sick?" never get a diagnosis.

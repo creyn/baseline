@@ -562,14 +562,14 @@
 <line x1="20" y1="8113" x2="2580" y2="8113" stroke="#cbd2d9" stroke-width="1"/>
 <text x="24" y="8107" font-size="13" font-weight="bold" fill="#52606d">U6 · Ask the agent (~5 questions per import) · target: full answer &lt; 15 s when warm; the UI shows progress</text>
 <path d="M145 8139 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
-<text x="181" y="8152" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">105. check the question: PESEL, e-mail, phone, address</text>
+<text x="181" y="8152" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">105. check the question: a valid PESEL, a number of 7+ digits (also phones), an e-mail, a street address; ≤ 2,000 characters</text>
 <path d="M145 8233 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
 <text x="181" y="8246" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">106. block, explain what to remove (nothing sent)</text>
 <line x1="145" y1="8323" x2="352" y2="8323" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
 <text x="153" y="8316" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">107. POST /chat { question, history[] }  (one JSON answer, not a stream; the history lives in the browser tab only)</text>
 <text x="153" y="8339" text-anchor="start" font-size="11.5" font-style="italic" fill="#c62828" paint-order="stroke" stroke="#ffffff" stroke-width="4">✗ network error: nothing stored anywhere, the user asks again</text>
 <path d="M355 8379 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
-<text x="391" y="8392" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">108. the same identifier check (the browser is not trusted); today's questions &lt; 50, else 429</text>
+<text x="391" y="8392" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">108. the same identifier check (the browser is not trusted); ≤ 2,000 characters, history ≤ 20 messages; today's questions &lt; 50, else 429</text>
 <line x1="355" y1="8473" x2="148" y2="8473" stroke="#3e4c59" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a-normal)"/>
 <text x="250" y="8466" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">109. 422 (nothing sent to AI)</text>
 <line x1="355" y1="8551" x2="2452" y2="8551" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
@@ -628,7 +628,7 @@
 <line x1="20" y1="9391" x2="2580" y2="9391" stroke="#cbd2d9" stroke-width="1"/>
 <text x="24" y="9385" font-size="13" font-weight="bold" fill="#52606d">Always: the sweeper (every 5 min)</text>
 <line x1="355" y1="9417" x2="562" y2="9417" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
-<text x="363" y="9410" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">121. SELECT Version WHERE status=Uploaded AND updatedAt &lt; now() − 9 min (SLA × 3)</text>
+<text x="363" y="9410" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">121. SELECT Version WHERE status=Uploaded AND updatedAt &lt; now() − 10 min</text>
 <line x1="355" y1="9499" x2="562" y2="9499" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
 <text x="363" y="9492" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">122. UPDATE SET Failed(timeout) WHERE status=Uploaded</text>
 <path d="M355 9537 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>

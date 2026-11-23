@@ -555,14 +555,14 @@
 <line x1="20" y1="7833" x2="2660" y2="7833" stroke="#cbd2d9" stroke-width="1"/>
 <text x="24" y="7827" font-size="13" font-weight="bold" fill="#52606d">U6 · Ask the agent (~5 questions per import) · target: full answer &lt; 15 s when warm; the UI shows progress</text>
 <path d="M140 7859 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
-<text x="176" y="7872" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">100. check the question: PESEL, e-mail, phone, address</text>
+<text x="176" y="7872" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">100. check the question: a valid PESEL, a number of 7+ digits (also phones), an e-mail, a street address; ≤ 2,000 characters</text>
 <path d="M140 7953 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
 <text x="176" y="7966" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">101. block, explain what to remove (nothing sent)</text>
 <line x1="140" y1="8043" x2="337" y2="8043" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
 <text x="148" y="8036" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">102. POST /chat { question, history[] }  (one JSON answer, not a stream; the history lives in the browser tab only)</text>
 <text x="148" y="8059" text-anchor="start" font-size="11.5" font-style="italic" fill="#c62828" paint-order="stroke" stroke="#ffffff" stroke-width="4">✗ network error: nothing stored anywhere, the user asks again</text>
 <path d="M340 8099 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
-<text x="376" y="8112" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">103. the same identifier check (the browser is not trusted); today's questions &lt; 50, else 429</text>
+<text x="376" y="8112" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">103. the same identifier check (the browser is not trusted); ≤ 2,000 characters, history ≤ 20 messages; today's questions &lt; 50, else 429</text>
 <line x1="340" y1="8193" x2="143" y2="8193" stroke="#3e4c59" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a-normal)"/>
 <text x="240" y="8186" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">104. 422 (nothing sent to AI)</text>
 <line x1="340" y1="8271" x2="2537" y2="8271" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>

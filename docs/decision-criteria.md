@@ -8,12 +8,12 @@ The workload behind these criteria is described in [use-cases.md](use-cases.md).
 
 | # | Gate |
 |---|---|
-| G1 | No unmasked personal data reaches a managed AI service. |
-| G2 | Data and AI processing stay in the EU (EU region, Data Zone EU). |
-| G3 | Every user sees only their own data, and a test proves it. |
-| G4 | Model output is saved at once, as `PendingReview`, so it is not lost. Only the user sets `Approved`. Trends, the agent and summaries read only approved results. Out-of-range flags are computed by code, and every answer cites its source. |
+| G1 | No unmasked personal data reaches a managed AI service. The original document never leaves the user's device. |
+| G2 | Data and AI processing stay in the EU (Sweden Central, Data Zone EU). |
+| G3 | Every user sees only their own data: every query filters by the signed-in user, enforced again by Row-Level Security, and a test proves it. |
+| G4 | Model output is saved at once as `PendingReview`, so it is not lost; only the user sets `Approved`. Trends, the agent and summaries read only `Approved` results. Out-of-range flags are computed by code. Every answer cites its source. |
 | G5 | Deleting a document or an account reaches every store the system controls, and a test proves it. The sign-in account in Entra is removed by the owner after an alert ([ADR-0010](adr/0010-identity-users-and-consent.md)). |
-| G6 | No keys or passwords in code or configuration (Managed Identity, Entra ID). |
+| G6 | No keys or passwords in code or configuration: Managed Identity and Entra ID everywhere. |
 
 ## Weighted criteria
 

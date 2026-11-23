@@ -91,7 +91,7 @@
 <path d="M385 851 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
 <text x="421" y="864" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">9. validate as in U2; zipSha256 = SHA-256 of the ZIP</text>
 <line x1="385" y1="901" x2="612" y2="901" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
-<text x="393" y="894" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">10. SELECT Version WHERE docId AND (zipSha256=@z OR newest status=Uploaded)</text>
+<text x="393" y="894" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">10. SELECT Document WHERE userId=@me AND docId (else 404); SELECT Version WHERE docId AND (zipSha256=@z OR newest status=Uploaded)</text>
 <line x1="385" y1="983" x2="158" y2="983" stroke="#3e4c59" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a-normal)"/>
 <text x="270" y="976" text-anchor="middle" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">11. 200 { verId, status }  (the version made by the first try)</text>
 <line x1="385" y1="1061" x2="158" y2="1061" stroke="#3e4c59" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a-normal)"/>

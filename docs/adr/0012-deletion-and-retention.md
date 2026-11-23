@@ -41,7 +41,13 @@ We choose option 3.
 
    If the API stops between the steps, the sweeper finds the marker and finishes step 2. The marker is written only when the transaction deleted something. Deleting a blob that is already gone is not an error.
 2. **A pipeline still running for a deleted document finds nothing to work on.** The checker and the extractor complete their message when the blob is missing, and the API ignores status events for versions that no longer exist ([ADR-0005](0005-asynchronous-import-pipeline.md)). A late write of `text` by the extractor, or of `clean` by the checker, is removed by the sweeper, which once a day deletes blobs whose version does not exist.
-3. **Deleting an account** runs the same saga for every document of the person, then deletes the consent and the user row. The marker keeps the person's `oid`, so the last step can run after the user row is gone: the API logs `AccountDeleted` with the `oid` only, and an alert e-mails the owner, who removes the user object in the External ID tenant by hand ([ADR-0010](0010-identity-users-and-consent.md)). Because every blob path starts with `userId`, the sweeper can confirm that nothing is left under the prefix.
+3. **Deleting an account** is the same saga for the whole person:
+   1. one SQL transaction sets the user to `Deleting`, deletes the consent and records a deletion marker for the prefix `{userId}/`; from then on the person cannot use the application, and status events for their documents change nothing;
+   2. the API deletes every blob under `{userId}/` in the three containers;
+   3. one SQL transaction deletes all the person's rows and the user row;
+   4. the API logs `AccountDeleted` and removes the marker.
+
+   The marker keeps the person's `oid`, so the last step can run after the user row is gone: the API logs `AccountDeleted` with the `oid` only, and an alert e-mails the owner, who removes the user object in the External ID tenant by hand ([ADR-0010](0010-identity-users-and-consent.md)). Because every blob path starts with `userId`, the sweeper can confirm that nothing is left under the prefix.
 4. **Withdrawing consent deletes the account** ([ADR-0010](0010-identity-users-and-consent.md)).
 5. **SQL backups are kept for 7 days.** The application and the README say: "Deleted from the application at once, from backups after 7 days."
 6. **No soft delete and no versions** on the blob containers. A mistaken delete is fixed by importing the original again; the data export is the person's own backup.

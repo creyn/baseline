@@ -46,7 +46,7 @@ const A = {
     ...review(lastA),
     ...reads(lastA),
     { section: 'Always: the sweeper (every 5 min)' },
-    { from: 'api', to: 'sql', text: 'SELECT Version WHERE status=Uploaded AND updatedAt < now() − 9 min (SLA × 3)', labelAt: 'start' },
+    { from: 'api', to: 'sql', text: 'SELECT Version WHERE status=Uploaded AND updatedAt < now() − 10 min', labelAt: 'start' },
     { alt: '[found]', span: ['api', lastA] },
     { from: 'api', to: 'sql', text: 'UPDATE SET Failed(timeout) WHERE status=Uploaded', labelAt: 'start' },
     { self: 'api', text: 'the UI shows "Retry"; the outbox already guarantees every command was sent' },

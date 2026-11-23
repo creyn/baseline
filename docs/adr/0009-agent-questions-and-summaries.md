@@ -94,7 +94,7 @@ We choose option 1.
 
 We choose option 3.
 
-1. **The check runs in the browser**, to highlight the problem at once, **and in the API**, because the browser cannot be trusted. Both use the same rules as masking, with the same tests.
+1. **The check runs in the browser**, to highlight the problem at once, **and in the API**, because the browser cannot be trusted. Both use the same rules: the PESEL and long-number rules shared with masking, plus patterns for an e-mail address and a street address, with the same tests.
 2. **The question is blocked, never changed silently.** It is sent only after the user fixes it.
 3. **A permanent hint next to the question field:** "Do not type names, addresses or numbers. Age and sex are fine."
 4. **Names are knowingly not detected.** The question is typed on purpose by the user, unlike a document that arrives from outside.

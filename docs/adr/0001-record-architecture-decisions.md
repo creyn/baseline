@@ -10,7 +10,7 @@ Accepted
 
 Baseline keeps the lab results of one family. One person builds and maintains it. It processes health data, so most decisions are trade-offs between privacy, cost and simplicity. Decisions must outlive memory: months later we need to know what we chose, why, and what we rejected.
 
-This set replaces an earlier one (ADR-0001 to ADR-0009 of 2026-11-17 to 2026-11-20). Those decisions were written before the workload, the costs and the import flow were known, and the choice of import flow changed most of them. They remain in the Git history.
+This set replaces an earlier one (ADR-0001 to ADR-0012 of 2026-11-17 to 2026-11-20, accepted on `main`). Those decisions were written before the workload, the costs and the import flow were known, and the choice of import flow changed most of them. The owner decided on 2026-11-22 to replace the whole set at once instead of superseding each ADR, because almost every one of them changed. They remain in the Git history.
 
 ### Considered options
 
@@ -23,10 +23,10 @@ This set replaces an earlier one (ADR-0001 to ADR-0009 of 2026-11-17 to 2026-11-
 
 We choose option 4.
 
-1. **One file per decision:** `NNNN-short-title.md`, numbered in order. Numbers are never reused.
+1. **One file per decision:** `NNNN-short-title.md`, numbered in order. Numbers are never reused. The replacement of the earlier set, which restarted the numbers at 0001, is the only exception.
 2. **Sections:** Status, Context (with a required "Considered options" subsection), Decision, Consequences.
 3. **Options are checked against [docs/decision-criteria.md](../decision-criteria.md):** gates first, then the weighted criteria when the choice is close. The workload and costs behind them are in [docs/use-cases.md](../use-cases.md).
-4. **Statuses:** Proposed, Accepted, Rejected, Superseded by ADR-NNNN. An ADR is accepted when the owner merges the pull request that adds it.
+4. **Statuses:** Proposed, Accepted, Rejected, Superseded by ADR-NNNN. An ADR is accepted when the owner merges the pull request that sets its status to Accepted.
 5. **An accepted ADR is not rewritten.** A changed decision is a new ADR that supersedes the old one.
 6. **ADRs are written in English**, in plain, short sentences.
 

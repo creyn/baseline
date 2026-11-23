@@ -28,7 +28,7 @@ The owner and their family, up to 10 people. Each person signs in and sees only 
 3. **Import is rare and asynchronous.** Its cost depends on the number of pages, not on how the queues are arranged.
 4. **The system is idle most of the day.** Services that scale to zero cost almost nothing, but the first read after idle time waits for a cold start ([ADR-0004](adr/0004-serverless-hosting-and-operations.md)).
 
-Every use case that changes state is drawn as a sequence diagram, with arguments on the arrows, alternative paths and the state after a failure. Import, review, U5 and U6 are drawn in [docs/adr/0005](adr/0005/c-pipeline-without-outbox.svg).
+Every use case that changes state is drawn as a sequence diagram, with arguments on the arrows, alternative paths and the state after a failure. The diagrams are in [docs/sequences](sequences/README.md).
 
 ## Cost
 
