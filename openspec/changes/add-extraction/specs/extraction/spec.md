@@ -36,7 +36,7 @@ For the name, the value, the unit and the range of every result, the LLM MUST re
 
 ### Requirement: Dates get their zone from code
 
-The extractor SHALL convert each local date and time from the model into a time with an offset, in `Europe/Warsaw` by default, using the offset in force on that day. A date without a time MUST be stored at midnight with `hasTime` false. Code SHALL set each result's `collectedAt` from its own `collected` date, else the document's `collected` date, else a `registered` date.
+The extractor SHALL convert each local date and time from the model into a time with an offset, in `Europe/Warsaw` by default, using the offset in force on that day. A date without a time MUST be stored at midnight with `hasTime` false. Code SHALL set each result's `collectedAt` from the labelled dates in this order of kind: `collected`, `received`, `registered`, `performed`, `released`; within a kind the result's own dates before the document's, and the earliest first. Without such a date it SHALL be null.
 
 #### Scenario: Winter time
 
@@ -52,6 +52,11 @@ The extractor SHALL convert each local date and time from the model into a time 
 
 - **WHEN** a result has no dates of its own and the document has "Data rejestracji" and "Data/godz. pobrania"
 - **THEN** its `collectedAt` is the collection date
+
+#### Scenario: Only a date of performing
+
+- **WHEN** the only dates are "Data wykonania" and "Data wydruku"
+- **THEN** `collectedAt` is the date of performing, never the printed date
 
 ### Requirement: No results means not a lab result
 

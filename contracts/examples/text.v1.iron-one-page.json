@@ -290,6 +290,7 @@
       "analyser": "Cobas 8000",
       "dates": [],
       "collectedAt": "2026-04-10T07:25:00+02:00",
+      "collectedHasTime": true,
       "suggestedParameter": null,
       "source": {
         "page": 1,
@@ -328,6 +329,7 @@
       "analyser": "Cobas 8000",
       "dates": [],
       "collectedAt": "2026-04-10T07:25:00+02:00",
+      "collectedHasTime": true,
       "suggestedParameter": null,
       "source": {
         "page": 1,

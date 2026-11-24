@@ -282,6 +282,7 @@
         "analyser",
         "dates",
         "collectedAt",
+        "collectedHasTime",
         "suggestedParameter",
         "source"
       ],
@@ -402,7 +403,7 @@
           }
         },
         "collectedAt": {
-          "description": "The date the trend uses, picked by code: the result's own collected date, else the document's collected date, else a registered date.",
+          "description": "The date the trend uses, picked by code (contracts/text_checks.py, collected_at): by kind collected, received, registered, performed, released; within a kind the result's own dates before the document's, the earliest first; null without such a date.",
           "anyOf": [
             {
               "$ref": "#/$defs/instant"
@@ -411,6 +412,9 @@
               "type": "null"
             }
           ]
+        },
+        "collectedHasTime": {
+          "type": "boolean"
         },
         "suggestedParameter": {
           "type": [

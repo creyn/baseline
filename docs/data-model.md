@@ -93,12 +93,13 @@ One result of one version, as extracted. Written in the same transaction that se
 | `Method` | nvarchar(400), null | |
 | `Analyser` | nvarchar(200), null | |
 | `SuggestedParameter` | varchar(64), null | the model's proposal for `ParameterCode`; empty until the dictionary exists |
-| `CollectedAt` | datetimeoffset, null | the date the trend uses; picked by code from the dates (collection first), corrected on review |
+| `CollectedAt` | datetimeoffset, null | the date the trend uses, `collectedAt` from the `text` blob (the rule is in [the design](../openspec/changes/add-extraction/design.md)); required before approval, corrected on review |
+| `CollectedHasTime` | bit | false: a date without a printed time, stored at midnight |
 | `Dates` | nvarchar(max) | JSON: the result's own labelled dates from the `text` blob |
 | `PageSha256` | binary(32) | |
 | `Source` | nvarchar(max) | JSON: the word ids and boxes of the name, value, unit and range, for highlighting |
 
-Index: (`UserId`, `ParameterCode`, `CollectedAt`) for trends. Dates other than `CollectedAt` are JSON, not tables: their number and labels differ between laboratories, nothing queries them, and they are shown as printed.
+Trend queries join `Version` and read only `Status = 'Approved'` (G4). Indexes: (`UserId`, `ParameterCode`, `CollectedAt`) for mapped results, and (`UserId`, `PrintedName`, `CollectedAt`) filtered `WHERE ParameterCode IS NULL` for results not mapped yet, which trend by printed name ([ADR-0011](adr/0011-lab-parameters-units-and-ranges.md)). Dates other than `CollectedAt` are JSON, not tables: their number and labels differ between laboratories, nothing queries them, and they are shown as printed.
 
 The review removes rejected rows and applies corrections at approval (U3). Numbers, normalised values and computed flags are added by the changes for review and normalisation ([ADR-0011](adr/0011-lab-parameters-units-and-ranges.md)). They are derived, so they can be recomputed.
 

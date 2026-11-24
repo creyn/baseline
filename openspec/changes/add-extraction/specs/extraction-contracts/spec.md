@@ -40,7 +40,7 @@ The contracts SHALL define `ExtractRequested` (queue `extract`), `Extracted` and
 
 ### Requirement: Versioned contracts
 
-`schemaVersion` SHALL be `major.minor`. A receiver SHALL ignore fields it does not know and SHALL decide on the major version only. Adding an optional field MUST raise the minor version. Removing any field, renaming it, changing its meaning or adding a required field MUST raise the major version, in a new schema file. A receiver MUST dead-letter a message whose major version it does not support.
+`schemaVersion` SHALL be `major.minor`. A receiver SHALL ignore fields it does not know and SHALL decide on the major version only. Adding an optional field MUST raise the minor version. Removing any field, renaming it, changing its meaning or adding a required field MUST raise the major version, in a new schema file. For one release after a new major version, receivers MUST accept both. A receiver MUST dead-letter a message whose major version it does not support. A reader of a blob with a major version it does not support MUST treat it the same way: the API dead-letters the `Extracted` message that pointed to it, and refuses a manifest with 422 at upload.
 
 #### Scenario: A new optional field
 

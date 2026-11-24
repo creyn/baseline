@@ -4,10 +4,12 @@ Standard library only. The extractor runs them before it writes a blob, and the
 contract tests run them on the examples, so both use one implementation.
 """
 import re
+from datetime import datetime
 
 _SPACES = re.compile(r'\s+')
 _LEADING_NUMBER = re.compile(r'^[<>≤≥]?\d+(?:[.,]\d+)?')
 _FLAGS = {'H': 'H', '↑': 'H', 'L': 'L', '↓': 'L'}
+TREND_DATE_KINDS = ('collected', 'received', 'registered', 'performed', 'released')
 
 
 def normalise(text):
@@ -18,6 +20,26 @@ def normalise(text):
 def map_flag(printed):
     """The laboratory's marker as printed, mapped to H, L or None. Anything unknown is None, never a guess."""
     return _FLAGS.get(normalise(printed)) if printed else None
+
+
+def collected_at(result_dates, document_dates):
+    """The date a result's trend uses, as (at, hasTime), or (None, None).
+
+    By kind in the order of TREND_DATE_KINDS (never "printed"); within a kind the
+    result's own dates before the document's, and the earliest first. Times are
+    compared as instants, so different offsets order correctly.
+    """
+    for kind in TREND_DATE_KINDS:
+        for dates in (result_dates, document_dates):
+            found = [d for d in dates if d['kind'] == kind]
+            if found:
+                first = min(found, key=lambda d: _instant(d['at']))
+                return first['at'], first['hasTime']
+    return None, None
+
+
+def _instant(text):
+    return datetime.fromisoformat(text.replace('Z', '+00:00'))
 
 
 def joined(words_by_id, ids):
@@ -47,6 +69,8 @@ def problems(doc):
             out.append(f'a fragment names page {f["page"]}, which does not exist')
     for n, r in enumerate(doc['results'], 1):
         out += [f'result {n}: {m}' for m in _result_problems(r, words, indexes)]
+        if (r['collectedAt'], r['collectedHasTime'] if r['collectedAt'] else None) != collected_at(r['dates'], doc['documentDates']):
+            out.append(f'result {n}: collectedAt: is not the date the rule picks')
     return out
 
 

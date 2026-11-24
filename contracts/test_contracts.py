@@ -144,6 +144,27 @@ class TextBlob(unittest.TestCase):
         del self.doc['results'][0]['collectedAt']
         self.assertTrue(errors('text.v1', self.doc))
 
+    def date(self, kind, at, has_time=True):
+        return {'label': kind, 'text': at, 'at': at, 'timeZone': 'Europe/Warsaw', 'hasTime': has_time, 'kind': kind}
+
+    def test_collected_at_rule(self):
+        pick = text_checks.collected_at
+        own = [self.date('performed', '2026-04-11T00:00:00+02:00', False)]
+        document = [self.date('printed', '2026-04-12T10:00:00+02:00'),
+                    self.date('registered', '2026-04-10T07:00:00+02:00'),
+                    self.date('collected', '2026-04-10T07:25:00+02:00'),
+                    self.date('collected', '2026-04-10T05:20:00Z')]
+        self.assertEqual(pick(own, document), ('2026-04-10T05:20:00Z', True))
+        self.assertEqual(pick(own, document[:2]), ('2026-04-10T07:00:00+02:00', True))
+        self.assertEqual(pick(own, document[:1]), ('2026-04-11T00:00:00+02:00', False))
+        self.assertEqual(pick([], document[:1]), (None, None))
+        result_collected = [self.date('collected', '2026-04-09T08:00:00+02:00')]
+        self.assertEqual(pick(result_collected, document), ('2026-04-09T08:00:00+02:00', True))
+
+    def test_collected_at_must_follow_the_rule(self):
+        self.doc['results'][0]['collectedAt'] = '2026-04-12T10:00:00+02:00'
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: collectedAt: is not the date the rule picks'])
+
     def test_a_box_is_a_fraction_of_the_page(self):
         self.doc['pages'][0]['words'][0]['box']['x'] = 120
         self.assertTrue(errors('text.v1', self.doc))
