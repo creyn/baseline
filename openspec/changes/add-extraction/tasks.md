@@ -11,11 +11,11 @@
 
 ## 2. Extractor (second pull request)
 
-- [ ] 2.1 Core: pages to the `text` document, with Document Intelligence and the LLM behind interfaces
-- [ ] 2.2 Prompt `extract.v1` and the pydantic model for structured output
-- [ ] 2.3 The word check, the dates, validation and one retry
-- [ ] 2.4 Service shell: the queue, the blobs, lock renewal, retries, idempotency, tested with fakes
-- [ ] 2.5 A test that the core's output validates against `contracts/text.v1.schema.json`
+- [x] 2.1 Core: pages to the `text` document, with Document Intelligence and the LLM behind interfaces
+- [x] 2.2 Prompt `extract.v1` and the pydantic model for structured output
+- [x] 2.3 The word check, the dates, validation and one retry
+- [x] 2.4 Service shell: the queue, the blobs, lock renewal, retries, idempotency, tested with fakes
+- [x] 2.5 A test that the core's output validates against `contracts/text.v1.schema.json`
 
 ## 3. Evals (third pull request)
 

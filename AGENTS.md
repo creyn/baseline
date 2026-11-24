@@ -55,6 +55,7 @@ Running the tests:
 python3 -m unittest discover -s tools/privacy
 python3 -m unittest discover -s tools/docs-mcp
 python3 -m unittest discover -s contracts        # needs contracts/requirements.txt; CI has it
+python3 -m unittest discover -s services/extractor -t services/extractor   # adapters need its requirements.txt; CI has it
 python3 -m unittest discover -s evals/synthetic   # the generator tests need requirements.txt; CI has it
 node --test 'spikes/**/*.test.mjs'   # the quotes are needed on Node 22
 ```

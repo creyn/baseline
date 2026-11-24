@@ -68,13 +68,14 @@ def problems(doc):
         if f['page'] not in indexes:
             out.append(f'a fragment names page {f["page"]}, which does not exist')
     for n, r in enumerate(doc['results'], 1):
-        out += [f'result {n}: {m}' for m in _result_problems(r, words, indexes)]
+        out += [f'result {n}: {m}' for m in result_problems(r, words, indexes)]
         if (r['collectedAt'], r['collectedHasTime'] if r['collectedAt'] else None) != collected_at(r['dates'], doc['documentDates']):
             out.append(f'result {n}: collectedAt: is not the date the rule picks')
     return out
 
 
-def _result_problems(r, words, indexes):
+def result_problems(r, words, indexes):
+    """Problems of one result: its page exists, its word ids exist on that page, each field equals its words."""
     src = r['source']
     if src['page'] not in indexes:
         return [f'page {src["page"]} does not exist']
