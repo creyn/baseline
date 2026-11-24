@@ -4,7 +4,7 @@ Date: 2026-11-23
 
 ## Status
 
-Accepted. Point 10 is extended by [ADR-0015](0015-internal-user-id-and-log-identifiers.md): logs also carry `userId` and the trace context, and the Service Bus `CorrelationId` is not used. The unique index of point 3 is changed by [ADR-0016](0016-same-zip-after-a-failure.md): it covers only versions without a fail reason.
+Accepted. Point 10 is extended by [ADR-0015](0015-internal-user-id-and-log-identifiers.md): logs also carry `userId` and the trace context, and the Service Bus `CorrelationId` is not used. The unique index of point 3 is changed by [ADR-0016](0016-same-zip-after-a-failure.md): it covers only live versions.
 
 ## Context
 
