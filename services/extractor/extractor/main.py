@@ -31,7 +31,7 @@ def main():
     env = os.environ
     layout = DocumentIntelligenceLayout(env['DOCUMENT_INTELLIGENCE_ENDPOINT'], credential)
     llm = AzureOpenAILlm(env['AZURE_OPENAI_ENDPOINT'], env['AZURE_OPENAI_DEPLOYMENT'],
-                         env.get('AZURE_OPENAI_API_VERSION', '2024-10-21'), credential)
+                         env.get('AZURE_OPENAI_API_VERSION') or '2024-10-21', credential)
     store = BlobStore(env['STORAGE_ACCOUNT_URL'], credential)
 
     def extract(pages, ids):

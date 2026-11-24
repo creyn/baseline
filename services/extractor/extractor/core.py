@@ -77,6 +77,8 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
             answer, used = llm.complete(messages(texts, errors))
             for k in ('input', 'output'):
                 usage[k] += used.get(k, 0)
+            if used.get('model'):
+                usage['model'] = used['model']  # the version that answered, not only the deployment name
             usage['calls'] += 1
             part, errors = convert(answer, words, indexes, zone)
             if not errors:
@@ -96,7 +98,7 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
             r['collectedHasTime'] = False
     blob = {
         'schemaVersion': '1.0', 'docId': doc_id, 'verId': ver_id,
-        'extraction': {'model': model, 'promptVersion': PROMPT_VERSION, 'dictionaryVersion': None,
+        'extraction': {'model': usage.get('model') or model, 'promptVersion': PROMPT_VERSION, 'dictionaryVersion': None,
                        'extractorVersion': VERSION,
                        'extractedAt': (now or datetime.now(timezone.utc)).isoformat(timespec='seconds').replace('+00:00', 'Z')},
         'pages': blob_pages, 'fragments': fragments, 'documentDates': document_dates, 'results': results,

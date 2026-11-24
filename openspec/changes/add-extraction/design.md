@@ -105,18 +105,18 @@ The tables are in [docs/data-model.md](../../../docs/data-model.md), one place f
   - missing and extra results (counted and reported);
   - material, condition, method and dates (reported, no target yet).
 - **Offline run, on every pull request, free:**
-  - The layout comes from the generated text PDF: its words and their boxes, read with pypdfium2, in the shape Document Intelligence returns.
-  - The "LLM" is a fake that answers from the truth, picking word ids from those words.
+  - The layout is built from the description: one line per section title, date, result row and method, every token a word with a box. It is not the rendered page, so the run needs no generator and runs anywhere with the standard library and jsonschema; rendering and OCR are the live run's job.
+  - The "LLM" is a fake that answers from the truth, naming the ids the core gave to those words.
   - It tests everything except the models: batching, the word check, dates, validation, the `text` schema and the scoring. The score must be 100%; anything less is a bug in our code.
-- **Live run:** real Document Intelligence and gpt-5.4 mini on every form of every synthetic document (text, scan and photo). It runs on pull requests that change `services/extractor/**` or `evals/extraction/**`, and on demand. The report is a JSON artifact and a table in the job summary. Evals call the extractor's core function and never touch storage or queues ([ADR-0004](../../../docs/adr/0004-serverless-hosting-and-operations.md)).
+- **Live run:** real Document Intelligence and gpt-5.4 mini on every form of every synthetic document (text, scan and photo). It runs on pull requests that change `services/extractor/**`, `contracts/**` or `evals/**`, every Monday ([ADR-0017](../../../docs/adr/0017-catching-changes-on-the-ai-services.md)), and on demand. The pages are the generated ones, rendered to PNG at 200 DPI. They are fictional but not masked, so the header with the invented patient is still there. How much masking changes the results (for example a registration date in the header) is to check, once masking runs on the server side and the evals can mask the pages first. The report names the model version that answered. The report is a JSON artifact and a table in the job summary. Evals call the extractor's core function and never touch storage or queues ([ADR-0004](../../../docs/adr/0004-serverless-hosting-and-operations.md)).
 
 ### Live evals: what the owner sets up
 
 Live evals need Azure resources that do not exist yet. They cost money and change the subscription, so the owner creates them:
 
-1. Document Intelligence (S0) and Azure OpenAI with a gpt-5.4 mini deployment in the EU Data Zone, in Sweden Central.
+1. Document Intelligence (S0) and Azure OpenAI with a gpt-5.4 mini deployment in the EU Data Zone, in Sweden Central, with a pinned model version and `versionUpgradeOption: OnceCurrentVersionExpired` ([ADR-0017](../../../docs/adr/0017-catching-changes-on-the-ai-services.md)).
 2. An identity for GitHub Actions with a federated credential for the GitHub environment `evals`, and the role "Cognitive Services User" on those two resources only.
-3. Repository variables (not secrets) with the tenant, subscription and client id, and the two endpoints.
+3. Variables (not secrets) that `.github/workflows/evals.yml` reads: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `DOCUMENT_INTELLIGENCE_ENDPOINT`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, and optionally `AZURE_OPENAI_API_VERSION`.
 
 The Bicep for these resources comes with the infrastructure change. Until the owner creates them, the live run is skipped when the variables are missing.
 
@@ -124,5 +124,6 @@ The Bicep for these resources comes with the infrastructure change. Until the ow
 
 - **A fake LLM in the offline run proves only our code.** Model quality is measured only by the live run, which needs Azure.
 - **Synthetic documents are cleaner than real ones.** The scan and photo forms add noise. Evals on real documents stay a manual step for the owner, outside the repository.
-- **A result that spans two batches** can be split or repeated. ADR-0007 says the evals include such documents, so the evals part adds a synthetic document of 7 pages with a result block that continues from page 5 to page 6.
+- **A result that spans two batches** can be split or repeated. ADR-0007 says the evals include such documents, so the evals part adds a synthetic document of 7 pages with a result block that continues from page 5 to page 6. No single result row is split across pages, as on real printouts.
+- **A continued block loses its dates.** Pages 5 and 6 are in different batches, so the results on page 6 do not see the collection date printed with their block on page 5, and `collectedAt` falls back to the document's registration date. Known limitation: the review shows `collectedAt` and the user corrects it. Passing the last block's dates to the next batch is a later improvement, measured by the same document.
 - **The word check can reject a correct answer** when a value is printed in one word with its unit ("18ng/ml"). The check allows a value that is the start of one word, and the unit the rest of it.

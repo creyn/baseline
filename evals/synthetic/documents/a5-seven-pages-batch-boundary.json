@@ -1,0 +1,454 @@
+{
+  "id": "a5-seven-pages-batch-boundary",
+  "layout": "A",
+  "forms": [
+    "text",
+    "scan"
+  ],
+  "lab": {
+    "name": "Laboratorium Alfa sp. z o.o.",
+    "address": "ul. Fikcyjna 10, 00-100 Przykładowo",
+    "phone": "tel. 22 000 00 00"
+  },
+  "patient": {
+    "name": "Jan Testowy",
+    "pesel": "44051401359",
+    "birth_date": "14.05.1944",
+    "sex": "M",
+    "address": "ul. Przykładowa 1/2, 00-001 Testowo"
+  },
+  "orderer": "lek. Anna Fikcyjna",
+  "order_no": "2605180712",
+  "dates": [
+    {
+      "label": "Data rejestracji",
+      "value": "2026-05-18 07:31",
+      "where": "header"
+    }
+  ],
+  "staff": [
+    {
+      "role": "Wykonał",
+      "name": "mgr Ewa Przykładowa",
+      "in_table": false
+    },
+    {
+      "role": "Autoryzował",
+      "name": "mgr Piotr Wzorcowy",
+      "in_table": false
+    }
+  ],
+  "printed": "2026-05-18 16:05",
+  "pages": [
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "Lipidogram",
+          "icd9": "O99",
+          "results": [
+            {
+              "name": "Cholesterol całkowity",
+              "value": "212",
+              "unit": "mg/dl",
+              "min": "115",
+              "max": "190",
+              "material": "surowica",
+              "flag": "H"
+            },
+            {
+              "name": "Cholesterol HDL",
+              "value": "52",
+              "unit": "mg/dl",
+              "min": "40",
+              "max": "60",
+              "material": "surowica"
+            },
+            {
+              "name": "Cholesterol LDL",
+              "value": "131",
+              "unit": "mg/dl",
+              "min": "0",
+              "max": "115",
+              "material": "surowica",
+              "flag": "H"
+            },
+            {
+              "name": "Triglicerydy",
+              "value": "143",
+              "unit": "mg/dl",
+              "min": "0",
+              "max": "150",
+              "material": "surowica"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ],
+          "method": "Badanie wykonano metodą enzymatyczną."
+        }
+      ]
+    },
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "Glukoza",
+          "icd9": "L43",
+          "results": [
+            {
+              "name": "Glukoza",
+              "value": "97",
+              "unit": "mg/dl",
+              "min": "70",
+              "max": "99",
+              "material": "osocze",
+              "condition": "na czczo"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ],
+          "method": "Badanie wykonano metodą enzymatyczną (heksokinaza)."
+        },
+        {
+          "title": "Hemoglobina glikowana (HbA1c)",
+          "icd9": "L55",
+          "results": [
+            {
+              "name": "HbA1c",
+              "value": "5,6",
+              "unit": "%",
+              "min": "4,0",
+              "max": "6,0",
+              "material": "krew pełna"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "TSH",
+          "icd9": "L69",
+          "results": [
+            {
+              "name": "TSH",
+              "value": "2,14",
+              "unit": "µIU/ml",
+              "min": "0,27",
+              "max": "4,20",
+              "material": "surowica"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ],
+          "method": "Badanie wykonano metodą ECLIA."
+        },
+        {
+          "title": "FT4",
+          "icd9": "L67",
+          "results": [
+            {
+              "name": "FT4",
+              "value": "1,21",
+              "unit": "ng/dl",
+              "min": "0,93",
+              "max": "1,70",
+              "material": "surowica"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "Kreatynina",
+          "icd9": "M37",
+          "results": [
+            {
+              "name": "Kreatynina",
+              "value": "0,98",
+              "unit": "mg/dl",
+              "min": "0,70",
+              "max": "1,20",
+              "material": "surowica"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ]
+        },
+        {
+          "title": "ALT",
+          "icd9": "I17",
+          "results": [
+            {
+              "name": "ALT",
+              "value": "38",
+              "unit": "U/l",
+              "min": "0",
+              "max": "41",
+              "material": "surowica"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ]
+        },
+        {
+          "title": "AST",
+          "icd9": "I19",
+          "results": [
+            {
+              "name": "AST",
+              "value": "29",
+              "unit": "U/l",
+              "min": "0",
+              "max": "40",
+              "material": "surowica"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "Morfologia krwi z rozmazem automatycznym",
+          "icd9": "C55",
+          "results": [
+            {
+              "name": "WBC",
+              "value": "7,12",
+              "unit": "tys/µl",
+              "min": "4,00",
+              "max": "10,00",
+              "material": "krew pełna"
+            },
+            {
+              "name": "RBC",
+              "value": "4,77",
+              "unit": "mln/µl",
+              "min": "4,50",
+              "max": "5,90",
+              "material": "krew pełna"
+            },
+            {
+              "name": "HGB",
+              "value": "14,2",
+              "unit": "g/dl",
+              "min": "13,5",
+              "max": "17,5",
+              "material": "krew pełna"
+            },
+            {
+              "name": "HCT",
+              "value": "42,9",
+              "unit": "%",
+              "min": "40,0",
+              "max": "52,0",
+              "material": "krew pełna"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "table_header": false,
+      "sections": [
+        {
+          "title": "Morfologia krwi z rozmazem automatycznym (cd.)",
+          "icd9": "C55",
+          "results": [
+            {
+              "name": "MCV",
+              "value": "89,9",
+              "unit": "fl",
+              "min": "80,0",
+              "max": "96,0",
+              "material": "krew pełna"
+            },
+            {
+              "name": "MCH",
+              "value": "29,8",
+              "unit": "pg",
+              "min": "27,0",
+              "max": "33,0",
+              "material": "krew pełna"
+            },
+            {
+              "name": "PLT",
+              "value": "389",
+              "unit": "tys/µl",
+              "min": "150",
+              "max": "400",
+              "material": "krew pełna"
+            },
+            {
+              "name": "Neutrofile",
+              "value": "4,02",
+              "unit": "tys/µl",
+              "min": "1,80",
+              "max": "7,70",
+              "material": "krew pełna"
+            }
+          ],
+          "notes": [],
+          "method": "Badanie wykonano na analizatorze Sysmex XN."
+        }
+      ]
+    },
+    {
+      "table_header": true,
+      "sections": [
+        {
+          "title": "CRP",
+          "icd9": "I81",
+          "results": [
+            {
+              "name": "CRP",
+              "value": "<1,0",
+              "unit": "mg/l",
+              "min": "0,0",
+              "max": "5,0",
+              "material": "surowica"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ]
+        },
+        {
+          "title": "Witamina D3 metabolit 25(OH)",
+          "icd9": "O03",
+          "results": [
+            {
+              "name": "Witamina D 25(OH)",
+              "value": "24,1",
+              "unit": "ng/ml",
+              "min": "30,0",
+              "max": "50,0",
+              "material": "surowica",
+              "flag": "L"
+            }
+          ],
+          "notes": [],
+          "dates": [
+            {
+              "label": "Data pobrania",
+              "value": "2026-05-18 07:40:00"
+            },
+            {
+              "label": "Data wykonania",
+              "value": "18.05.2026 10:15:00"
+            }
+          ],
+          "method": "Badanie wykonano metodą CLIA."
+        }
+      ]
+    }
+  ],
+  "traps": [
+    "continuation_page"
+  ],
+  "flag_note": "Page 6 continues the blood count of page 5 without its dates: the batch of pages 6 and 7 must not lose them silently."
+}

@@ -1,0 +1,86 @@
+name: Extraction evals (live)
+
+# Real Document Intelligence and Azure OpenAI on the synthetic documents (ADR-0004, ADR-0007).
+# Runs when the extractor, its contracts or the evals change, every Monday (to catch a change
+# of the model or the service on Azure's side), and on demand. Skipped until the owner has set
+# the Azure variables. Never touches storage or queues: the identity has roles on the two AI
+# services only.
+on:
+  pull_request:
+    paths: ['services/extractor/**', 'evals/**', 'contracts/**', '.github/workflows/evals.yml']
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Azure set up?
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          SET: ${{ vars.AZURE_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' && vars.AZURE_SUBSCRIPTION_ID != '' && vars.DOCUMENT_INTELLIGENCE_ENDPOINT != '' && vars.AZURE_OPENAI_ENDPOINT != '' && vars.AZURE_OPENAI_DEPLOYMENT != '' }}
+          FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          if [ "$SET" != "true" ]; then
+            echo "::notice::Live evals skipped, the Azure repository variables are not all set."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          elif [ "$FORK" = "true" ]; then
+            echo "::notice::Live evals skipped for a pull request from a fork."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  live:
+    name: Extraction evals (live)
+    needs: check
+    if: needs.check.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    environment: evals
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DOCUMENT_INTELLIGENCE_ENDPOINT: ${{ vars.DOCUMENT_INTELLIGENCE_ENDPOINT }}
+      AZURE_OPENAI_ENDPOINT: ${{ vars.AZURE_OPENAI_ENDPOINT }}
+      AZURE_OPENAI_DEPLOYMENT: ${{ vars.AZURE_OPENAI_DEPLOYMENT }}
+      AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
+          python -m pip install -q -r evals/synthetic/requirements.txt -r services/extractor/requirements.txt
+      - name: Generate the synthetic documents
+        run: python evals/synthetic/generate.py --out generated
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Run
+        run: python evals/extraction/live.py --generated generated --out report
+      - name: Summary
+        if: always()
+        run: test -f report/summary.md && cat report/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: extraction-evals
+          path: report
+          retention-days: 30

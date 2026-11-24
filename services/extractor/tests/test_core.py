@@ -92,6 +92,16 @@ class Extract(unittest.TestCase):
         self.assertEqual(blob['extraction']['promptVersion'], 'extract.v1')
         self.assertEqual(usage, {'input': 100, 'output': 50, 'calls': 1})
 
+    def test_the_model_version_that_answered_is_recorded(self):
+        pages = [fakes.page(1, 1)]
+        llm = fakes.FakeLlm(fakes.iron_answer())
+        llm.model = 'gpt-5.4-mini-2026-01-01'
+        blob, _ = core.extract(pages, fakes.FakeLayout([fakes.IRON_PAGE]), llm, doc_id=DOC, ver_id=VER,
+                               model='deployment', now=NOW)
+        self.assertEqual(blob['extraction']['model'], 'gpt-5.4-mini-2026-01-01')
+        blob, _, _ = run([fakes.IRON_PAGE], fakes.iron_answer())
+        self.assertEqual(blob['extraction']['model'], 'gpt-5.4-mini')  # no version reported: the deployment name
+
     def test_the_blob_meets_the_contract(self):
         blob, _, _ = run([fakes.IRON_PAGE], fakes.iron_answer())
         self.assertEqual(list(Draft202012Validator(schema('text.v1')).iter_errors(blob)), [])
