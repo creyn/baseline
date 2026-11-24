@@ -36,9 +36,9 @@ One masked upload of a document, or a reprocessed copy of one.
 | `DocumentId` | uniqueidentifier | FK to `Document` |
 | `UserId` | uniqueidentifier | |
 | `ZipSha256` | binary(32) | the hash of the uploaded ZIP; null for a reprocessed copy |
-| `ReprocessOf` | uniqueidentifier, null | the version whose checked ZIP was copied (U9) |
+| `ReprocessOf` | uniqueidentifier, null | the version whose checked ZIP was copied (U9); no foreign key, because a failed source is deleted ([ADR-0016](adr/0016-retry-replaces-a-failed-version.md)) |
 | `Status` | varchar(16) | `Uploaded`, `Blocked`, `PendingReview`, `Approved`, `Archived`, `Superseded`, `Failed` |
-| `FailReason` | varchar(16), null | `integrity`, `check_error`, `extract_invalid`, `extract_error`, `no_results`, `timeout`; kept after `Superseded` |
+| `FailReason` | varchar(16), null | `integrity`, `check_error`, `extract_invalid`, `extract_error`, `no_results`, `timeout`. A failed version is deleted when the document gets a new version ([ADR-0016](adr/0016-retry-replaces-a-failed-version.md)) |
 | `StatusChangedAt` | datetimeoffset | the sweeper reads it |
 | `ResendCount` | tinyint | how many times the sweeper sent the first message again (at most 3) |
 | `BlockedRegions` | nvarchar(max), null | JSON: page and rectangle, never text (`Blocked`) |
@@ -47,7 +47,7 @@ One masked upload of a document, or a reprocessed copy of one.
 | `RowVersion` | rowversion | optimistic concurrency on review |
 
 Indexes:
-- (`DocumentId`, `ZipSha256`), unique, filtered `WHERE ZipSha256 IS NOT NULL`, as [ADR-0006](adr/0006-document-lifecycle-and-review.md) sets it. A retry of the same upload returns the version made by the first try. A reprocessed copy has no hash, so it never collides with the version it was copied from. **Open question:** the same ZIP sent again after a failure returns the failed version; see [docs/sequences](sequences/README.md#open-questions). A change of this index needs a new ADR.
+- (`DocumentId`, `ZipSha256`), unique, filtered `WHERE ZipSha256 IS NOT NULL AND Status IN ('Uploaded', 'Blocked', 'PendingReview', 'Approved')` ([ADR-0016](adr/0016-retry-replaces-a-failed-version.md)). A retry of the same upload returns the live version made by the first try; the same ZIP after a failure, or after its version was superseded, makes a new version, and the failed version is deleted. A reprocessed copy has no hash, so it never collides with the version it was copied from.
 - (`DocumentId`), unique, filtered `WHERE Status = 'Approved'`: at most one approved version per document.
 - (`Status`, `StatusChangedAt`): the sweeper's query.
 
@@ -108,4 +108,4 @@ The review removes rejected rows and applies corrections at approval (U3). Numbe
 - **Create:** the upload inserts `Document` (or finds it) and `Version`. `Extracted` inserts the `Extraction` and `LabResult` rows, stores the document dates on the version and sets `PendingReview`, in one transaction, after the API has read the `text` blob.
 - **Retry:** `Extracted` delivered twice: the second update changes zero rows, the transaction rolls back, the message is completed.
 - **Change:** only the review changes results; only forward-only updates change statuses.
-- **Delete:** deleting a document deletes its versions, extractions and results by cascade, then its blobs ([ADR-0012](adr/0012-deletion-and-retention.md)).
+- **Delete:** deleting a document deletes its versions, extractions and results by cascade, then its blobs ([ADR-0012](adr/0012-deletion-and-retention.md)). A new version deletes the document's `Failed` versions, then their blobs ([ADR-0016](adr/0016-retry-replaces-a-failed-version.md)); nothing cascades from that, because `Extraction` and `LabResult` rows are written only with `PendingReview`.

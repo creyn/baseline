@@ -152,7 +152,7 @@
 <rect x="252" y="1558" width="1576" height="86" fill="none" stroke="#52606d" stroke-width="1.5"/>
 <path d="M252 1558 h46 v14 l-8 8 h-38 z" fill="#e4e7eb" stroke="#52606d" stroke-width="1.5"/>
 <text x="260" y="1574" font-size="12" font-weight="bold" fill="#1f2933">alt</text>
-<text x="308" y="1574" font-size="12" fill="#1f2933">[a blob whose version does not exist: the extractor's late text, a clean ZIP the checker wrote during the delete, a failed U9 copy]</text>
+<text x="308" y="1574" font-size="12" fill="#1f2933">[a blob whose version does not exist: the extractor's late text, a clean ZIP the checker wrote during the delete, a failed U9 copy, blobs of Failed versions deleted by a retry (ADR-0016)]</text>
 <path d="M212.3 1666 h643.4 l12 12 v34 h-655.4 z" fill="#eceff1" stroke="#546e7a" stroke-width="1.5"/>
 <text x="224.3" y="1686" font-size="12" fill="#1f2933" font-weight="bold">SQL backups keep the deleted rows for 7 days. Masked data may stay in Azure OpenAI</text>
 <text x="224.3" y="1703" font-size="12" fill="#1f2933" >for up to 30 days and in Document Intelligence for up to 24 hours (ADR-0012).</text>
