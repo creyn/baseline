@@ -1,0 +1,462 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/creyn/baseline/contracts/text.v1.schema.json",
+  "title": "The text blob",
+  "description": "text/{userId}/{docId}/{verId}.json, written once by the extractor and read by the API (ADR-0005, ADR-0007). Boxes are fractions of the page from the top left. Values stay as printed; numbers, conversions and computed flags are made in .NET (ADR-0011). Every text field has the maxLength of its column in docs/data-model.md, so a valid blob always fits the database.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "docId",
+    "verId",
+    "extraction",
+    "pages",
+    "fragments",
+    "documentDates",
+    "results"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.(0|[1-9][0-9]*)$",
+      "description": "major.minor. Receivers decide on the major version only."
+    },
+    "docId": {
+      "$ref": "#/$defs/uuidv7"
+    },
+    "verId": {
+      "$ref": "#/$defs/uuidv7"
+    },
+    "extraction": {
+      "description": "How the extraction was made (ADR-0006, point 11).",
+      "type": "object",
+      "required": [
+        "model",
+        "promptVersion",
+        "dictionaryVersion",
+        "extractorVersion",
+        "extractedAt"
+      ],
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "promptVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "dictionaryVersion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 32
+        },
+        "extractorVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "extractedAt": {
+          "$ref": "#/$defs/instant"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pages": {
+      "description": "In the order of the manifest. index starts at 1.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "index",
+          "sha256",
+          "words"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/word"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "fragments": {
+      "description": "Comments and descriptions, never result rows. Embedded by the API at approval (ADR-0008).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "page",
+          "text",
+          "box"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "box": {
+            "$ref": "#/$defs/box"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "documentDates": {
+      "description": "Dates of the whole document, such as registration or collection. Never the date of birth.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/date"
+      }
+    },
+    "results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/result"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "uuidv7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "instant": {
+      "description": "A time with an offset.",
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "box": {
+      "type": "object",
+      "required": [
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "y": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "w": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "h": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "wordId": {
+      "type": "string",
+      "pattern": "^p[1-9][0-9]*w[1-9][0-9]*$"
+    },
+    "wordIds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/wordId"
+      }
+    },
+    "word": {
+      "type": "object",
+      "required": [
+        "id",
+        "text",
+        "box",
+        "confidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/wordId"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "box": {
+          "$ref": "#/$defs/box"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "date": {
+      "description": "A date read from the page. at carries the offset in force in timeZone on that day; a date without a time is midnight with hasTime false (ADR-0007).",
+      "type": "object",
+      "required": [
+        "label",
+        "text",
+        "at",
+        "timeZone",
+        "hasTime",
+        "kind"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "at": {
+          "$ref": "#/$defs/instant"
+        },
+        "timeZone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "hasTime": {
+          "type": "boolean"
+        },
+        "kind": {
+          "enum": [
+            "collected",
+            "registered",
+            "received",
+            "performed",
+            "released",
+            "printed",
+            "other"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "name",
+        "value",
+        "unit",
+        "range",
+        "flagPrinted",
+        "flag",
+        "icd9",
+        "material",
+        "condition",
+        "method",
+        "analyser",
+        "dates",
+        "collectedAt",
+        "collectedHasTime",
+        "suggestedParameter",
+        "source"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 50
+        },
+        "range": {
+          "type": "object",
+          "required": [
+            "text",
+            "low",
+            "high",
+            "kind"
+          ],
+          "properties": {
+            "text": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 400
+            },
+            "low": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 50
+            },
+            "high": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 50
+            },
+            "kind": {
+              "enum": [
+                "interval",
+                "lt",
+                "gt",
+                "text",
+                "none"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "flagPrinted": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 10
+        },
+        "flag": {
+          "description": "Mapped by code from flagPrinted: H and ↑ to H, L and ↓ to L, anything else to null.",
+          "enum": [
+            "H",
+            "L",
+            null
+          ]
+        },
+        "icd9": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 10
+        },
+        "material": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "condition": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "method": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 400
+        },
+        "analyser": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "dates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/date"
+          }
+        },
+        "collectedAt": {
+          "description": "The date the trend uses, picked by code (contracts/text_checks.py, collected_at): by kind collected, received, registered, performed, released; within a kind the result's own dates before the document's, the earliest first; null without such a date.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "collectedHasTime": {
+          "type": "boolean"
+        },
+        "suggestedParameter": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 64
+        },
+        "source": {
+          "description": "The page and the words each field was read from. The word check in the extractor guarantees the text equals these words.",
+          "type": "object",
+          "required": [
+            "page",
+            "name",
+            "value",
+            "unit",
+            "range"
+          ],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "name": {
+              "$ref": "#/$defs/wordIds",
+              "minItems": 1
+            },
+            "value": {
+              "$ref": "#/$defs/wordIds",
+              "minItems": 1
+            },
+            "unit": {
+              "$ref": "#/$defs/wordIds"
+            },
+            "range": {
+              "$ref": "#/$defs/wordIds"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

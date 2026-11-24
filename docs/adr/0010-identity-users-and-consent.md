@@ -4,7 +4,7 @@ Date: 2026-11-22
 
 ## Status
 
-Accepted
+Accepted. Point 4 is superseded by [ADR-0015](0015-internal-user-id-and-log-identifiers.md): `userId` is our own UUIDv7, and the `oid` is one column of `User`.
 
 ## Context
 

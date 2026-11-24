@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/creyn/baseline/contracts/messages.v1.schema.json",
+  "title": "Pipeline messages",
+  "description": "Bodies of the Service Bus messages between the pipeline's services (ADR-0005). Strict: a sender's tests reject any field not listed here. Receivers read only the fields they know.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ExtractRequested"
+    },
+    {
+      "$ref": "#/$defs/Extracted"
+    },
+    {
+      "$ref": "#/$defs/Failed"
+    }
+  ],
+  "$defs": {
+    "uuidv7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "envelope": {
+      "description": "Fields of every message. userId is our own UUIDv7 for the person, never the Entra oid (ADR-0015); docId and verId are UUIDv7 made by the API (ADR-0006). The sender also sets subject, the application properties docId and verId, and the trace context in Diagnostic-Id.",
+      "type": "object",
+      "required": [
+        "type",
+        "schemaVersion",
+        "userId",
+        "docId",
+        "verId"
+      ],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "pattern": "^1\\.(0|[1-9][0-9]*)$",
+          "description": "major.minor. Receivers decide on the major version only."
+        },
+        "userId": {
+          "$ref": "#/$defs/uuidv7"
+        },
+        "docId": {
+          "$ref": "#/$defs/uuidv7"
+        },
+        "verId": {
+          "$ref": "#/$defs/uuidv7"
+        }
+      }
+    },
+    "ExtractRequested": {
+      "description": "Queue extract, from the checker (or the API's sweeper and U9) to the extractor. The pages are in clean/{userId}/{docId}/{verId}.zip.",
+      "$ref": "#/$defs/envelope",
+      "properties": {
+        "type": {
+          "const": "ExtractRequested"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "Extracted": {
+      "description": "Queue status, from the extractor to the API. The results are in text/{userId}/{docId}/{verId}.json (claim check).",
+      "$ref": "#/$defs/envelope",
+      "properties": {
+        "type": {
+          "const": "Extracted"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "Failed": {
+      "description": "Queue status, from the checker or the extractor to the API. timeout is never sent: the API's sweeper sets it.",
+      "$ref": "#/$defs/envelope",
+      "required": [
+        "reason"
+      ],
+      "properties": {
+        "type": {
+          "const": "Failed"
+        },
+        "reason": {
+          "enum": [
+            "integrity",
+            "check_error",
+            "extract_invalid",
+            "extract_error",
+            "no_results"
+          ]
+        }
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}

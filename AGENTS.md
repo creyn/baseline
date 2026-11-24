@@ -46,6 +46,7 @@ Before a design change (an ADR, a diagram, a use case) is shown to the owner or 
 | [.claude/settings.json](.claude/settings.json) | Claude Code hook: runs the scan before an agent commits or pushes, and blocks `--no-verify`. |
 | [.githooks/pre-commit](.githooks/pre-commit) | The same scan for people. Enable once per clone: `git config core.hooksPath .githooks`. |
 | [.claude/agents/reviewer.md](.claude/agents/reviewer.md) | Review subagent: privacy, gates, ADRs, failure handling, tests. |
+| [contracts/](contracts/README.md) | JSON Schemas of the messages and blobs between services, with examples and the text blob checks. Every service tests what it sends against them. |
 | [tools/docs-mcp/server.py](tools/docs-mcp/server.py) | Local MCP server with the project documentation: ADRs, gates, use cases, search. Read-only: documentation files that Git does not ignore. Claude Code starts it from [.mcp.json](.mcp.json) in the repository folder. |
 
 Running the tests:
@@ -53,6 +54,7 @@ Running the tests:
 ```sh
 python3 -m unittest discover -s tools/privacy
 python3 -m unittest discover -s tools/docs-mcp
+python3 -m unittest discover -s contracts        # needs contracts/requirements.txt; CI has it
 python3 -m unittest discover -s evals/synthetic   # the generator tests need requirements.txt; CI has it
 node --test 'spikes/**/*.test.mjs'   # the quotes are needed on Node 22
 ```

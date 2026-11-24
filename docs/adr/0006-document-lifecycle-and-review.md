@@ -4,7 +4,7 @@ Date: 2026-11-23
 
 ## Status
 
-Accepted
+Accepted. Point 10 is extended by [ADR-0015](0015-internal-user-id-and-log-identifiers.md): logs also carry `userId` and the trace context, and the Service Bus `CorrelationId` is not used.
 
 ## Context
 
