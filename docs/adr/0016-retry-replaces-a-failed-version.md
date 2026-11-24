@@ -36,13 +36,15 @@ Index: option 2. Failed version: option 3 (decided by the owner on 2026-11-24).
 1. **The unique index on (`DocumentId`, `ZipSha256`) is filtered `WHERE ZipSha256 IS NOT NULL AND Status IN ('Uploaded', 'Blocked', 'PendingReview', 'Approved')`.** A reprocessed copy has no `ZipSha256` (U9), so it never collides.
 2. **The upload looks for a live version with the same `ZipSha256`.** Found: 200 with that version (a `Blocked` one would be blocked again; an `Approved` one has nothing new). Not found: a new version.
 3. **Creating a version deletes the document's `Failed` versions** in the same transaction, and sets older `Blocked` and `PendingReview` versions to `Superseded` as before. After the commit, the API deletes their blobs (`incoming`, `clean`, `text`). For a U9 retry after an extraction failure, the checked ZIP is copied first, then the failed version is deleted.
-4. **`Superseded` is reached only from `Blocked` and `PendingReview`.** `Failed` ends by deletion, or stays while it is the newest version, so the UI can offer "Retry".
+4. **The transaction checks again before it inserts.** It locks the `Document` row (`UPDLOCK`), refuses with 409 when a version of the document is `Uploaded`, and for a U9 retry requires that deleting the source version `WHERE Status = 'Failed'` changes one row. So two retries at once, or a retry and an upload at once, cannot both make a version.
+5. **`Superseded` is reached only from `Blocked` and `PendingReview`.** `Failed` ends by deletion, or stays while it is the newest version, so the UI can offer "Retry".
 
 ## Consequences
 
-- "Retry" after any failure leaves one version of the document in the database, the new one.
+- "Retry" after any failure leaves no failed version of the document in the database.
 - "Retry" after a failure before the check (`integrity`, `check_error`, `timeout` before the check) works with the same original and the same masking.
 - A retry of a lost response still returns the version made by the first try, unless that version has failed meanwhile; then the retry makes a new version.
-- A late message or blob from the deleted attempt finds no version: the status consumer changes zero rows, and the daily orphan sweep deletes the blob ([ADR-0012](0012-deletion-and-retention.md)). A crash between the commit and the blob deletion leaves orphans for the same sweep.
+- A late message or blob from the deleted attempt finds no version: the status consumer changes zero rows, the daily orphan sweep deletes a late `clean` or `text` blob ([ADR-0012](0012-deletion-and-retention.md)), and the 24-hour lifecycle rule deletes a late `incoming` ZIP ([ADR-0005](0005-asynchronous-import-pipeline.md)). A crash between the commit and the blob deletion leaves orphans for the same two.
+- A `CheckRequested` still queued for a deleted version (the checker was down) can lead to a full check and extraction that nobody reads. It costs a few cents; ADR-0012 accepts the same for a deleted document.
 - The reason of a failure is kept only in the logs (30 days, with `verId`).
 - Two parallel uploads of the same ZIP after a failure: the second insert violates the index and returns the version made by the first. The loser's `incoming` ZIP has no row; the 24-hour lifecycle rule deletes it ([ADR-0005](0005-asynchronous-import-pipeline.md)).

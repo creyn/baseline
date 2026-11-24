@@ -108,4 +108,4 @@ The review removes rejected rows and applies corrections at approval (U3). Numbe
 - **Create:** the upload inserts `Document` (or finds it) and `Version`. `Extracted` inserts the `Extraction` and `LabResult` rows, stores the document dates on the version and sets `PendingReview`, in one transaction, after the API has read the `text` blob.
 - **Retry:** `Extracted` delivered twice: the second update changes zero rows, the transaction rolls back, the message is completed.
 - **Change:** only the review changes results; only forward-only updates change statuses.
-- **Delete:** deleting a document deletes its versions, extractions and results by cascade, then its blobs ([ADR-0012](adr/0012-deletion-and-retention.md)).
+- **Delete:** deleting a document deletes its versions, extractions and results by cascade, then its blobs ([ADR-0012](adr/0012-deletion-and-retention.md)). A new version deletes the document's `Failed` versions, then their blobs ([ADR-0016](adr/0016-retry-replaces-a-failed-version.md)); nothing cascades from that, because `Extraction` and `LabResult` rows are written only with `PendingReview`.
