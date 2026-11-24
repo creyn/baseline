@@ -47,7 +47,7 @@ One masked upload of a document, or a reprocessed copy of one.
 | `RowVersion` | rowversion | optimistic concurrency on review |
 
 Indexes:
-- (`DocumentId`, `ZipSha256`), unique, filtered `WHERE ZipSha256 IS NOT NULL`, as [ADR-0006](adr/0006-document-lifecycle-and-review.md) sets it. A retry of the same upload returns the version made by the first try. A reprocessed copy has no hash, so it never collides with the version it was copied from. **Open question:** the same ZIP sent again after a failure returns the failed version; see [docs/sequences](sequences/README.md#open-questions). A change of this index needs a new ADR.
+- (`DocumentId`, `ZipSha256`), unique, filtered `WHERE ZipSha256 IS NOT NULL AND FailReason IS NULL` ([ADR-0016](adr/0016-same-zip-after-a-failure.md)). A retry of the same upload returns the version made by the first try; the same ZIP after a failure makes a new version. A reprocessed copy has no hash, so it never collides with the version it was copied from.
 - (`DocumentId`), unique, filtered `WHERE Status = 'Approved'`: at most one approved version per document.
 - (`Status`, `StatusChangedAt`): the sweeper's query.
 
