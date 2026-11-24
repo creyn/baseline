@@ -14,56 +14,72 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: evals-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  check:
+    name: Azure set up?
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          SET: ${{ vars.AZURE_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' && vars.AZURE_SUBSCRIPTION_ID != '' && vars.DOCUMENT_INTELLIGENCE_ENDPOINT != '' && vars.AZURE_OPENAI_ENDPOINT != '' && vars.AZURE_OPENAI_DEPLOYMENT != '' }}
+          FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          if [ "$SET" != "true" ]; then
+            echo "::notice::Live evals skipped, the Azure repository variables are not all set."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          elif [ "$FORK" = "true" ]; then
+            echo "::notice::Live evals skipped for a pull request from a fork."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
   live:
     name: Extraction evals (live)
+    needs: check
+    if: needs.check.outputs.run == 'true'
     runs-on: ubuntu-latest
     environment: evals
     timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
     env:
-      CONFIGURED: ${{ vars.AZURE_CLIENT_ID != '' && vars.DOCUMENT_INTELLIGENCE_ENDPOINT != '' && vars.AZURE_OPENAI_ENDPOINT != '' }}
       DOCUMENT_INTELLIGENCE_ENDPOINT: ${{ vars.DOCUMENT_INTELLIGENCE_ENDPOINT }}
       AZURE_OPENAI_ENDPOINT: ${{ vars.AZURE_OPENAI_ENDPOINT }}
       AZURE_OPENAI_DEPLOYMENT: ${{ vars.AZURE_OPENAI_DEPLOYMENT }}
       AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION }}
     steps:
-      - name: Skip without Azure
-        if: env.CONFIGURED != 'true'
-        run: 'echo "::notice::Live evals skipped, the Azure variables are not set yet."'
       - uses: actions/checkout@v4
-        if: env.CONFIGURED == 'true'
       - uses: actions/setup-python@v5
-        if: env.CONFIGURED == 'true'
         with:
           python-version: '3.12'
       - name: Install
-        if: env.CONFIGURED == 'true'
         run: |
           sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
           python -m pip install -q -r evals/synthetic/requirements.txt -r services/extractor/requirements.txt
       - name: Generate the synthetic documents
-        if: env.CONFIGURED == 'true'
         run: python evals/synthetic/generate.py --out generated
       - uses: azure/login@v2
-        if: env.CONFIGURED == 'true'
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - name: Run
-        if: env.CONFIGURED == 'true'
         run: python evals/extraction/live.py --generated generated --out report
       - name: Summary
-        if: always() && env.CONFIGURED == 'true'
+        if: always()
         run: test -f report/summary.md && cat report/summary.md >> "$GITHUB_STEP_SUMMARY" || true
       - uses: actions/upload-artifact@v4
-        if: always() && env.CONFIGURED == 'true'
+        if: always()
         with:
           name: extraction-evals
           path: report

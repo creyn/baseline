@@ -80,13 +80,14 @@ class FakeLlm:
     def __init__(self, *answers):
         self.answers = list(answers)
         self.calls = []
+        self.model = None
 
     def complete(self, messages):
         self.calls.append(messages)
         answer = self.answers.pop(0)
         if isinstance(answer, Exception):
             raise answer
-        return json.loads(json.dumps(answer)), {'input': 100, 'output': 50}
+        return json.loads(json.dumps(answer)), {'input': 100, 'output': 50, **({'model': self.model} if self.model else {})}
 
 
 class FakeStore:

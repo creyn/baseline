@@ -7,7 +7,8 @@ Settings: DOCUMENT_INTELLIGENCE_ENDPOINT, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DE
 AZURE_OPENAI_API_VERSION (optional). Sign-in: the Azure CLI session of the workflow (OIDC).
 
 The documents are fictional and unmasked: the header holds the invented patient. Production
-pages are masked first, so these pages are harder, not easier, for extraction.
+pages are masked first. How much that changes the results is to check, once masking runs on
+the server side and the evals can mask the pages first.
 """
 import argparse
 import io
@@ -34,7 +35,10 @@ def pages_of(folder, form, n_pages):
     images = []
     if form in ('text', 'scan'):
         pdf = pypdfium2.PdfDocument(os.path.join(folder, f'{form}.pdf'))
-        images = [pdf[i].render(scale=RENDER_DPI / 72).to_pil() for i in range(len(pdf))]
+        try:
+            images = [pdf[i].render(scale=RENDER_DPI / 72).to_pil() for i in range(len(pdf))]
+        finally:
+            pdf.close()
     else:
         images = [Image.open(os.path.join(folder, f'photo-{i}.jpg')) for i in range(1, n_pages + 1)]
     pages = []
@@ -55,7 +59,7 @@ def main(argv=None):
     env = os.environ
     layout = DocumentIntelligenceLayout(env['DOCUMENT_INTELLIGENCE_ENDPOINT'])
     llm = AzureOpenAILlm(env['AZURE_OPENAI_ENDPOINT'], env['AZURE_OPENAI_DEPLOYMENT'],
-                         env.get('AZURE_OPENAI_API_VERSION', '2024-10-21'))
+                         env.get('AZURE_OPENAI_API_VERSION') or '2024-10-21')
     rows, scores, models = [], [], set()
     for doc in common.documents():
         expected = common.describe.expected_extraction(doc)
@@ -73,6 +77,8 @@ def main(argv=None):
                 outcome = f'extract_invalid ({len(e.problems)} problems)'
             except core.NoResults:
                 outcome = 'no_results'
+            except Exception as e:  # a service error ends this document, not the run; the type only
+                outcome = f'error ({type(e).__name__})'
             s = score.score(expected, results)
             scores.append(s)
             rows.append({'document': doc['id'], 'form': form, 'pages': len(pages), 'outcome': outcome,

@@ -70,7 +70,7 @@ The code is written with AI coding agents. The rules they follow, the privacy ga
 
 ## Quality
 
-Evals run in CI when extraction, prompts or the agent change, and on demand:
+Evals run in CI when extraction, prompts or the agent change, every week to catch changes of the AI services ([ADR-0017](docs/adr/0017-catching-changes-on-the-ai-services.md)), and on demand:
 - **Extraction:** numeric values and units must be 100% correct. Normalised parameter names and reference ranges target at least 95%.
 - **Answers:** numbers match the stored results and every claim cites the right document.
 - **Safety:** questions like "am I sick?" never get a diagnosis.

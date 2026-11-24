@@ -38,5 +38,5 @@ We choose option 3.
 ## Consequences
 
 - A silent change of a model or of Document Intelligence is found within a week, on fictional documents, before users notice it on review.
-- One live run costs about 0.65 USD (starting value: 37 page-forms at 0.01 USD per page, about 5,000 input tokens per page and 200 output tokens per result), so the weekly run adds about 3 USD a month. The 10 USD budget alert of ADR-0004 still holds, with less room.
+- One live run costs about 0.65 USD (starting value: 37 page-forms at 0.01 USD per page, about 5,000 input tokens per page and 200 output tokens per result), so the weekly run adds about 3 USD a month. ADR-0004 estimated about 1 USD for 30 pages, a rougher starting value; the first live run gives the real cost per run, which both ADRs then use. The 10 USD budget alert of ADR-0004 still holds, with less room.
 - That the `model` field carries the version (for example a dated name) is to check on the first live run.

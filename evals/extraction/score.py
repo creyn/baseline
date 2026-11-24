@@ -3,9 +3,12 @@
 Standard library only. Targets (ADR-0007, design.md):
 - values and units exactly right: 100%;
 - names, ranges and flags as printed: 95%;
-- missing and extra results, material, condition, method and dates: reported, no target yet.
+- missing and extra results, the mapped flag, material, condition, method and dates: reported, no target yet.
 """
 import re
+
+import common  # noqa: F401  sets the paths to the extractor
+from extractor.dates import to_instant
 
 TARGETS = {'values_units': 1.0, 'names': 0.95, 'ranges': 0.95, 'flags': 0.95}
 _SPACES = re.compile(r'\s+')
@@ -19,7 +22,8 @@ def score(expected, extracted):
     """expected: describe.expected_extraction(doc); extracted: the blob's results. Returns counts and ratios."""
     pairs, extra = match(expected, extracted)
     n = len(expected)
-    counts = {k: 0 for k in ('values_units', 'names', 'ranges', 'flags', 'material', 'condition', 'method')}
+    counts = {k: 0 for k in ('values_units', 'names', 'ranges', 'flags', 'mapped_flags', 'material', 'condition',
+                             'method', 'dates')}
     for e, x in pairs:
         if x is None:
             continue
@@ -29,7 +33,10 @@ def score(expected, extracted):
         counts['flags'] += (x['flagPrinted'] or None) == (e['flag'] or None)
         counts['material'] += norm(x['material']) == norm(e['material'])
         counts['condition'] += norm(x['condition']) == norm(e['condition'])
-        counts['method'] += not e['method'] or norm(x['method']) in norm(e['method'])
+        counts['mapped_flags'] += x['flag'] == (e['flag'] if e['flag'] in ('H', 'L') else None)
+        method = norm(x['method'])
+        counts['method'] += (not method) if not e['method'] else bool(method) and method in norm(e['method'])
+        counts['dates'] += _dates(x['dates']) == _dates_expected(e['dates'])
     missing = sum(1 for _, x in pairs if x is None)
     ratios = {k: (v / n if n else 1.0) for k, v in counts.items()}
     return {'expected': n, 'missing': missing, 'extra': len(extra), 'counts': counts, 'ratios': ratios}
@@ -64,10 +71,20 @@ def _range_ok(e, x):
     return norm(x['range']['text']) == norm(e.get('range'))
 
 
+def _dates(dates):
+    return sorted((norm(d['label']), d['at'][:16]) for d in dates)
+
+
+def _dates_expected(dates):
+    return sorted((norm(d['label']), to_instant(common.local(d['value']))[0][:16]) for d in dates)
+
+
 def total(scores):
     """Sums per-document scores into one, weighted by the number of expected results."""
+    if not scores:
+        return score([], [])
     n = sum(s['expected'] for s in scores)
-    counts = {k: sum(s['counts'][k] for s in scores) for k in scores[0]['counts']} if scores else {}
+    counts = {k: sum(s['counts'][k] for s in scores) for k in scores[0]['counts']}
     return {'expected': n, 'missing': sum(s['missing'] for s in scores), 'extra': sum(s['extra'] for s in scores),
             'counts': counts, 'ratios': {k: (v / n if n else 1.0) for k, v in counts.items()}}
 
