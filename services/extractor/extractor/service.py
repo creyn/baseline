@@ -42,10 +42,12 @@ def handle(body, delivery_count, store, status, extract):
     except (ValueError, KeyError, TypeError):
         log.error('unreadable message')
         return DEAD_LETTER
+    if not all(isinstance(v, str) and _UUID7.match(v) for v in ids.values()):
+        log.error('identifiers are not UUIDv7')  # never log what is not an identifier
+        return DEAD_LETTER
     ctx = {'userId': ids['userId'], 'docId': ids['docId'], 'verId': ids['verId'], 'deliveryCount': delivery_count}
-    if msg.get('type') != 'ExtractRequested' or not version or version.group(1) != '1' \
-            or not all(isinstance(v, str) and _UUID7.match(v) for v in ids.values()):
-        log.error('message type, version or identifiers not supported', extra=ctx)
+    if msg.get('type') != 'ExtractRequested' or not version or version.group(1) != '1':
+        log.error('message type or major version not supported', extra=ctx)
         return DEAD_LETTER
     try:
         return _process(ids, ctx, delivery_count, store, status, extract)
@@ -54,11 +56,20 @@ def handle(body, delivery_count, store, status, extract):
             log.warning('transient error, abandoned: %s', type(e).__name__, extra=ctx)
             return ABANDON
         log.error('transient error on the last delivery: %s', type(e).__name__, extra=ctx)
-        try:
-            status.send(_status('Failed', ids, reason='extract_error'))
-        except Transient:
-            return ABANDON  # delivered again; the queue's max delivery count ends in dead-letter
-        return COMPLETE
+        return _fail_last(ids, store, status)
+    except Exception as e:  # a bug or a non-transient refusal: retrying would call the AI services again
+        log.error('unexpected error: %s', type(e).__name__, extra=ctx)  # the type only: messages may quote content
+        return _fail_last(ids, store, status)
+
+
+def _fail_last(ids, store, status):
+    """Ends the version with Failed(extract_error), unless its results were saved meanwhile."""
+    try:
+        saved = store.text_exists(ids)
+        status.send(_status('Extracted', ids) if saved else _status('Failed', ids, reason='extract_error'))
+    except Exception:
+        return ABANDON  # delivered again; the queue's max delivery count ends in dead-letter, which alerts
+    return COMPLETE
 
 
 def _process(ids, ctx, delivery_count, store, status, extract):

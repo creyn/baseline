@@ -6,11 +6,13 @@ Transient failures become service.Transient, so the message is retried (ADR-0005
 import io
 import json
 
-from azure.core.exceptions import (HttpResponseError, ResourceExistsError, ResourceNotFoundError,
-                                   ServiceRequestError, ServiceResponseError)
+from azure.core.exceptions import (HttpResponseError, ResourceExistsError, ResourceModifiedError,
+                                   ResourceNotFoundError, ServiceRequestError, ServiceResponseError)
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
 from .answer import Answer, parse
+
+AI_TIMEOUT_SECONDS = 180
 from .layout import box_from_polygon
 from .service import Transient
 
@@ -33,7 +35,7 @@ class DocumentIntelligenceLayout:
         try:
             poller = self.client.begin_analyze_document('prebuilt-layout', body=pdf_of(pages),
                                                         content_type='application/octet-stream')
-            result = poller.result()
+            result = poller.result(timeout=AI_TIMEOUT_SECONDS)
         except HttpResponseError as e:
             if _transient(e):
                 raise Transient('document intelligence') from None
@@ -65,21 +67,30 @@ class AzureOpenAILlm:
         from openai import AzureOpenAI
         token = get_bearer_token_provider(credential or DefaultAzureCredential(),
                                           'https://cognitiveservices.azure.com/.default')
-        self.client = AzureOpenAI(azure_endpoint=endpoint, azure_ad_token_provider=token, api_version=api_version)
+        self.client = AzureOpenAI(azure_endpoint=endpoint, azure_ad_token_provider=token, api_version=api_version,
+                                  timeout=AI_TIMEOUT_SECONDS, max_retries=1)
         self.deployment = deployment
 
     def complete(self, messages):
         import openai
+        import pydantic
+        unusable = {'results': [], 'documentDates': [], 'fragments': [], 'refused': True}
         try:
             response = self.client.beta.chat.completions.parse(model=self.deployment, messages=messages,
                                                                response_format=Answer)
         except (openai.RateLimitError, openai.APIConnectionError, openai.APITimeoutError, openai.InternalServerError):
             raise Transient('azure openai') from None
+        except (openai.LengthFinishReasonError, openai.ContentFilterFinishReasonError, pydantic.ValidationError):
+            # Cut off, filtered or not in the schema: an invalid answer, retried once by the core.
+            return unusable, {'input': 0, 'output': 0}
         choice = response.choices[0]
         usage = {'input': response.usage.prompt_tokens, 'output': response.usage.completion_tokens}
         if choice.message.refusal or choice.message.content is None:
-            return {'results': [], 'documentDates': [], 'fragments': [], 'refused': True}, usage
-        return parse(choice.message.content), usage
+            return unusable, usage
+        try:
+            return parse(choice.message.content), usage
+        except pydantic.ValidationError:
+            return unusable, usage
 
 
 class BlobStore:
@@ -96,7 +107,7 @@ class BlobStore:
     def _call(self, fn):
         try:
             return fn()
-        except (ResourceNotFoundError, ResourceExistsError):
+        except (ResourceNotFoundError, ResourceExistsError, ResourceModifiedError):
             raise
         except (HttpResponseError, ServiceRequestError, ServiceResponseError) as e:
             if isinstance(e, HttpResponseError) and not _transient(e):
@@ -114,12 +125,15 @@ class BlobStore:
             return None
 
     def write_text_if_absent(self, ids, data):
-        """If-None-Match: * — another run that wrote first keeps its blob. Storage answers 412."""
+        """If-None-Match: * (overwrite=False): another run that wrote first keeps its blob.
+
+        An existing blob is answered with 409 BlobAlreadyExists; a 412 is handled the same way (to check under a real race).
+        """
         blob = self.service.get_blob_client('text', self._name(ids, 'json'))
         try:
             self._call(lambda: blob.upload_blob(data, overwrite=False, content_type='application/json'))
             return True
-        except ResourceExistsError:
+        except (ResourceExistsError, ResourceModifiedError):
             return False
 
 

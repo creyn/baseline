@@ -77,6 +77,30 @@ class Service(unittest.TestCase):
         self.assertEqual(handle(self.store, self.status, extract, 5), service.COMPLETE)
         self.assertEqual(self.status.sent, [{'type': 'Failed', 'schemaVersion': '1.0', **IDS, 'reason': 'extract_error'}])
 
+    def test_an_unexpected_error_fails_at_once(self):
+        extract = Extractor(layout_error=ValueError('a message that could quote the page'))
+        with self.assertLogs('extractor', level='ERROR') as logs:
+            self.assertEqual(handle(self.store, self.status, extract, 1), service.COMPLETE)
+        self.assertEqual(self.status.sent[0]['reason'], 'extract_error')
+        self.assertNotIn('quote the page', ' '.join(logs.output))
+
+    def test_the_last_delivery_reports_saved_results(self):
+        class SavedMeanwhile(fakes.FakeStore):
+            checks = 0
+
+            def text_exists(self, ids):
+                self.checks += 1
+                return self.checks > 1
+        store = SavedMeanwhile(clean=fakes.clean_zip(PAGES))
+        extract = Extractor(layout_error=service.Transient('down'))
+        self.assertEqual(handle(store, self.status, extract, 5), service.COMPLETE)
+        self.assertEqual(self.status.sent[0]['type'], 'Extracted')
+
+    def test_identifiers_that_are_not_uuids_are_not_logged(self):
+        with self.assertLogs('extractor', level='ERROR') as logs:
+            self.assertEqual(handle(self.store, self.status, Extractor(), msg=body(docId='Jan Testowy')), service.DEAD_LETTER)
+        self.assertNotIn('Testowy', ' '.join(logs.output) + str(vars(logs.records[0])))
+
     def test_status_queue_down(self):
         status = fakes.FakeStatus(fail=service.Transient('down'))
         self.assertEqual(handle(self.store, status, Extractor(fakes.iron_answer())), service.ABANDON)
