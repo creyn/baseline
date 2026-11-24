@@ -280,6 +280,7 @@
         "high": "400",
         "kind": "interval"
       },
+      "flagPrinted": null,
       "flag": null,
       "icd9": "O15",
       "material": "surowica",
@@ -316,6 +317,7 @@
         "high": "175",
         "kind": "interval"
       },
+      "flagPrinted": "L",
       "flag": "L",
       "icd9": "O45",
       "material": "surowica",

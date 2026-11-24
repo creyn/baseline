@@ -156,6 +156,26 @@ class TextBlob(unittest.TestCase):
         self.doc['results'][0]['value'] = '1'
         self.assertEqual(text_checks.problems(self.doc), ['result 1: value and unit: do not equal their shared words'])
 
+    def test_value_and_unit_split_inside_the_number(self):
+        self.doc['pages'][0]['words'][1]['text'] = '18ng/ml'
+        r = self.doc['results'][0]
+        r['source']['unit'] = ['p1w2']
+        r['value'], r['unit'] = '1', '8ng/ml'
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: value and unit: do not equal their shared words'])
+
+    def test_flags_are_mapped_by_code(self):
+        self.assertEqual([text_checks.map_flag(m) for m in ('H', '↑', 'L', '↓', '*', '+', None)],
+                         ['H', 'H', 'L', 'L', None, None, None])
+        r = self.doc['results'][0]
+        r['flagPrinted'], r['flag'] = '*', 'H'
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: flag: does not match the printed marker'])
+        r['flag'] = None
+        self.assertEqual(text_checks.problems(self.doc), [])
+
+    def test_text_that_does_not_fit_its_column(self):
+        self.doc['results'][0]['value'] = '1' * 101
+        self.assertTrue(errors('text', self.doc))
+
     def test_a_unit_without_words(self):
         self.doc['results'][0]['source']['unit'] = []
         self.assertEqual(text_checks.problems(self.doc),

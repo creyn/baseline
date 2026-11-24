@@ -4,7 +4,7 @@ The messages between the pipeline's services and the blob formats that one servi
 
 | Schema | What it describes | Written by | Read by |
 |---|---|---|---|
-| [messages.schema.json](messages.schema.json) | `ExtractRequested` (queue `extract`), `Extracted` and `Failed` (queue `status`) | checker, extractor | extractor, API |
+| [messages.schema.json](messages.schema.json) | `ExtractRequested` (queue `extract`), `Extracted` and `Failed` (queue `status`) | checker, extractor, API (sweeper, U9) | extractor, API |
 | [manifest.schema.json](manifest.schema.json) | `manifest.json` in a version's ZIP: the page order (minimal) | browser | checker, extractor |
 | [text.schema.json](text.schema.json) | `text/{userId}/{docId}/{verId}.json`: words, fragments, dates and results | extractor | API |
 

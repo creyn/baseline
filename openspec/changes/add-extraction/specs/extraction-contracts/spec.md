@@ -75,6 +75,11 @@ The `text` blob of a version SHALL hold `extraction` (model, prompt version, dic
 - **WHEN** a laboratory prints "<1,0" or "nie wykryto"
 - **THEN** the result's `value` holds exactly that text
 
+#### Scenario: Text that does not fit
+
+- **WHEN** a value is longer than the `LabResult.Value` column
+- **THEN** the blob does not validate, because every text field has the `maxLength` of its column in [docs/data-model.md](../../../../../docs/data-model.md)
+
 #### Scenario: A date with its zone
 
 - **WHEN** a date is printed as "10.04.2026 07:25" by a laboratory in Poland

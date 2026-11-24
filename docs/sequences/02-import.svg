@@ -371,7 +371,7 @@
 <text x="348" y="4603" text-anchor="start" font-size="12.5" fill="#00838f" paint-order="stroke" stroke="#ffffff" stroke-width="4">57. GET text/{userId}/{docId}/{verId}.json  (results[], before the transaction)</text>
 <text x="348" y="4626" text-anchor="start" font-size="11.5" font-style="italic" fill="#c62828" paint-order="stroke" stroke="#ffffff" stroke-width="4">✗ blob missing (document deleted): complete and ignore</text>
 <line x1="340" y1="4666" x2="537" y2="4666" stroke="#3e4c59" stroke-width="2"  marker-end="url(#a-normal)"/>
-<text x="348" y="4659" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">58. TX: UPDATE Version SET PendingReview WHERE verId AND status=Uploaded; if 1 row: INSERT Extraction(model, prompt and dictionary versions), LabResult[]; COMMIT</text>
+<text x="348" y="4659" text-anchor="start" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">58. TX: UPDATE Version SET PendingReview WHERE verId AND status=Uploaded; if 1 row: INSERT Extraction(model, prompt and dictionary versions), LabResult[], LabResultDate[], DocumentDate[]; COMMIT</text>
 <text x="348" y="4682" text-anchor="start" font-size="11.5" font-style="italic" fill="#c62828" paint-order="stroke" stroke="#ffffff" stroke-width="4">✗ SQL error: rollback; abandon, delivered again</text>
 <path d="M340 4766 h28 v18 h-24" fill="none" stroke="#3e4c59" stroke-width="2" marker-end="url(#a-normal)"/>
 <text x="376" y="4779" font-size="12.5" fill="#1f2933" paint-order="stroke" stroke="#ffffff" stroke-width="4">59. complete; the UI sees PendingReview on its next poll</text>

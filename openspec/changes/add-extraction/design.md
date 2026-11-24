@@ -53,13 +53,13 @@ One JSON file per version, written once. It holds:
 
 ### Every value is tied to words on the page
 
-The model never writes a box. It gets the words with their ids, and for the name, the value, the unit and the range of each result it returns the text **and the ids of the words it read it from**. Code then checks that the text equals those words, after removing spaces and a trailing footnote marker (`*`). A value the model typed but did not read fails the check.
+The model never writes a box. It gets the words with their ids, and for the name, the value, the unit and the range of each result it returns the text **and the ids of the words it read it from**. Code then checks that the text equals those words, after removing spaces and a trailing footnote marker (`*`). A value the model typed but did not read fails the check. When the value and the unit share one word ("18ng/ml"), the value must be the whole number at the start of the word, so the split cannot move. The check is in [contracts/text_checks.py](../../../contracts/text_checks.py), shared by the extractor and the contract tests.
 
 This is principle 2 of the [README](../../../README.md) applied inside extraction: the model proposes, code verifies against the OCR layer, the user approves. Boxes for highlighting are computed from the word ids.
 
 ### A result
 
-`name`, `value` and `unit` as printed; `range` as printed text, with `low` and `high` as printed strings when the range has bounds, and `kind` (`interval`, `lt`, `gt`, `text`, `none`); `flag` (`H`, `L` or none) as printed by the laboratory; `icd9`, `material`, `condition`, `method`, `analyser` (each may be missing); `dates`; `suggestedParameter` (always empty until the dictionary exists); `source` with the page and the word ids of each field.
+`name`, `value` and `unit` as printed; `range` as printed text, with `low` and `high` as printed strings when the range has bounds, and `kind` (`interval`, `lt`, `gt`, `text`, `none`); `flagPrinted`, the laboratory's marker as printed ("H", "↑", "*"), and `flag`, mapped from it by code with a fixed table (`H` and `↑` to `H`, `L` and `↓` to `L`, anything else to none, so the computed flag of ADR-0011 is not hidden by a guess); `icd9`, `material`, `condition`, `method`, `analyser` (each may be missing); `dates`; `suggestedParameter` (always empty until the dictionary exists); `source` with the page and the word ids of each field.
 
 Values stay text: "<1,0" and "nie wykryto" are valid values. Parsing numbers, converting units and computing flags happen in .NET ([ADR-0011](../../../docs/adr/0011-lab-parameters-units-and-ranges.md)).
 
@@ -80,6 +80,7 @@ The model returns each date's label, its text as printed, and the local date and
   7. Write the blob with `If-None-Match: *`. If another run wrote it first, keep theirs.
   8. Send `Extracted` and complete the message.
 - **Retries ([ADR-0005](../../../docs/adr/0005-asynchronous-import-pipeline.md), point 6):** the message lock is renewed while the work runs. A transient error (HTTP 429 or 5xx from an AI service, a storage or Service Bus error) abandons the message while `deliveryCount` is below 5; on the fifth try the extractor sends `Failed (extract_error)` and completes it. An invalid answer is not transient and does not wait for five tries.
+- **A failure is not stored.** After `no_results` or `extract_invalid` nothing is written, so a redelivery (a crash after sending `Failed`, before completing the message) calls the AI services again. The API ignores the second `Failed`. Accepted: it is rare and costs a few cents.
 - **Two runs of the same message at once** both write with `If-None-Match: *`; one wins, both send `Extracted`, and the API's forward-only update ignores the second.
 - **Deleted while in progress:** the extractor may write `text` after the deletion. The sweeper removes blobs that have no version row ([ADR-0012](../../../docs/adr/0012-deletion-and-retention.md)).
 - **Logs** carry `docId`, `verId`, page and result counts, tokens and durations. Never words, values or prompts.
@@ -96,7 +97,7 @@ The tables are in [docs/data-model.md](../../../docs/data-model.md), one place f
 - **Matching:** an extracted result matches an expected one on the same page with the same printed name, after removing spaces and case. Each expected result is matched at most once.
 - **Metrics:**
   - values and units exactly right, over all expected results (target 100%, the run fails below it);
-  - names, ranges and flags as printed (target 95%, the run fails below it);
+  - names, ranges and flags as printed (target 95%, the run fails below it). ADR-0007 sets the 95% on normalised names and ranges; normalisation does not exist yet ([ADR-0011](../../../docs/adr/0011-lab-parameters-units-and-ranges.md), in .NET), so this change measures the printed form, and the normalisation change adds the normalised metric;
   - missing and extra results (counted and reported);
   - material, condition, method and dates (reported, no target yet).
 - **Offline run, on every pull request, free:**
@@ -119,5 +120,5 @@ The Bicep for these resources comes with the infrastructure change. Until then t
 
 - **A fake LLM in the offline run proves only our code.** Model quality is measured only by the live run, which needs Azure.
 - **Synthetic documents are cleaner than real ones.** The scan and photo forms add noise. Evals on real documents stay a manual step for the owner, outside the repository.
-- **A result that spans two batches** can be split or repeated. No synthetic document has more than 5 pages, so the evals do not cover it yet.
+- **A result that spans two batches** can be split or repeated. ADR-0007 says the evals include such documents, so the evals part adds a synthetic document of 7 pages with a result block that continues from page 5 to page 6.
 - **The word check can reject a correct answer** when a value is printed in one word with its unit ("18ng/ml"). The check allows a value that is the start of one word, and the unit the rest of it.

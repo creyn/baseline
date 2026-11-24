@@ -19,9 +19,10 @@
 ## 3. Evals (third pull request)
 
 - [ ] 3.1 Matching and metrics, with tests
-- [ ] 3.2 Offline run in CI: layout from the text PDFs, a fake LLM from the truth
-- [ ] 3.3 Live run workflow, skipped without the Azure variables
-- [ ] 3.4 `evals/extraction/README.md` with the owner's Azure setup
+- [ ] 3.2 A synthetic document of 7 pages with a result block from page 5 to page 6 (ADR-0007)
+- [ ] 3.3 Offline run in CI: layout from the text PDFs, a fake LLM from the truth
+- [ ] 3.4 Live run workflow, skipped without the Azure variables
+- [ ] 3.5 `evals/extraction/README.md` with the owner's Azure setup
 
 ## 4. After merge
 

@@ -92,7 +92,7 @@ Logs and telemetry of the extractor MUST carry only identifiers, counts, token u
 
 ### Requirement: Evals on the synthetic documents
 
-Evals SHALL run the extractor's core on every synthetic document and compare the results with the truth from `evals/synthetic/describe.py`. Values and units MUST be 100% correct, and names, ranges and flags as printed at least 95%; below either target the run fails.
+Evals SHALL run the extractor's core on every synthetic document and compare the results with the truth from `evals/synthetic/describe.py`. Values and units MUST be 100% correct, and names, ranges and flags as printed at least 95%; below either target the run fails. The evals MUST include a document with a result block that crosses a batch boundary.
 
 #### Scenario: Offline run on a pull request
 

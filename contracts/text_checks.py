@@ -6,11 +6,18 @@ contract tests run them on the examples, so both use one implementation.
 import re
 
 _SPACES = re.compile(r'\s+')
+_LEADING_NUMBER = re.compile(r'^[<>≤≥]?\d+(?:[.,]\d+)?')
+_FLAGS = {'H': 'H', '↑': 'H', 'L': 'L', '↓': 'L'}
 
 
 def normalise(text):
     """Remove spaces and a trailing footnote marker ("ng/ml*" reads as "ng/ml")."""
     return _SPACES.sub('', text).rstrip('*')
+
+
+def map_flag(printed):
+    """The laboratory's marker as printed, mapped to H, L or None. Anything unknown is None, never a guess."""
+    return _FLAGS.get(normalise(printed)) if printed else None
 
 
 def joined(words_by_id, ids):
@@ -57,6 +64,8 @@ def _result_problems(r, words, indexes):
                 out.append(f'{field}: word {i} is not on page {src["page"]}')
     if out:
         return out
+    if r['flag'] != map_flag(r['flagPrinted']):
+        out.append('flag: does not match the printed marker')
     texts = {'name': r['name'], 'value': r['value'], 'unit': r['unit'], 'range': r['range']['text']}
     for field in ('unit', 'range'):
         if (texts[field] is None) != (not src[field]):
@@ -70,7 +79,9 @@ def _result_problems(r, words, indexes):
     value_words = joined(words, src['value'])
     if texts['unit'] is not None and src['unit'] == src['value']:
         # A value printed together with its unit in one word, e.g. "18ng/ml".
-        if not field_matches(texts['value'] + texts['unit'], value_words):
+        number = _LEADING_NUMBER.match(normalise(value_words))
+        if not number or number.group() != normalise(texts['value']) \
+                or not field_matches(texts['value'] + texts['unit'], value_words):
             out.append('value and unit: do not equal their shared words')
     else:
         if not field_matches(texts['value'], value_words):

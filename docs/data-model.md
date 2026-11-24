@@ -11,7 +11,7 @@ The decisions behind it: identifiers and statuses in [ADR-0006](adr/0006-documen
 - **Times written by the system** are `datetimeoffset` in UTC. Dates read from a document keep the offset of their zone.
 - **Hashes** are `binary(32)` (SHA-256).
 - **Deletion cascades** from `Document` to everything below it.
-- **Text as printed** is `nvarchar`, because results are in Polish.
+- **Text as printed** is `nvarchar`, because results are in Polish. Its lengths are the `maxLength` values in [contracts/text.schema.json](../contracts/text.schema.json), so a valid blob always fits; a longer text fails extraction with `extract_invalid`.
 
 ## Document
 
@@ -46,7 +46,7 @@ One masked upload of a document, or a reprocessed copy of one.
 | `RowVersion` | rowversion | optimistic concurrency on review |
 
 Indexes:
-- (`DocumentId`, `ZipSha256`), unique, filtered `WHERE ZipSha256 IS NOT NULL AND FailReason IS NULL`. A retry of the same upload returns the version made by the first try. A reprocessed copy has no hash, so it never collides with the version it was copied from. **Open question:** the `FailReason` filter lets the user send the same ZIP again after a failure; see [docs/sequences](sequences/README.md#open-questions).
+- (`DocumentId`, `ZipSha256`), unique, filtered `WHERE ZipSha256 IS NOT NULL`, as [ADR-0006](adr/0006-document-lifecycle-and-review.md) sets it. A retry of the same upload returns the version made by the first try. A reprocessed copy has no hash, so it never collides with the version it was copied from. **Open question:** the same ZIP sent again after a failure returns the failed version; see [docs/sequences](sequences/README.md#open-questions). A change of this index needs a new ADR.
 - (`DocumentId`), unique, filtered `WHERE Status = 'Approved'`: at most one approved version per document.
 - (`Status`, `StatusChangedAt`): the sweeper's query.
 
@@ -83,7 +83,8 @@ One result of one version, as extracted. Written in the same transaction that se
 | `RangeLow` | nvarchar(50), null | as printed |
 | `RangeHigh` | nvarchar(50), null | as printed |
 | `RangeKind` | varchar(8) | `interval`, `lt`, `gt`, `text`, `none` |
-| `LabFlag` | char(1), null | `H` or `L`, as printed |
+| `LabFlag` | char(1), null | `H` or `L`, mapped by code from `LabFlagPrinted` |
+| `LabFlagPrinted` | nvarchar(10), null | the laboratory's marker as printed: "H", "↑", "*" |
 | `Icd9` | varchar(10), null | |
 | `Material` | nvarchar(100), null | |
 | `Condition` | nvarchar(100), null | as printed: "na czczo", "po 2 h" |
@@ -92,28 +93,26 @@ One result of one version, as extracted. Written in the same transaction that se
 | `SuggestedParameter` | varchar(64), null | a code from the dictionary; empty until it exists |
 | `PageSha256` | binary(32) | |
 | `Source` | nvarchar(max) | JSON: the word ids and boxes of the name, value, unit and range, for highlighting |
-| `ReviewState` | varchar(8) | `pending`, `accepted`, `rejected`; set by the review |
 
-Numbers, normalised values and computed flags are added by the changes for review and normalisation ([ADR-0011](adr/0011-lab-parameters-units-and-ranges.md)). They are derived, so they can be recomputed.
+The review removes rejected rows and applies corrections at approval (U3). Numbers, normalised values and computed flags are added by the changes for review and normalisation ([ADR-0011](adr/0011-lab-parameters-units-and-ranges.md)). They are derived, so they can be recomputed.
 
-## ExtractedDate
+## DocumentDate and LabResultDate
 
-A date read from a document: of the whole document (`ResultId` null) or of one result.
+Dates read from a document. `DocumentDate` holds the dates of the whole document (registration, collection) and has `VersionId`, a cascading FK to `Version`. `LabResultDate` holds the dates of one result and has `ResultId`, a cascading FK to `LabResult`. Two tables, because one table with both keys would have two cascade paths from `Version`, which SQL Server refuses. Both have these columns too:
 
 | Column | Type | Notes |
 |---|---|---|
 | `Id` | uniqueidentifier | PK |
-| `VersionId` | uniqueidentifier | FK to `Version` |
-| `ResultId` | uniqueidentifier, null | FK to `LabResult` |
 | `UserId` | uniqueidentifier | |
 | `Label` | nvarchar(100) | as printed: "Data/godz. pobrania" |
+| `Text` | nvarchar(100) | the date as printed |
 | `At` | datetimeoffset | with the offset of its zone on that day |
 | `TimeZone` | varchar(64) | `Europe/Warsaw` by default |
 | `HasTime` | bit | false: the time is midnight and was not printed |
 
 ## Life of the rows
 
-- **Create:** the upload inserts `Document` (or finds it) and `Version`. `Extracted` inserts the `Extraction`, `LabResult` and `ExtractedDate` rows and sets `PendingReview`, in one transaction, after the API has read the `text` blob.
+- **Create:** the upload inserts `Document` (or finds it) and `Version`. `Extracted` inserts the `Extraction`, `LabResult`, `LabResultDate` and `DocumentDate` rows and sets `PendingReview`, in one transaction, after the API has read the `text` blob.
 - **Retry:** `Extracted` delivered twice: the second update changes zero rows, the transaction rolls back, the message is completed.
 - **Change:** only the review changes results; only forward-only updates change statuses.
-- **Delete:** deleting a document deletes its versions, results and dates by cascade, then its blobs ([ADR-0012](adr/0012-deletion-and-retention.md)).
+- **Delete:** deleting a document deletes its versions, extraction, results and dates by cascade (one path to each table), then its blobs ([ADR-0012](adr/0012-deletion-and-retention.md)).

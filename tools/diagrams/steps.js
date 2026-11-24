@@ -154,7 +154,7 @@ const apply = (q, ev, upd, last) => [
 const applyExtracted = (q, last) => [
   { from: q, to: 'api', text: 'Extracted { userId, docId, verId }', fail: 'API asleep: the queue scale rule wakes it; the event waits' },
   { from: 'api', to: 'text', text: 'GET text/{userId}/{docId}/{verId}.json  (results[], before the transaction)', flow: 'masked', labelAt: 'start', fail: 'blob missing (document deleted): complete and ignore' },
-  { from: 'api', to: 'sql', text: 'TX: UPDATE Version SET PendingReview WHERE verId AND status=Uploaded; if 1 row: INSERT Extraction(model, prompt and dictionary versions), LabResult[]; COMMIT', labelAt: 'start', fail: 'SQL error: rollback; abandon, delivered again' },
+  { from: 'api', to: 'sql', text: 'TX: UPDATE Version SET PendingReview WHERE verId AND status=Uploaded; if 1 row: INSERT Extraction(model, prompt and dictionary versions), LabResult[], LabResultDate[], DocumentDate[]; COMMIT', labelAt: 'start', fail: 'SQL error: rollback; abandon, delivered again' },
   { alt: '[1 row changed]', ok: true, span: ['api', last] },
   { self: 'api', text: 'complete; the UI sees PendingReview on its next poll' },
   { else: '[0 rows: a duplicate, a superseded version, or the document was deleted]' },
