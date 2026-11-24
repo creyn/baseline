@@ -1,0 +1,346 @@
+{
+  "schemaVersion": 1,
+  "docId": "019ab3c4-5d6e-7f80-9a1b-2c3d4e5f6a7b",
+  "verId": "019ab3c4-6e7f-7081-8b2c-3d4e5f6a7b8c",
+  "extraction": {
+    "model": "gpt-5.4-mini",
+    "promptVersion": "extract.v1",
+    "dictionaryVersion": null,
+    "extractorVersion": "0.1.0",
+    "extractedAt": "2026-04-12T09:30:12Z"
+  },
+  "pages": [
+    {
+      "index": 1,
+      "sha256": "aff0b30059ed8c3c4b213d0ebc84b75a579a0ddd063e56544e43f57775a42f94",
+      "words": [
+        {
+          "id": "p1w1",
+          "text": "Ferrytyna",
+          "box": {
+            "x": 0.08,
+            "y": 0.4,
+            "w": 0.1,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w2",
+          "text": "18",
+          "box": {
+            "x": 0.4,
+            "y": 0.4,
+            "w": 0.03,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w3",
+          "text": "ng/ml*",
+          "box": {
+            "x": 0.5,
+            "y": 0.4,
+            "w": 0.06,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w4",
+          "text": "30",
+          "box": {
+            "x": 0.62,
+            "y": 0.4,
+            "w": 0.03,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w5",
+          "text": "-",
+          "box": {
+            "x": 0.655,
+            "y": 0.4,
+            "w": 0.01,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w6",
+          "text": "400",
+          "box": {
+            "x": 0.67,
+            "y": 0.4,
+            "w": 0.04,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w7",
+          "text": "Badanie",
+          "box": {
+            "x": 0.1,
+            "y": 0.42,
+            "w": 0.06,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w8",
+          "text": "wykonano",
+          "box": {
+            "x": 0.165,
+            "y": 0.42,
+            "w": 0.07,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w9",
+          "text": "metodą",
+          "box": {
+            "x": 0.24,
+            "y": 0.42,
+            "w": 0.06,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w10",
+          "text": "ECLIA",
+          "box": {
+            "x": 0.305,
+            "y": 0.42,
+            "w": 0.05,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w11",
+          "text": "na",
+          "box": {
+            "x": 0.36,
+            "y": 0.42,
+            "w": 0.02,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w12",
+          "text": "aparacie",
+          "box": {
+            "x": 0.385,
+            "y": 0.42,
+            "w": 0.07,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w13",
+          "text": "Cobas",
+          "box": {
+            "x": 0.46,
+            "y": 0.42,
+            "w": 0.05,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w14",
+          "text": "8000.",
+          "box": {
+            "x": 0.515,
+            "y": 0.42,
+            "w": 0.04,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w15",
+          "text": "Żelazo",
+          "box": {
+            "x": 0.08,
+            "y": 0.46,
+            "w": 0.07,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w16",
+          "text": "64",
+          "box": {
+            "x": 0.4,
+            "y": 0.46,
+            "w": 0.03,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w17",
+          "text": "µg/dl*",
+          "box": {
+            "x": 0.5,
+            "y": 0.46,
+            "w": 0.06,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w18",
+          "text": "65",
+          "box": {
+            "x": 0.62,
+            "y": 0.46,
+            "w": 0.03,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w19",
+          "text": "-",
+          "box": {
+            "x": 0.655,
+            "y": 0.46,
+            "w": 0.01,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w20",
+          "text": "175",
+          "box": {
+            "x": 0.67,
+            "y": 0.46,
+            "w": 0.04,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        },
+        {
+          "id": "p1w21",
+          "text": "L",
+          "box": {
+            "x": 0.75,
+            "y": 0.46,
+            "w": 0.01,
+            "h": 0.012
+          },
+          "confidence": 0.99
+        }
+      ]
+    }
+  ],
+  "fragments": [
+    {
+      "page": 1,
+      "text": "Badanie wykonano metodą ECLIA na aparacie Cobas 8000.",
+      "box": {
+        "x": 0.1,
+        "y": 0.42,
+        "w": 0.455,
+        "h": 0.012
+      }
+    }
+  ],
+  "documentDates": [
+    {
+      "label": "Data/godz. pobrania",
+      "text": "2026-04-10 07:25",
+      "at": "2026-04-10T07:25:00+02:00",
+      "timeZone": "Europe/Warsaw",
+      "hasTime": true
+    }
+  ],
+  "results": [
+    {
+      "name": "Ferrytyna",
+      "value": "18",
+      "unit": "ng/ml",
+      "range": {
+        "text": "30 - 400",
+        "low": "30",
+        "high": "400",
+        "kind": "interval"
+      },
+      "flag": null,
+      "icd9": "O15",
+      "material": "surowica",
+      "condition": null,
+      "method": "ECLIA",
+      "analyser": "Cobas 8000",
+      "dates": [],
+      "suggestedParameter": null,
+      "source": {
+        "page": 1,
+        "name": [
+          "p1w1"
+        ],
+        "value": [
+          "p1w2"
+        ],
+        "unit": [
+          "p1w3"
+        ],
+        "range": [
+          "p1w4",
+          "p1w5",
+          "p1w6"
+        ]
+      }
+    },
+    {
+      "name": "Żelazo",
+      "value": "64",
+      "unit": "µg/dl",
+      "range": {
+        "text": "65 - 175",
+        "low": "65",
+        "high": "175",
+        "kind": "interval"
+      },
+      "flag": "L",
+      "icd9": "O45",
+      "material": "surowica",
+      "condition": null,
+      "method": null,
+      "analyser": "Cobas 8000",
+      "dates": [],
+      "suggestedParameter": null,
+      "source": {
+        "page": 1,
+        "name": [
+          "p1w15"
+        ],
+        "value": [
+          "p1w16"
+        ],
+        "unit": [
+          "p1w17"
+        ],
+        "range": [
+          "p1w18",
+          "p1w19",
+          "p1w20"
+        ]
+      }
+    }
+  ]
+}

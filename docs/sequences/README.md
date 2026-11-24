@@ -34,4 +34,4 @@ The import flows A and B, compared with the chosen C, are in [ADR-0005](../adr/0
 
 ## Open questions
 
-None at the moment.
+1. **The same ZIP sent again after a failure** (U2, U4, U9). [ADR-0006](../adr/0006-document-lifecycle-and-review.md) makes (`docId`, `zipSha256`) unique, so a retry of a lost upload returns the first version. But after `Failed (integrity, check_error or timeout)` the user picks the original again, and the browser masks it the same way: the same ZIP returns the failed version, and the user cannot retry. Proposal: the unique index covers only versions without a fail reason ([data-model.md](../data-model.md#version)), so the same ZIP after a failure makes a new version. The U2 diagram then shows that path. To decide by the owner.

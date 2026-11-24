@@ -42,6 +42,7 @@ Lab results are scattered across PDFs, emails, different labs' apps and paper. T
 - **User device (red):** the only place where the original document exists.
 - **Managed AI services (teal):** see masked pages and masked text only.
 - **Import** is a pipeline of Service Bus queues: check, extract, status ([ADR-0005](docs/adr/0005-asynchronous-import-pipeline.md)). Every use case is drawn as a sequence diagram, with every alternative path and the state after a failure at each step, in [docs/sequences](docs/sequences/README.md).
+- **Data model and contracts:** the tables in [docs/data-model.md](docs/data-model.md), the messages and blobs between services as JSON Schema in [contracts/](contracts/README.md).
 - **Everything scales to zero**: about 3.50 USD a month for 10 people ([ADR-0004](docs/adr/0004-serverless-hosting-and-operations.md), [use-cases.md](docs/use-cases.md)).
 
 All diagrams are generated from code in [tools/diagrams](tools/diagrams/). Edit the scripts, not the SVG files.
