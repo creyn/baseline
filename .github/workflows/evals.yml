@@ -1,0 +1,70 @@
+name: Extraction evals (live)
+
+# Real Document Intelligence and Azure OpenAI on the synthetic documents (ADR-0004, ADR-0007).
+# Runs when the extractor, its contracts or the evals change, every Monday (to catch a change
+# of the model or the service on Azure's side), and on demand. Skipped until the owner has set
+# the Azure variables. Never touches storage or queues: the identity has roles on the two AI
+# services only.
+on:
+  pull_request:
+    paths: ['services/extractor/**', 'evals/**', 'contracts/**', '.github/workflows/evals.yml']
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live:
+    name: Extraction evals (live)
+    runs-on: ubuntu-latest
+    environment: evals
+    timeout-minutes: 30
+    env:
+      CONFIGURED: ${{ vars.AZURE_CLIENT_ID != '' && vars.DOCUMENT_INTELLIGENCE_ENDPOINT != '' && vars.AZURE_OPENAI_ENDPOINT != '' }}
+      DOCUMENT_INTELLIGENCE_ENDPOINT: ${{ vars.DOCUMENT_INTELLIGENCE_ENDPOINT }}
+      AZURE_OPENAI_ENDPOINT: ${{ vars.AZURE_OPENAI_ENDPOINT }}
+      AZURE_OPENAI_DEPLOYMENT: ${{ vars.AZURE_OPENAI_DEPLOYMENT }}
+      AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION }}
+    steps:
+      - name: Skip without Azure
+        if: env.CONFIGURED != 'true'
+        run: 'echo "::notice::Live evals skipped, the Azure variables are not set yet."'
+      - uses: actions/checkout@v4
+        if: env.CONFIGURED == 'true'
+      - uses: actions/setup-python@v5
+        if: env.CONFIGURED == 'true'
+        with:
+          python-version: '3.12'
+      - name: Install
+        if: env.CONFIGURED == 'true'
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
+          python -m pip install -q -r evals/synthetic/requirements.txt -r services/extractor/requirements.txt
+      - name: Generate the synthetic documents
+        if: env.CONFIGURED == 'true'
+        run: python evals/synthetic/generate.py --out generated
+      - uses: azure/login@v2
+        if: env.CONFIGURED == 'true'
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Run
+        if: env.CONFIGURED == 'true'
+        run: python evals/extraction/live.py --generated generated --out report
+      - name: Summary
+        if: always() && env.CONFIGURED == 'true'
+        run: test -f report/summary.md && cat report/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always() && env.CONFIGURED == 'true'
+        with:
+          name: extraction-evals
+          path: report
+          retention-days: 30

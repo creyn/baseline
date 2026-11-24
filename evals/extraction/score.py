@@ -1,0 +1,77 @@
+"""Compares extracted results with the truth of a synthetic document (design: "Evals").
+
+Standard library only. Targets (ADR-0007, design.md):
+- values and units exactly right: 100%;
+- names, ranges and flags as printed: 95%;
+- missing and extra results, material, condition, method and dates: reported, no target yet.
+"""
+import re
+
+TARGETS = {'values_units': 1.0, 'names': 0.95, 'ranges': 0.95, 'flags': 0.95}
+_SPACES = re.compile(r'\s+')
+
+
+def norm(text):
+    return _SPACES.sub('', text or '').rstrip('*').lower()
+
+
+def score(expected, extracted):
+    """expected: describe.expected_extraction(doc); extracted: the blob's results. Returns counts and ratios."""
+    pairs, extra = match(expected, extracted)
+    n = len(expected)
+    counts = {k: 0 for k in ('values_units', 'names', 'ranges', 'flags', 'material', 'condition', 'method')}
+    for e, x in pairs:
+        if x is None:
+            continue
+        counts['values_units'] += (x['value'] or '').strip() == e['value'] and norm(x['unit']) == norm(e['unit'] or None)
+        counts['names'] += norm(x['name']) == norm(e['name'])
+        counts['ranges'] += _range_ok(e, x)
+        counts['flags'] += (x['flagPrinted'] or None) == (e['flag'] or None)
+        counts['material'] += norm(x['material']) == norm(e['material'])
+        counts['condition'] += norm(x['condition']) == norm(e['condition'])
+        counts['method'] += not e['method'] or norm(x['method']) in norm(e['method'])
+    missing = sum(1 for _, x in pairs if x is None)
+    ratios = {k: (v / n if n else 1.0) for k, v in counts.items()}
+    return {'expected': n, 'missing': missing, 'extra': len(extra), 'counts': counts, 'ratios': ratios}
+
+
+def match(expected, extracted):
+    """Pairs each expected result with one extracted result: first by page and printed name,
+    then by page, value and unit (the name is then counted as wrong). Each is used once."""
+    left = list(extracted)
+    pairs = []
+    for e in expected:
+        x = _take(left, lambda x: x['source']['page'] == e['page'] and norm(x['name']) == norm(e['name']))
+        pairs.append([e, x])
+    for pair in pairs:
+        if pair[1] is None:
+            e = pair[0]
+            pair[1] = _take(left, lambda x: x['source']['page'] == e['page'] and (x['value'] or '').strip() == e['value']
+                            and norm(x['unit']) == norm(e['unit'] or None))
+    return [tuple(p) for p in pairs], left
+
+
+def _take(items, test):
+    for i, x in enumerate(items):
+        if test(x):
+            return items.pop(i)
+    return None
+
+
+def _range_ok(e, x):
+    if e.get('min') is not None or e.get('max') is not None:
+        return norm(x['range']['low']) == norm(e.get('min')) and norm(x['range']['high']) == norm(e.get('max'))
+    return norm(x['range']['text']) == norm(e.get('range'))
+
+
+def total(scores):
+    """Sums per-document scores into one, weighted by the number of expected results."""
+    n = sum(s['expected'] for s in scores)
+    counts = {k: sum(s['counts'][k] for s in scores) for k in scores[0]['counts']} if scores else {}
+    return {'expected': n, 'missing': sum(s['missing'] for s in scores), 'extra': sum(s['extra'] for s in scores),
+            'counts': counts, 'ratios': {k: (v / n if n else 1.0) for k, v in counts.items()}}
+
+
+def failures(summary):
+    """Metrics below their target, as 'name ratio < target'."""
+    return [f'{k} {summary["ratios"][k]:.3f} < {t}' for k, t in TARGETS.items() if summary['ratios'][k] < t]

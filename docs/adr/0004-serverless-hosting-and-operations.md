@@ -4,7 +4,7 @@ Date: 2026-11-23
 
 ## Status
 
-Accepted
+Accepted. Point 2 is extended by [ADR-0017](0017-catching-changes-on-the-ai-services.md): live evals also run every week, and the model version is pinned.
 
 ## Context
 

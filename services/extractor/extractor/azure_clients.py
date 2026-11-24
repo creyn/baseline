@@ -84,7 +84,8 @@ class AzureOpenAILlm:
             # Cut off, filtered or not in the schema: an invalid answer, retried once by the core.
             return unusable, {'input': 0, 'output': 0}
         choice = response.choices[0]
-        usage = {'input': response.usage.prompt_tokens, 'output': response.usage.completion_tokens}
+        usage = {'input': response.usage.prompt_tokens, 'output': response.usage.completion_tokens,
+                 'model': getattr(response, 'model', None)}
         if choice.message.refusal or choice.message.content is None:
             return unusable, usage
         try:

@@ -111,7 +111,7 @@ Evals SHALL run the extractor's core on every synthetic document and compare the
 
 #### Scenario: Live run
 
-- **WHEN** a pull request changes the extractor or the evals, and the Azure variables are set
+- **WHEN** a pull request changes the extractor, its contracts or the evals, or it is Monday, and the Azure variables are set
 - **THEN** evals run against Document Intelligence and gpt-5.4 mini on every form of every document, and the job summary shows each metric per document and form
 
 #### Scenario: No Azure yet

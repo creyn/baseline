@@ -19,10 +19,10 @@
 
 ## 3. Evals (third pull request)
 
-- [ ] 3.1 Matching and metrics, with tests
-- [ ] 3.2 A synthetic document of 7 pages with a result block from page 5 to page 6 (ADR-0007)
-- [ ] 3.3 Offline run in CI: layout from the text PDFs, a fake LLM from the truth
-- [ ] 3.4 Live run workflow, skipped without the Azure variables
+- [x] 3.1 Matching and metrics, with tests
+- [x] 3.2 A synthetic document of 7 pages with a result block from page 5 to page 6 (ADR-0007)
+- [x] 3.3 Offline run in CI: a layout built from the descriptions, a fake LLM from the truth
+- [x] 3.4 Live run workflow, skipped without the Azure variables, also weekly (ADR-0017)
 
 ## 4. After merge
 
