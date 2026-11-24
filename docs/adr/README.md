@@ -21,7 +21,7 @@ This set replaces an earlier one (2026-11-17 to 2026-11-20), which is in the Git
 | 0013 | [Application security baseline](0013-application-security-baseline.md) | Accepted |
 | 0014 | [Development with AI coding agents: specs first, CI as the build, privacy checks everywhere](0014-development-with-ai-agents.md) | Accepted |
 | 0015 | [Our own user id, and the identifiers in every log entry](0015-internal-user-id-and-log-identifiers.md) | Accepted |
-| 0016 | [The same ZIP sent again matches only a live version](0016-same-zip-after-a-failure.md) | Accepted |
+| 0016 | [A retry replaces a failed version; an upload sent again matches only a live version](0016-retry-replaces-a-failed-version.md) | Accepted |
 
 ## Order of dependence
 

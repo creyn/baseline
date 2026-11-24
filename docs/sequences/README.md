@@ -21,7 +21,7 @@ One diagram per use case of [use-cases.md](../use-cases.md), for the chosen arch
 | U1 | Account, sign in and consent | [01-sign-in-and-consent](01-sign-in-and-consent.svg) | [ADR-0010](../adr/0010-identity-users-and-consent.md) |
 | U2 | Import a lab result | [02-import](02-import.svg) | [ADR-0003](../adr/0003-masking-in-the-browser-and-a-second-check.md), [ADR-0005](../adr/0005-asynchronous-import-pipeline.md), [ADR-0006](../adr/0006-document-lifecycle-and-review.md) |
 | U3 | Review and approve the extracted values | [03-review](03-review.svg) | [ADR-0006](../adr/0006-document-lifecycle-and-review.md), [ADR-0008](../adr/0008-retrieval-without-ai-search.md) |
-| U4 | Fix a blocked document and send it again | [04-blocked-document](04-blocked-document.svg) | [ADR-0003](../adr/0003-masking-in-the-browser-and-a-second-check.md), [ADR-0016](../adr/0016-same-zip-after-a-failure.md) |
+| U4 | Fix a blocked document and send it again | [04-blocked-document](04-blocked-document.svg) | [ADR-0003](../adr/0003-masking-in-the-browser-and-a-second-check.md), [ADR-0016](../adr/0016-retry-replaces-a-failed-version.md) |
 | U5 | Browse results and trends | [05-browse-results](05-browse-results.svg) | [ADR-0008](../adr/0008-retrieval-without-ai-search.md) |
 | U6 | Ask the agent a question | [06-ask-the-agent](06-ask-the-agent.svg) | [ADR-0009](../adr/0009-agent-questions-and-summaries.md) |
 | U7 | Pre-visit summary | [07-pre-visit-summary](07-pre-visit-summary.svg) | [ADR-0009](../adr/0009-agent-questions-and-summaries.md) |
