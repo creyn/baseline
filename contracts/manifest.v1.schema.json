@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/creyn/baseline/contracts/manifest.schema.json",
+  "$id": "https://github.com/creyn/baseline/contracts/manifest.v1.schema.json",
   "title": "ZIP manifest (minimal)",
   "description": "manifest.json inside a version's ZIP. order lists the page hashes in page order; each has a file pages/{sha256}.png in the same ZIP. The checker change adds the other fields (keptRegions, originalSha256), as drawn in U2.",
   "type": "object",
@@ -10,7 +10,9 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": 1
+      "type": "string",
+      "pattern": "^1\\.(0|[1-9][0-9]*)$",
+      "description": "major.minor. Receivers decide on the major version only."
     },
     "order": {
       "type": "array",

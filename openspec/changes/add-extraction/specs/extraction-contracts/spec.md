@@ -22,7 +22,7 @@ Every message type and every blob format that one service writes and another rea
 
 ### Requirement: One envelope for every message
 
-Every message body MUST carry `type`, `schemaVersion`, `userId`, `docId` and `verId`, and MUST NOT carry any text, value or image from the document. The sender SHALL set the Service Bus `subject` to `type` and `correlationId` to `verId`.
+Every message body MUST carry `type`, `schemaVersion`, `userId`, `docId` and `verId`, and MUST NOT carry any text, value or image from the document. The sender SHALL set the Service Bus `subject` to `type`, the application properties `docId` and `verId`, and the trace context in `Diagnostic-Id`. `userId` MUST be our own UUIDv7, never the Entra `oid`.
 
 #### Scenario: A message with content
 
@@ -40,16 +40,16 @@ The contracts SHALL define `ExtractRequested` (queue `extract`), `Extracted` and
 
 ### Requirement: Versioned contracts
 
-A receiver SHALL ignore fields it does not know. A change that removes, renames or changes the meaning of a field MUST raise `schemaVersion`. A receiver MUST dead-letter a message whose `schemaVersion` it does not support.
+`schemaVersion` SHALL be `major.minor`. A receiver SHALL ignore fields it does not know and SHALL decide on the major version only. Adding an optional field MUST raise the minor version. Removing any field, renaming it, changing its meaning or adding a required field MUST raise the major version, in a new schema file. A receiver MUST dead-letter a message whose major version it does not support.
 
 #### Scenario: A new optional field
 
-- **WHEN** a sender adds an optional field and keeps `schemaVersion`
+- **WHEN** a sender adds an optional field and sends `schemaVersion` "1.1"
 - **THEN** a receiver built for the earlier contract still accepts the message
 
 #### Scenario: An unknown version
 
-- **WHEN** a receiver gets `schemaVersion` 2 and supports only 1
+- **WHEN** a receiver gets `schemaVersion` "2.0" and supports only major version 1
 - **THEN** it sends the message to the dead-letter queue, which raises an alert
 
 ### Requirement: The minimal ZIP manifest
@@ -63,7 +63,7 @@ A clean ZIP SHALL contain `manifest.json` with `schemaVersion` and `order`, the 
 
 ### Requirement: The text blob
 
-The `text` blob of a version SHALL hold `extraction` (model, prompt version, dictionary version, extractor version, time), `pages` (each page's `sha256` and its words with id, text, box and confidence), `fragments`, `documentDates` and `results`. Boxes MUST be fractions of the page, from the top left.
+The `text` blob of a version SHALL hold `extraction` (model, prompt version, dictionary version, extractor version, time), `pages` (each page's `sha256` and its words with id, text, box and confidence), `fragments`, `documentDates` and `results`. Boxes MUST be fractions of the page, from the top left. Every date MUST have a `kind`, and every result a `collectedAt` (or null) chosen by code.
 
 #### Scenario: A result points to its words
 

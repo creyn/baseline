@@ -23,17 +23,19 @@ The checker and the API do not exist yet. This change defines the contracts they
 
 ### Messages
 
-- **One envelope for every message:** `type`, `schemaVersion`, `userId`, `docId`, `verId`, plus the fields of the type. The Service Bus message also sets `subject` to the type and `correlationId` to `verId`, so logs and the dead-letter queue can be read without opening the body. The body never carries content of the document ([ADR-0005](../../../docs/adr/0005-asynchronous-import-pipeline.md), point 4).
-- **`userId` travels in every message**, because blob paths start with it and the API's status consumer runs as that user for Row-Level Security ([ADR-0010](../../../docs/adr/0010-identity-users-and-consent.md)).
+- **One envelope for every message:** `type`, `schemaVersion`, `userId`, `docId`, `verId`, plus the fields of the type. The Service Bus message also sets `subject` to the type and the application properties `docId` and `verId`, so the dead-letter queue can be read without opening the body. The trace context travels in `Diagnostic-Id`, and `CorrelationId` is not used ([ADR-0015](../../../docs/adr/0015-internal-user-id-and-log-identifiers.md)). The body never carries content of the document ([ADR-0005](../../../docs/adr/0005-asynchronous-import-pipeline.md), point 4).
+- **`userId` travels in every message**, because blob paths start with it and the API's status consumer runs as that user for Row-Level Security ([ADR-0010](../../../docs/adr/0010-identity-users-and-consent.md)). It is our own UUIDv7, never the Entra `oid` ([ADR-0015](../../../docs/adr/0015-internal-user-id-and-log-identifiers.md)).
 - **This change defines three types:**
   - `ExtractRequested` (queue `extract`): the envelope only.
   - `Extracted` (queue `status`): the envelope only. The results are in `text`, the claim check.
   - `Failed` (queue `status`): the envelope plus `reason`. The extractor sends `extract_invalid`, `extract_error` or `no_results`. The schema also allows `integrity` and `check_error`, which the checker will send. `timeout` is never a message: the API's sweeper sets it.
 - **Versioning, so that the first version can change:**
   - Schemas are strict: they list every allowed field, so a sender's tests catch a field that should not be there (content of the document, a typo).
-  - Receivers read only the fields they know and ignore the rest. So adding an optional field keeps `schemaVersion`: the schema gains the field, and an older receiver still works.
-  - Removing a field, renaming it or changing its meaning raises `schemaVersion`. For one release, receivers accept both versions, the same expand-then-contract rule as database migrations ([ADR-0004](../../../docs/adr/0004-serverless-hosting-and-operations.md)).
-  - A message with a `schemaVersion` the receiver does not know goes to the dead-letter queue, which raises an alert.
+  - Required means the sender must provide it, whoever reads it. A field that only a later reader needs is still required; each receiver reads only the fields it knows and ignores the rest.
+  - `schemaVersion` is `major.minor`, a string such as `"1.0"`. Adding an optional field raises the minor version; receivers need no change, and the minor version shows in logs which sender wrote the message.
+  - Removing a field (optional ones too, since a receiver may use them), renaming it, changing its meaning or adding a required field raises the major version. The schema file carries the major version in its name (`messages.v1.schema.json`); a new major version is a new file next to the old one. For one release, receivers accept both, the same expand-then-contract rule as database migrations ([ADR-0004](../../../docs/adr/0004-serverless-hosting-and-operations.md)).
+  - A receiver decides on the major version only. A major version it does not know goes to the dead-letter queue, which raises an alert.
+  - Until the first release, nothing has sent a v1 message, so v1 is still a draft and can change without a new major version.
 - **Contracts are JSON Schema (draft 2020-12) in `contracts/`.** Every service validates what it sends in its tests. Examples in `contracts/examples/` are valid messages, checked by a test, and used by the services' tests.
 
 ### The ZIP manifest, minimal
@@ -65,7 +67,9 @@ Values stay text: "<1,0" and "nie wykryto" are valid values. Parsing numbers, co
 
 ### Dates
 
-The model returns each date's label, its text as printed, and the local date and time it reads (`2026-04-10T07:25`, or a date alone). Code, not the model, adds the zone and the offset ([ADR-0007](../../../docs/adr/0007-extraction-with-document-intelligence-and-an-llm.md), point 2): `Europe/Warsaw` by default, the earlier offset in the hour repeated in autumn, midnight and `hasTime: false` for a date without a time. A time in the hour skipped in spring is invalid. The date of birth is never on a masked page ([ADR-0003](../../../docs/adr/0003-masking-in-the-browser-and-a-second-check.md)), so extraction does not look for it.
+The model returns each date's label, its text as printed, and the local date and time it reads (`2026-04-10T07:25`, or a date alone). Code, not the model, adds the zone and the offset ([ADR-0007](../../../docs/adr/0007-extraction-with-document-intelligence-and-an-llm.md), point 2): `Europe/Warsaw` by default, the earlier offset in the hour repeated in autumn, midnight and `hasTime: false` for a date without a time. A time in the hour skipped in spring is invalid. The model also gives each date a `kind` from its label: `collected`, `registered`, `received`, `performed`, `released`, `printed` or `other`.
+
+Every result gets `collectedAt`, the date its trend uses. Code picks it: the result's own `collected` date, else the document's `collected` date, else a `registered` date, else none. The user can correct it on review. The date of birth is never on a masked page ([ADR-0003](../../../docs/adr/0003-masking-in-the-browser-and-a-second-check.md)), so extraction does not look for it.
 
 ### The extractor
 
@@ -83,13 +87,13 @@ The model returns each date's label, its text as printed, and the local date and
 - **A failure is not stored.** After `no_results` or `extract_invalid` nothing is written, so a redelivery (a crash after sending `Failed`, before completing the message) calls the AI services again. The API ignores the second `Failed`. Accepted: it is rare and costs a few cents.
 - **Two runs of the same message at once** both write with `If-None-Match: *`; one wins, both send `Extracted`, and the API's forward-only update ignores the second.
 - **Deleted while in progress:** the extractor may write `text` after the deletion. The sweeper removes blobs that have no version row ([ADR-0012](../../../docs/adr/0012-deletion-and-retention.md)).
-- **Logs** carry `docId`, `verId`, page and result counts, tokens and durations. Never words, values or prompts.
+- **Logs** go to Application Insights through OpenTelemetry. They carry `userId`, `docId`, `verId` and the trace context from `Diagnostic-Id` ([ADR-0015](../../../docs/adr/0015-internal-user-id-and-log-identifiers.md)), page and result counts, tokens and durations. Never words, values or prompts.
 - **Identity:** the extractor's managed identity reads `clean`, writes `text`, receives from `extract`, sends to `status`, and calls Document Intelligence and Azure OpenAI. Nothing else. It has no database access ([ADR-0002](../../../docs/adr/0002-languages-dotnet-python-and-typescript.md)).
 - **The prompt** lives in a file with a version in its name (`extract.v1`). Changing the prompt means a new file and a new version, so every `text` blob says which prompt made it.
 
 ### The data model
 
-The tables are in [docs/data-model.md](../../../docs/data-model.md), one place for the API and the reviewers. It covers documents, versions, results and their dates. Users, consent, fragments, aliases and normalised values are added there by the changes that need them.
+The tables are in [docs/data-model.md](../../../docs/data-model.md), one place for the API and the reviewers. It covers documents, versions, extractions and results. A result has its printed name, the confirmed parameter (`ParameterCode`, set by the review) and `CollectedAt` for trends; all labelled dates are kept as JSON, because their number and labels differ between laboratories and nothing queries them. Users, consent, fragments, aliases and normalised values are added there by the changes that need them.
 
 ### Evals
 
@@ -114,7 +118,7 @@ Live evals need Azure resources that do not exist yet. They cost money and chang
 2. An identity for GitHub Actions with a federated credential for the GitHub environment `evals`, and the role "Cognitive Services User" on those two resources only.
 3. Repository variables (not secrets) with the tenant, subscription and client id, and the two endpoints.
 
-The Bicep for these resources comes with the infrastructure change. Until then the steps are described in `evals/extraction/README.md`, and the live run is skipped when the variables are missing.
+The Bicep for these resources comes with the infrastructure change. Until the owner creates them, the live run is skipped when the variables are missing.
 
 ## Risks / Trade-offs
 

@@ -4,16 +4,18 @@ The messages between the pipeline's services and the blob formats that one servi
 
 | Schema | What it describes | Written by | Read by |
 |---|---|---|---|
-| [messages.schema.json](messages.schema.json) | `ExtractRequested` (queue `extract`), `Extracted` and `Failed` (queue `status`) | checker, extractor, API (sweeper, U9) | extractor, API |
-| [manifest.schema.json](manifest.schema.json) | `manifest.json` in a version's ZIP: the page order (minimal) | browser | checker, extractor |
-| [text.schema.json](text.schema.json) | `text/{userId}/{docId}/{verId}.json`: words, fragments, dates and results | extractor | API |
+| [messages.v1.schema.json](messages.v1.schema.json) | `ExtractRequested` (queue `extract`), `Extracted` and `Failed` (queue `status`) | checker, extractor, API (sweeper, U9) | extractor, API |
+| [manifest.v1.schema.json](manifest.v1.schema.json) | `manifest.json` in a version's ZIP: the page order (minimal) | browser | checker, extractor |
+| [text.v1.schema.json](text.v1.schema.json) | `text/{userId}/{docId}/{verId}.json`: words, fragments, dates and results | extractor | API |
 
 ## Rules
 
 - **Strict schemas, tolerant receivers.** A schema lists every allowed field, so a sender's tests catch a field that should not be there. A receiver reads only the fields it knows.
-- **Versions.** Adding an optional field keeps `schemaVersion`. Removing, renaming or changing the meaning of a field raises it, and receivers accept both versions for one release. A receiver dead-letters a version it does not know.
+- **Required means the sender must provide it**, whoever reads it. A field that only a later reader needs is still required.
+- **Versions.** `schemaVersion` is `major.minor` ("1.0"). Adding an optional field raises the minor version. Removing any field, renaming it, changing its meaning or adding a required field raises the major version, in a new file (`messages.v2.schema.json`) next to the old one; receivers accept both for one release. A receiver decides on the major version only and dead-letters one it does not know. v1 is a draft until the first release.
 - **No content in messages.** Messages carry identifiers and a reason. Page text and results travel in blobs.
-- **Examples** in [examples/](examples/) are named `{schema}.{name}.json`. Every schema has at least one, and services use them in their tests.
+- **Service Bus properties.** The sender sets `subject` to the type, the application properties `docId` and `verId`, and the trace context in `Diagnostic-Id`. `CorrelationId` is not used ([ADR-0015](../docs/adr/0015-internal-user-id-and-log-identifiers.md)).
+- **Examples** in [examples/](examples/) are named `{schema}.v{major}.{name}.json`. Every schema has at least one, and services use them in their tests.
 - **Checks JSON Schema cannot express** (word ids exist on the right page, a value equals the words it was read from) are in [text_checks.py](text_checks.py). The extractor runs them before it writes a blob.
 
 ## Running the tests

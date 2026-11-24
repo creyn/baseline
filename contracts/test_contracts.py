@@ -38,6 +38,11 @@ def errors(schema_name, doc, definition=None):
     return [e.message for e in validator(schema_name, definition).iter_errors(doc)]
 
 
+def schema_of(example_name):
+    """messages.v1.extracted.json belongs to messages.v1.schema.json."""
+    return '.'.join(example_name.split('.')[:2])
+
+
 def example(name):
     return load(os.path.join(EXAMPLES, name))
 
@@ -49,61 +54,71 @@ class SchemasAndExamples(unittest.TestCase):
                 Draft202012Validator.check_schema(schema)
 
     def test_every_schema_has_an_example(self):
-        named = {n.split('.')[0] for n in EXAMPLE_FILES}
+        named = {schema_of(n) for n in EXAMPLE_FILES}
         self.assertEqual(set(SCHEMAS), named)
 
     def test_examples_are_valid(self):
         for name in EXAMPLE_FILES:
             with self.subTest(example=name):
-                schema = name.split('.')[0]
+                schema = schema_of(name)
                 self.assertIn(schema, SCHEMAS, 'an example must start with its schema name')
                 self.assertEqual(errors(schema, example(name)), [])
 
     def test_message_examples_match_their_own_type(self):
         for name in EXAMPLE_FILES:
-            if name.startswith('messages.'):
+            if name.startswith('messages.v1.'):
                 with self.subTest(example=name):
                     doc = example(name)
-                    self.assertEqual(errors('messages', doc, doc['type']), [])
+                    self.assertEqual(errors('messages.v1', doc, doc['type']), [])
 
 
 class Messages(unittest.TestCase):
     def setUp(self):
-        self.extracted = example('messages.extracted.json')
-        self.failed = example('messages.failed.json')
+        self.extracted = example('messages.v1.extracted.json')
+        self.failed = example('messages.v1.failed.json')
 
     def test_timeout_is_never_sent(self):
         self.failed['reason'] = 'timeout'
-        self.assertTrue(errors('messages', self.failed))
+        self.assertTrue(errors('messages.v1', self.failed))
 
     def test_failed_needs_a_reason(self):
         del self.failed['reason']
-        self.assertTrue(errors('messages', self.failed))
+        self.assertTrue(errors('messages.v1', self.failed))
 
     def test_no_content_in_a_message(self):
         self.extracted['value'] = '18'
-        self.assertTrue(errors('messages', self.extracted))
+        self.assertTrue(errors('messages.v1', self.extracted))
 
     def test_a_reason_only_on_failed(self):
         self.extracted['reason'] = 'no_results'
-        self.assertTrue(errors('messages', self.extracted))
+        self.assertTrue(errors('messages.v1', self.extracted))
 
-    def test_unknown_version(self):
-        self.extracted['schemaVersion'] = 2
-        self.assertTrue(errors('messages', self.extracted))
+    def test_a_newer_minor_version_is_accepted(self):
+        self.extracted['schemaVersion'] = '1.1'
+        self.assertEqual(errors('messages.v1', self.extracted), [])
+
+    def test_another_major_version_is_not_v1(self):
+        for version in ('2.0', '1', 1, '1.01'):
+            with self.subTest(version=version):
+                self.extracted['schemaVersion'] = version
+                self.assertTrue(errors('messages.v1', self.extracted))
+
+    def test_user_id_is_ours_not_the_oid(self):
+        self.extracted['userId'] = '3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b'
+        self.assertTrue(errors('messages.v1', self.extracted))
 
     def test_ids_must_be_uuidv7(self):
         self.extracted['verId'] = '3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b'
-        self.assertTrue(errors('messages', self.extracted))
+        self.assertTrue(errors('messages.v1', self.extracted))
 
     def test_unknown_type(self):
         self.extracted['type'] = 'Checked'
-        self.assertTrue(errors('messages', self.extracted))
+        self.assertTrue(errors('messages.v1', self.extracted))
 
 
 class TextBlob(unittest.TestCase):
     def setUp(self):
-        self.doc = example('text.iron-one-page.json')
+        self.doc = example('text.v1.iron-one-page.json')
 
     def words(self):
         return {w['id']: w for p in self.doc['pages'] for w in p['words']}
@@ -113,15 +128,25 @@ class TextBlob(unittest.TestCase):
 
     def test_no_results_is_not_a_blob(self):
         self.doc['results'] = []
-        self.assertTrue(errors('text', self.doc))
+        self.assertTrue(errors('text.v1', self.doc))
 
     def test_a_date_needs_an_offset(self):
         self.doc['documentDates'][0]['at'] = '2026-04-10T07:25:00'
-        self.assertTrue(errors('text', self.doc))
+        self.assertTrue(errors('text.v1', self.doc))
+
+    def test_a_date_needs_a_kind(self):
+        del self.doc['documentDates'][0]['kind']
+        self.assertTrue(errors('text.v1', self.doc))
+
+    def test_a_result_needs_collected_at_or_null(self):
+        self.doc['results'][0]['collectedAt'] = None
+        self.assertEqual(errors('text.v1', self.doc), [])
+        del self.doc['results'][0]['collectedAt']
+        self.assertTrue(errors('text.v1', self.doc))
 
     def test_a_box_is_a_fraction_of_the_page(self):
         self.doc['pages'][0]['words'][0]['box']['x'] = 120
-        self.assertTrue(errors('text', self.doc))
+        self.assertTrue(errors('text.v1', self.doc))
 
     def test_a_value_the_model_did_not_read(self):
         self.doc['results'][0]['value'] = '16'
@@ -174,7 +199,7 @@ class TextBlob(unittest.TestCase):
 
     def test_text_that_does_not_fit_its_column(self):
         self.doc['results'][0]['value'] = '1' * 101
-        self.assertTrue(errors('text', self.doc))
+        self.assertTrue(errors('text.v1', self.doc))
 
     def test_a_unit_without_words(self):
         self.doc['results'][0]['source']['unit'] = []

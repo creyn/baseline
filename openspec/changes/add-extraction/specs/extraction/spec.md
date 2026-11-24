@@ -36,7 +36,7 @@ For the name, the value, the unit and the range of every result, the LLM MUST re
 
 ### Requirement: Dates get their zone from code
 
-The extractor SHALL convert each local date and time from the model into a time with an offset, in `Europe/Warsaw` by default, using the offset in force on that day. A date without a time MUST be stored at midnight with `hasTime` false.
+The extractor SHALL convert each local date and time from the model into a time with an offset, in `Europe/Warsaw` by default, using the offset in force on that day. A date without a time MUST be stored at midnight with `hasTime` false. Code SHALL set each result's `collectedAt` from its own `collected` date, else the document's `collected` date, else a `registered` date.
 
 #### Scenario: Winter time
 
@@ -47,6 +47,11 @@ The extractor SHALL convert each local date and time from the model into a time 
 
 - **WHEN** a printed time falls in the hour repeated when clocks go back
 - **THEN** the earlier offset (+02:00) is used
+
+#### Scenario: The date for the trend
+
+- **WHEN** a result has no dates of its own and the document has "Data rejestracji" and "Data/godz. pobrania"
+- **THEN** its `collectedAt` is the collection date
 
 ### Requirement: No results means not a lab result
 
@@ -83,7 +88,7 @@ The extractor MUST NOT call an AI service for a version whose `text` blob exists
 
 ### Requirement: Nothing from the document in logs
 
-Logs and telemetry of the extractor MUST carry only identifiers, counts, token use and durations, never words, values or prompts.
+Logs and telemetry of the extractor MUST carry `userId`, `docId`, `verId` and the trace context, and otherwise only counts, token use and durations, never words, values or prompts.
 
 #### Scenario: An invalid answer
 
