@@ -163,7 +163,7 @@ def _result(a, words, indexes, zone):
     problems += [_where(e) for e in _RESULT.iter_errors(result)]
     if not problems:
         for field in ('name', 'range'):
-            _drop_extra_words(result, field, words)
+            _regroup_words(result, field, words)
         problems += text_checks.result_problems(result, words, indexes)
     if not problems and text_checks.known_unit(result['unit']):
         # A unit read with OCR misreadings ("tys/ul") becomes the known unit ("tys/µl"); the words keep the reading.
@@ -174,20 +174,57 @@ def _result(a, words, indexes, zone):
 _MARK = re.compile(r'[A-Z]|[A-Z]{1,3}\d+(?:[.,]\d+)*')
 
 
-def _drop_extra_words(result, field, words):
-    """The model often lists, with a name or a range, a mark printed between its words: an accreditation
-    "A" or a procedure code ("V2.4"). When the text equals the listed words without such marks inside
-    them (never the first or the last word), keep only those words. The text is never changed, and no
-    other word is ever dropped, so a cut name or one band picked from a range still fails the check."""
+def _regroup_words(result, field, words):
+    """Long names and ranges run over several lines, between other columns, and the model often lists
+    their word ids a little wrong: a mark printed between the lines (an accreditation "A", a procedure
+    code "V2.4") or a word of another column added, or a word left out. When the text does not equal
+    the listed words, code looks for the text on the page itself, in reading order from the first listed
+    word, skipping inside it only such marks and words of another column (another line, no horizontal
+    overlap). It keeps the words it found when they hold every listed word that is not a mark or such a
+    word, so a cut name or one band picked from a range still fails. The text is never changed."""
     text = result['name'] if field == 'name' else result['range']['text']
     ids = result['source'][field]
-    if not text or len(ids) < 3 or any(i not in words for i in ids):
+    if not text or not ids or any(i not in words for i in ids):
         return
     if text_checks.field_matches(text, text_checks.joined(words, ids)):
         return
-    kept = [ids[0]] + [i for i in ids[1:-1] if not _MARK.fullmatch(words[i]['text'])] + [ids[-1]]
-    if len(kept) < len(ids) and text_checks.field_matches(text, text_checks.joined(words, kept)):
-        result['source'][field] = kept
+    page = f'p{result["source"]["page"]}w'
+    order = sorted((i for i in words if i.startswith(page)), key=lambda i: int(i[len(page):]))
+    target = text_checks.normalise(text)
+    start = order.index(ids[0])
+    for first in range(max(0, start - 3), min(len(order), start + 4)):  # the model may start a word early or late
+        found, pos = [], 0
+        for i in order[first:]:
+            w = text_checks.normalise(words[i]['text'])
+            if w and target.startswith(w, pos):
+                found.append(i)
+                pos += len(w)
+                if pos == len(target):
+                    break
+            elif found and (_MARK.fullmatch(words[i]['text']) or _other_column(words[i], [words[f] for f in found])):
+                continue
+            else:
+                break
+        if not found:
+            continue
+        rank = {i: n for n, i in enumerate(order)}
+        before = lambda i: [words[f] for f in found if rank[f] < rank[i]]  # noqa: E731  as skipped in the scan
+        listed = {i for i in ids if not _MARK.fullmatch(words[i]['text'])
+                  and not (rank[found[0]] < rank[i] < rank[found[-1]] and _other_column(words[i], before(i)))}
+        if pos == len(target) and found and listed <= set(found):
+            result['source'][field] = found
+            return
+
+
+def _other_column(word, found):
+    """A word printed in another column than the words found so far: on another line than the last of
+    them, and with no horizontal overlap with any of them. A word on the same line is never skipped."""
+    last = found[-1]['box']
+    if abs(word['box']['y'] - last['y']) < last['h'] / 2:
+        return False
+    left = min(w['box']['x'] for w in found)
+    right = max(w['box']['x'] + w['box']['w'] for w in found)
+    return word['box']['x'] + word['box']['w'] <= left or word['box']['x'] >= right
 
 
 def _date(d, zone):

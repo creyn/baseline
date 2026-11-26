@@ -136,6 +136,35 @@ class Extract(unittest.TestCase):
         self.assertEqual(blob['results'][0]['source']['range'], ['p1w8', 'p1w9', 'p1w11'])
         self.assertEqual(text_checks.problems(blob), [])
 
+    def test_a_word_left_out_of_the_range_is_found_on_the_page(self):
+        answer = fakes.iron_answer()
+        answer['results'][0]['rangeWords'] = ['p1w8', 'p1w10']  # "-" left out
+        blob, _, llm = run([fakes.IRON_PAGE], answer)
+        self.assertEqual(len(llm.calls), 1)
+        self.assertEqual(blob['results'][0]['source']['range'], ['p1w8', 'p1w9', 'p1w10'])
+
+    def test_a_name_not_printed_still_fails(self):
+        answer = fakes.iron_answer()
+        answer['results'][0]['name'] = 'Ferrytyna surowica'  # not on the page as one run of words
+        with self.assertRaises(core.InvalidAnswer):
+            run([fakes.IRON_PAGE], answer, answer)
+
+    def test_regrouping_skips_only_marks_and_other_columns(self):
+        w = fakes.w
+        words = {'p1w1': w('Cholesterol', 0.05, 0.40), 'p1w2': w('LDL', 0.11, 0.40), 'p1w3': w('bezp.', 0.16, 0.40),
+                 'p1w4': w('<115', 0.60, 0.40), 'p1w5': w('A', 0.80, 0.40, 0.01), 'p1w6': w('w', 0.05, 0.42, 0.01),
+                 'p1w7': w('surowicy', 0.07, 0.42), 'p1w8': w('<100', 0.60, 0.42)}
+        def regroup(field, text, ids):
+            r = {'name': text if field == 'name' else 'x', 'range': {'text': text if field == 'range' else None},
+                 'source': {'page': 1, 'name': ids if field == 'name' else [], 'range': ids if field == 'range' else []}}
+            core._regroup_words(r, field, words)
+            return r['source'][field]
+        # A mark and a word of another column on the next line are skipped
+        self.assertEqual(regroup('range', '<115 <100', ['p1w4', 'p1w5', 'p1w6', 'p1w7', 'p1w8']), ['p1w4', 'p1w8'])
+        # A word left out on the same line is not: the name stays as listed and fails the check
+        self.assertEqual(regroup('name', 'Cholesterol bezp.', ['p1w1', 'p1w2', 'p1w3']), ['p1w1', 'p1w2', 'p1w3'])
+        self.assertEqual(regroup('name', 'Cholesterol', ['p1w1', 'p1w2']), ['p1w1', 'p1w2'])
+
     def test_a_cut_name_or_range_still_fails(self):
         answer = fakes.iron_answer()
         answer['results'][0]['range'] = '30 -'  # the last word dropped from the text, all ids listed
