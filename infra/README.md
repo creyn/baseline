@@ -13,6 +13,6 @@ Everything Baseline runs on Azure, as Bicep at resource-group scope ([ADR-0004](
 
 **The smoke test's user** is `019ac000-0000-7000-8000-000000000001`, a fictional UUIDv7 that no real user gets (ours carry the time of sign-up, and its time part is 2025-11-26, before any real user). Its blobs hold only synthetic documents.
 
-The deploying identity, the resource group and the GitHub `production` environment are made once by the owner; they are not in the Bicep, because the Bicep runs as that identity.
+The deploying identity, the resource group (in Sweden Central; the Bicep allows no other region) and the GitHub `production` environment are made once by the owner; they are not in the Bicep, because the Bicep runs as that identity.
 
 Compile and lint without Azure: `az bicep build --file infra/main.bicep`.

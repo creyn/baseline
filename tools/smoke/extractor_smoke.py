@@ -50,7 +50,9 @@ ROLE_WAIT = 300
 
 def refused(error):
     """True for an authorization refusal (HTTP 403, or Service Bus's unauthorized error)."""
-    return getattr(error, 'status_code', None) == 403 or type(error).__name__ == 'ServiceBusAuthorizationError'
+    # A missing Service Bus role surfaces as either error, depending on where the AMQP sign-in fails.
+    return getattr(error, 'status_code', None) == 403 or type(error).__name__ in (
+        'ServiceBusAuthorizationError', 'ServiceBusAuthenticationError')
 
 
 def until_roles(call, wait, pause=15, clock=time.monotonic, sleep=time.sleep):
@@ -68,10 +70,11 @@ def until_roles(call, wait, pause=15, clock=time.monotonic, sleep=time.sleep):
 
 def readable_elsewhere(blobs):
     """Tries to read a blob of a random other user. A refusal is right; "not found" means the read was allowed."""
-    from azure.core.exceptions import HttpResponseError
     try:
         blobs.get_blob_client('text', f'{uuid7()}/{uuid7()}/{uuid7()}.json').download_blob()
-    except HttpResponseError as e:
+    except Exception as e:  # noqa: BLE001  azure.core's HttpResponseError, or a fake in the tests
+        if getattr(e, 'status_code', None) is None:
+            raise
         return e.status_code != 403
     return True
 
@@ -120,9 +123,6 @@ def main(argv=None):
     until_roles(upload, ROLE_WAIT)
     until_roles(send, ROLE_WAIT)
     print(f'sent ExtractRequested docId={doc} verId={ver}, waiting up to {args.timeout} s', flush=True)
-    # G3: the smoke identity must not read another user's text (the condition on its role).
-    if readable_elsewhere(blobs):
-        sys.exit('the smoke identity can read outside the test user: check the role condition')
 
     text = blobs.get_blob_client('text', path + '.json')
     deadline = time.monotonic() + args.timeout
@@ -142,6 +142,9 @@ def main(argv=None):
                 sys.exit(f'text blob breaks {len(problems)} rule(s)')
             if not blob['results']:
                 sys.exit('text blob has no results')
+            # G3: after its own text was read, a refusal elsewhere comes from the condition, not a missing role.
+            if readable_elsewhere(blobs):
+                sys.exit('the smoke identity can read outside the test user: check the role condition')
             print(f'ok: {len(blob["results"])} result(s), {len(blob["unread"])} unread, '
                   f'model {blob["extraction"]["model"]}, extractor {blob["extraction"]["extractorVersion"]}')
             return

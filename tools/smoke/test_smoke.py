@@ -55,6 +55,31 @@ class SmokeTest(unittest.TestCase):
         with self.assertRaises(ValueError):  # anything else is not retried
             smoke.until_roles(lambda: (_ for _ in ()).throw(ValueError()), 100, clock=lambda: 0, sleep=lambda s: None)
 
+    def test_reading_another_users_text(self):
+        class Error(Exception):
+            def __init__(self, code):
+                self.status_code = code
+
+        class Blobs:
+            def __init__(self, outcome):
+                self.outcome = outcome
+
+            def get_blob_client(self, container, name):
+                self.asked = (container, name)
+                return self
+
+            def download_blob(self):
+                if isinstance(self.outcome, Exception):
+                    raise self.outcome
+                return b'{}'
+        refused = Blobs(Error(403))
+        self.assertFalse(smoke.readable_elsewhere(refused))
+        self.assertEqual(refused.asked[0], 'text')
+        self.assertTrue(smoke.readable_elsewhere(Blobs(Error(404))))  # not found: the read was allowed
+        self.assertTrue(smoke.readable_elsewhere(Blobs(None)))
+        with self.assertRaises(ValueError):
+            smoke.readable_elsewhere(Blobs(ValueError()))
+
     def test_the_default_test_user_is_a_uuid7(self):
         with open(os.path.join(smoke._ROOT, 'infra', 'main.bicep')) as f:
             bicep = f.read()

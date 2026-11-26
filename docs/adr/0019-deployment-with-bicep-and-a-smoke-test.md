@@ -62,7 +62,7 @@ Option 3 for the tool, option 2 for the AI services, option 2 for checking.
    - its identity may write `clean` and read `text` only under the test user's path (a condition on the role assignment), and may send to `extract`. It cannot read any real user's data (G3);
    - the `Extracted` message it causes waits in `status` until the API exists, which ignores a version it does not know (ADR-0005, point 5);
    - expired messages on `status` are not dead-lettered, so they do not raise the dead-letter alert. The API's sweeper recovers a version whose event was lost (ADR-0005, point 7);
-   - it first checks that it cannot read another user's `text` (a refusal, not "not found"), so the condition is proven on every deployment.
+   - after reading its own `text`, it checks that it cannot read another user's (a refusal, not "not found"), so the condition is proven on every deployment.
 7. **The region is fixed to Sweden Central in the Bicep**, because the Data Zone of the model follows the region (G2).
 
 ## Consequences

@@ -138,6 +138,6 @@ jobs:
       # warning (BCP037), and Azure would drop it.
       - run: |
           az bicep install
-          az bicep build --file infra/main.bicep --stdout 2> bicep.log > /dev/null
+          az bicep build --file infra/main.bicep --stdout 2> bicep.log > /dev/null || { cat bicep.log; exit 1; }
           cat bicep.log
           if grep -qiE 'warning|error' bicep.log; then exit 1; fi

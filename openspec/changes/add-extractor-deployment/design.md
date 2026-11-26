@@ -58,7 +58,7 @@ Renders page 1 of the synthetic document `a1-vitamin-d`. A refused upload or sen
 ### Failure handling
 
 - **A deployment fails half way:** incremental mode leaves what was created; the next run completes it. Nothing is deleted by a deployment.
-- **A role is not applied yet:** new role assignments can take minutes. The smoke test waits a minute first; the extractor's transient errors are retried by Service Bus (ADR-0005). A first deployment that still fails is run again.
+- **A role is not applied yet:** new role assignments can take minutes. The smoke test retries a refused upload or send for up to 5 minutes; the extractor's transient errors are retried by Service Bus (ADR-0005). A first deployment that still fails is run again.
 - **A bad image:** the new revision does not start and the smoke test fails; the previous revision can be reactivated (ADR-0004, point 5).
 - **The scaler cannot read the queue:** the extractor never starts, and the smoke test fails after 10 minutes.
 - **Messages the smoke test leaves:** `Extracted` waits on `status` until the API consumes it, which ignores an unknown version (ADR-0005, point 5). `status` does not dead-letter expired messages, so they never raise the dead-letter alert; a real event lost that way is recovered by the sweeper (ADR-0005, point 7). `check` and `extract` keep dead-lettering.
