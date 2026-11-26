@@ -27,5 +27,5 @@
 ## 4. After merge
 
 - [x] 4.1 The owner sets up Azure for the live evals
-- [ ] 4.2 The first live run; prompt fixes until the targets are met (first run 2026-11-26; prompt `extract.v2`, the unit correction, the word regrouping, and ADR-0018: unread results and low confidence; prompt `extract.v3` and the method-line check for multi-line and qualitative ranges)
-- [ ] 4.3 Archive the change
+- [x] 4.2 The first live run; prompt fixes until the targets are met (met on main on 2026-11-26: values and units 100%, names 97.6%, ranges and flags 100%, 125 of 126 read; first run 2026-11-26; prompt `extract.v2`, the unit correction, the word regrouping, and ADR-0018: unread results and low confidence; prompt `extract.v3` and the method-line check for multi-line and qualitative ranges)
+- [x] 4.3 Archive the change

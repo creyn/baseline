@@ -1,6 +1,6 @@
 # Extraction evals
 
-Measure the extractor ([services/extractor](../../services/extractor/README.md)) on the fictional documents of [evals/synthetic](../synthetic/README.md), against their truth. The rules are in the OpenSpec change [add-extraction](../../openspec/changes/add-extraction/design.md), the targets in [ADR-0007](../../docs/adr/0007-extraction-with-document-intelligence-and-an-llm.md) and when they run in [ADR-0017](../../docs/adr/0017-catching-changes-on-the-ai-services.md).
+Measure the extractor ([services/extractor](../../services/extractor/README.md)) on the fictional documents of [evals/synthetic](../synthetic/README.md), against their truth. The rules are in the spec [extraction](../../openspec/specs/extraction/spec.md) and the design of the archived change [add-extraction](../../openspec/changes/archive/2026-11-26-add-extraction/design.md), the targets in [ADR-0007](../../docs/adr/0007-extraction-with-document-intelligence-and-an-llm.md) and when they run in [ADR-0017](../../docs/adr/0017-catching-changes-on-the-ai-services.md).
 
 | Metric | Target |
 |---|---|

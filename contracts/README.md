@@ -1,6 +1,6 @@
 # Contracts
 
-The messages between the pipeline's services and the blob formats that one service writes and another reads, as JSON Schema (draft 2020-12). The rules are in the OpenSpec change [add-extraction](../openspec/changes/add-extraction/design.md); the decisions in [ADR-0005](../docs/adr/0005-asynchronous-import-pipeline.md) and [ADR-0006](../docs/adr/0006-document-lifecycle-and-review.md). The tables the API builds from them are in [docs/data-model.md](../docs/data-model.md).
+The messages between the pipeline's services and the blob formats that one service writes and another reads, as JSON Schema (draft 2020-12). The rules are in the spec [extraction-contracts](../openspec/specs/extraction-contracts/spec.md) and the design of the archived change [add-extraction](../openspec/changes/archive/2026-11-26-add-extraction/design.md); the decisions in [ADR-0005](../docs/adr/0005-asynchronous-import-pipeline.md) and [ADR-0006](../docs/adr/0006-document-lifecycle-and-review.md). The tables the API builds from them are in [docs/data-model.md](../docs/data-model.md).
 
 | Schema | What it describes | Written by | Read by |
 |---|---|---|---|

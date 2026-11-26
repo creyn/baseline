@@ -1,6 +1,6 @@
 # Extractor
 
-Turns the masked pages of a checked version into the `text` blob: words with positions, results, dates and fragments ([ADR-0007](../../docs/adr/0007-extraction-with-document-intelligence-and-an-llm.md)). The rules are in the OpenSpec change [add-extraction](../../openspec/changes/add-extraction/design.md); the formats in [contracts/](../../contracts/README.md).
+Turns the masked pages of a checked version into the `text` blob: words with positions, results, dates and fragments ([ADR-0007](../../docs/adr/0007-extraction-with-document-intelligence-and-an-llm.md)). The rules are in the spec [extraction](../../openspec/specs/extraction/spec.md) and the design of the archived change [add-extraction](../../openspec/changes/archive/2026-11-26-add-extraction/design.md); the formats in [contracts/](../../contracts/README.md).
 
 | File | What it does |
 |---|---|

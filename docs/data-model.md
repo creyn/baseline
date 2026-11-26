@@ -94,7 +94,7 @@ One result of one version, as extracted. Written in the same transaction that se
 | `Method` | nvarchar(400), null | |
 | `Analyser` | nvarchar(200), null | |
 | `SuggestedParameter` | varchar(64), null | the model's proposal for `ParameterCode`; empty until the dictionary exists |
-| `CollectedAt` | datetimeoffset, null | the date the trend uses, `collectedAt` from the `text` blob (the rule is in [the design](../openspec/changes/add-extraction/design.md)); required before approval, corrected on review |
+| `CollectedAt` | datetimeoffset, null | the date the trend uses, `collectedAt` from the `text` blob (the rule is in [the design](../openspec/changes/archive/2026-11-26-add-extraction/design.md)); required before approval, corrected on review |
 | `CollectedHasTime` | bit | false: a date without a printed time, stored at midnight |
 | `LowConfidence` | bit | an OCR word of the value or unit is below the confidence threshold; the review marks the result for checking ([ADR-0018](adr/0018-unread-results-and-low-confidence-words.md)) |
 | `Dates` | nvarchar(max) | JSON: the result's own labelled dates from the `text` blob |
