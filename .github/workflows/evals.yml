@@ -74,7 +74,7 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - name: Run
-        run: python evals/extraction/live.py --generated generated --out report
+        run: python evals/extraction/live.py --generated generated --out report --dump report/dump
       - name: Summary
         if: always()
         run: test -f report/summary.md && cat report/summary.md >> "$GITHUB_STEP_SUMMARY" || true

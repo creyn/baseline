@@ -70,20 +70,25 @@ class AzureOpenAILlm:
         self.client = AzureOpenAI(azure_endpoint=endpoint, azure_ad_token_provider=token, api_version=api_version,
                                   timeout=AI_TIMEOUT_SECONDS, max_retries=1)
         self.deployment = deployment
+        self.last_raw = None  # the raw answer of the last call, for the evals' --dump only; never logged
 
     def complete(self, messages):
         import openai
         import pydantic
         unusable = {'results': [], 'documentDates': [], 'fragments': [], 'refused': True}
+        self.last_raw = None
         try:
             response = self.client.beta.chat.completions.parse(model=self.deployment, messages=messages,
                                                                response_format=Answer)
         except (openai.RateLimitError, openai.APIConnectionError, openai.APITimeoutError, openai.InternalServerError):
             raise Transient('azure openai') from None
-        except (openai.LengthFinishReasonError, openai.ContentFilterFinishReasonError, pydantic.ValidationError):
+        except (openai.LengthFinishReasonError, openai.ContentFilterFinishReasonError, pydantic.ValidationError) as e:
             # Cut off, filtered or not in the schema: an invalid answer, retried once by the core.
+            self.last_raw = {'error': type(e).__name__}
             return unusable, {'input': 0, 'output': 0}
         choice = response.choices[0]
+        self.last_raw = {'content': choice.message.content, 'refusal': choice.message.refusal,
+                         'finish_reason': choice.finish_reason, 'model': getattr(response, 'model', None)}
         usage = {'input': response.usage.prompt_tokens, 'output': response.usage.completion_tokens,
                  'model': getattr(response, 'model', None)}
         if choice.message.refusal or choice.message.content is None:

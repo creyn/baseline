@@ -2,7 +2,9 @@
 the LLM, scored against the truth. Writes report.json and a Markdown table; exits 1 when a
 target is missed (ADR-0007). Never touches storage or queues (ADR-0004).
 
-Usage: python3 evals/extraction/live.py --generated DIR --out DIR
+Usage: python3 evals/extraction/live.py --generated DIR --out DIR [--only DOC_ID] [--forms text,scan] [--dump DIR]
+--dump writes, per document, form and batch, what went to the AI services and what came back.
+The documents are fictional, so this is safe here; the extractor itself never logs prompts.
 Settings: DOCUMENT_INTELLIGENCE_ENDPOINT, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT,
 AZURE_OPENAI_API_VERSION (optional). Sign-in: the Azure CLI session of the workflow (OIDC).
 
@@ -24,6 +26,43 @@ from extractor import core  # noqa: E402
 from extractor.pages import Page  # noqa: E402
 
 RENDER_DPI = 200
+
+
+def _write(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+class RecordingLayout:
+    """Writes the words and boxes that Document Intelligence returned."""
+
+    def __init__(self, inner, folder):
+        self.inner, self.folder = inner, folder
+
+    def analyze(self, pages):
+        words = self.inner.analyze(pages)
+        _write(os.path.join(self.folder, 'layout.json'), [{'page': i, 'words': w} for i, w in enumerate(words, 1)])
+        return words
+
+
+class RecordingLlm:
+    """Writes each call: the messages sent, the raw answer (when the client keeps it) and the parsed one."""
+
+    def __init__(self, inner, folder):
+        self.inner, self.folder, self.calls = inner, folder, 0
+
+    def complete(self, messages):
+        self.calls += 1
+        name = os.path.join(self.folder, f'call-{self.calls}')
+        _write(name + '-request.json', messages)
+        try:
+            answer, usage = self.inner.complete(messages)
+        except Exception as e:
+            _write(name + '-answer.json', {'error': type(e).__name__})
+            raise
+        _write(name + '-answer.json', {'raw': getattr(self.inner, 'last_raw', None), 'parsed': answer, 'usage': usage})
+        return answer, usage
 
 
 def pages_of(folder, form, n_pages):
@@ -54,24 +93,39 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--generated', required=True, help='the output folder of evals/synthetic/generate.py')
     ap.add_argument('--out', required=True)
+    ap.add_argument('--only', help='one document id, e.g. c3-...')
+    ap.add_argument('--forms', help='comma-separated: text, scan, photo (default: every form of the document)')
+    ap.add_argument('--dump', help='folder for the requests and answers of the AI services')
     args = ap.parse_args(argv)
+    forms = set(args.forms.split(',')) if args.forms else None
     from extractor.azure_clients import AzureOpenAILlm, DocumentIntelligenceLayout
     env = os.environ
     layout = DocumentIntelligenceLayout(env['DOCUMENT_INTELLIGENCE_ENDPOINT'])
     llm = AzureOpenAILlm(env['AZURE_OPENAI_ENDPOINT'], env['AZURE_OPENAI_DEPLOYMENT'],
                          env.get('AZURE_OPENAI_API_VERSION') or '2024-10-21')
     rows, scores, models = [], [], set()
-    for doc in common.documents():
+    docs = [d for d in common.documents() if not args.only or d['id'] == args.only]
+    if not docs:
+        sys.exit(f'no document {args.only}')
+    for doc in docs:
         expected = common.describe.expected_extraction(doc)
         for form in doc['forms']:
+            if forms and form not in forms:
+                continue
             started = time.monotonic()
             pages = pages_of(os.path.join(args.generated, doc['id']), form, len(doc['pages']))
             outcome, results, usage = 'ok', [], {}
+            run_layout, run_llm = layout, llm
+            if args.dump:
+                folder = os.path.join(args.dump, doc['id'], form)
+                run_layout, run_llm = RecordingLayout(layout, folder), RecordingLlm(llm, folder)
             try:
-                blob, usage = core.extract(pages, layout, llm, doc_id='019ab3c4-5d6e-7f80-9a1b-2c3d4e5f6a7b',
+                blob, usage = core.extract(pages, run_layout, run_llm, doc_id='019ab3c4-5d6e-7f80-9a1b-2c3d4e5f6a7b',
                                            ver_id='019ab3c4-6e7f-7081-8b2c-3d4e5f6a7b8c',
                                            model=env['AZURE_OPENAI_DEPLOYMENT'])
                 results = blob['results']
+                if args.dump:
+                    _write(os.path.join(args.dump, doc['id'], form, 'text-blob.json'), blob)
                 models.add(blob['extraction']['model'])
             except core.InvalidAnswer as e:
                 outcome = f'extract_invalid ({len(e.problems)} problems)'

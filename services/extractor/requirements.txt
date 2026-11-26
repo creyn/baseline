@@ -1,6 +1,7 @@
 jsonschema==4.23.0
 pydantic==2.9.2
 openai==1.54.4
+httpx==0.27.2  # openai 1.54 passes proxies=, which httpx 0.28 removed
 azure-identity==1.19.0
 azure-ai-documentintelligence==1.0.0
 azure-storage-blob==12.24.0

@@ -12,7 +12,7 @@ Live evals run when our code changes: the extractor, its prompt, its contracts o
 
 - **Azure OpenAI** deploys one model version. A deployment's `versionUpgradeOption` decides what happens when Microsoft names a new default version or retires the current one (checked 2026-11-24 in the Azure OpenAI documentation, "Working with models" and "Model retirements"):
   - `OnceNewDefaultVersionAvailable`: upgrades within two weeks after a new default version is named;
-  - `OnceCurrentVersionExpired` (also the behaviour when the option is not set): upgrades when the current version retires;
+  - `OnceCurrentVersionExpired`: upgrades when the current version retires. (Correction 2026-11-26: the first version of this ADR said this is also the behaviour when the option is not set. A deployment created with the Azure CLI got `OnceNewDefaultVersionAvailable`, so the option is always set explicitly. The decision is unchanged.)
   - `NoAutoUpgrade`: never upgrades, and the deployment stops working when the version retires.
   - Notice: at least 60 days before a GA version retires (e-mail to subscription owners and Azure Service Health), and at least two weeks before a new default version.
 - **Document Intelligence** `prebuilt-layout` is called with a fixed API version (2024-11-30, through the pinned SDK). Whether the model behind it can still change within that API version is not stated in the documentation (to check).
