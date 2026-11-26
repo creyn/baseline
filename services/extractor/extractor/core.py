@@ -74,7 +74,7 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
     for batch in batches(blob_pages, batch_pages):
         texts = [page_text(p['index'], p['words']) for p in batch]
         indexes = {p['index'] for p in batch}
-        errors = None
+        errors, first = None, None
         for attempt in (1, 2):
             answer, used = llm.complete(messages(texts, errors))
             for k in ('input', 'output'):
@@ -85,8 +85,12 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
             part, errors = convert(answer, words, indexes, zone)
             if not errors:
                 break
-        if [e for e in errors if not e.startswith('result ')]:
-            raise InvalidAnswer(errors)  # a refusal, a date or a fragment: the batch cannot be trusted
+            if attempt == 1:
+                first = (part, errors)
+        if errors and first and _usable(first[1]) and (not _usable(errors) or len(first[0]['results']) > len(part['results'])):
+            part, errors = first  # the retry was worse: keep the first answer
+        if not _usable(errors):
+            raise InvalidAnswer(errors)  # a refusal, a document date or a fragment: the version cannot be trusted
         unread += part['unread']
         unread_problems += errors
         results += part['results']
@@ -98,7 +102,6 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
         if unread:
             raise InvalidAnswer(unread_problems)  # nothing verified to review
         raise NoResults()
-    usage['unread'] = len(unread)
     for r in results:
         r['collectedAt'], r['collectedHasTime'] = text_checks.collected_at(r['dates'], document_dates)
         if r['collectedAt'] is None:
@@ -115,6 +118,11 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
     if problems:
         raise InvalidAnswer(problems)
     return blob, usage
+
+
+def _usable(errors):
+    """Only problems of single results: they go to `unread`, and the rest of the batch is kept."""
+    return all(e.startswith('result ') for e in errors)
 
 
 def convert(answer, words, indexes, zone):
@@ -150,13 +158,28 @@ def convert(answer, words, indexes, zone):
 _FIELDS = ('name', 'value', 'unit', 'range')
 
 
+def _failed_fields(problem):
+    if problem.startswith('value and unit'):
+        return {'value', 'unit'}
+    head = problem.split(':', 1)[0]
+    field = head.split('/')[1] if head.startswith('source/') and '/' in head else head
+    return {field} if field in _FIELDS else {'other'}
+
+
 def _unread(a, problems, words):
-    """A result that failed the check: its page, a box around the words it named there, and which fields failed."""
+    """A result that failed the check: its page, a box and which fields failed. The box is around the words
+    of the fields that passed (the name first), as a failed field may name words of another row; around all
+    the words it named on that page when no field passed; none when it named none there."""
     prefix = f'p{a["page"]}w'
-    ids = [i for f in _FIELDS for i in (a.get(f + 'Words') or []) if isinstance(i, str) and i in words and i.startswith(prefix)]
-    fields = sorted({next((f for f in _FIELDS if m.startswith(f)), 'other') for m in problems},
-                    key=lambda f: (_FIELDS + ('other',)).index(f))
-    return {'page': a['page'], 'box': union([words[i]['box'] for i in ids]) if ids else None, 'fields': fields}
+    fields = set().union(*(_failed_fields(m) for m in problems)) if problems else {'other'}
+    def ids(names):
+        return [i for f in names for i in (a.get(f + 'Words') or [])
+                if isinstance(i, str) and i in words and i.startswith(prefix)]
+    passed = [f for f in _FIELDS if f not in fields]
+    chosen = ids(['name']) if 'name' in passed else []
+    chosen = chosen or ids(passed) or ids(_FIELDS)
+    return {'page': a['page'], 'box': union([words[i]['box'] for i in chosen]) if chosen else None,
+            'fields': sorted(fields, key=lambda f: (_FIELDS + ('other',)).index(f))}
 
 
 def _result(a, words, indexes, zone):

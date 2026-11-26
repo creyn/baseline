@@ -4,7 +4,7 @@ Date: 2026-11-23
 
 ## Status
 
-Accepted. Point 10 is extended by [ADR-0015](0015-internal-user-id-and-log-identifiers.md): logs also carry `userId` and the trace context, and the Service Bus `CorrelationId` is not used. [ADR-0016](0016-retry-replaces-a-failed-version.md) changes the unique index of point 3 (only live versions) and replaces `Failed → Superseded` in point 2: a new version deletes the failed ones.
+Accepted. Point 10 is extended by [ADR-0015](0015-internal-user-id-and-log-identifiers.md): logs also carry `userId` and the trace context, and the Service Bus `CorrelationId` is not used. [ADR-0016](0016-retry-replaces-a-failed-version.md) changes the unique index of point 3 (only live versions) and replaces `Failed → Superseded` in point 2: a new version deletes the failed ones. [ADR-0018](0018-unread-results-and-low-confidence-words.md) extends points 3 and 5 of the review: results that could not be read are shown as places to enter by hand or dismiss, and results with a word OCR is unsure of are marked.
 
 ## Context
 

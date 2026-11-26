@@ -55,7 +55,7 @@ Status changes are forward-only: `UPDATE … SET Status = @new, StatusChangedAt 
 
 ## Extraction
 
-How a version was extracted ([ADR-0006](adr/0006-document-lifecycle-and-review.md), point 11). A version has at most one extraction, so the key is the version's id. Copied from `extraction` in the `text` blob.
+How a version was extracted ([ADR-0006](adr/0006-document-lifecycle-and-review.md), point 11). A version has at most one extraction, so the key is the version's id. Copied from `extraction` in the `text` blob, and `Unread` from its `unread`. The review change adds the state of each unread place and the origin of a result entered by hand ([ADR-0018](adr/0018-unread-results-and-low-confidence-words.md)).
 
 | Column | Type | Notes |
 |---|---|---|

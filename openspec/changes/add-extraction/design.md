@@ -102,7 +102,7 @@ The tables are in [docs/data-model.md](../../../docs/data-model.md), one place f
 - **Metrics:**
   - values and units exactly right, over the results the extractor verified and returned (target 100%, the run fails below it); a wrong one marked `lowConfidence` counts as flagged, not wrong ([ADR-0018](../../../docs/adr/0018-unread-results-and-low-confidence-words.md));
   - names, ranges and flags as printed (target 95%, the run fails below it). ADR-0007 sets the 95% on normalised names and ranges; normalisation does not exist yet ([ADR-0011](../../../docs/adr/0011-lab-parameters-units-and-ranges.md), in .NET), so this change measures the printed form, and the normalisation change adds the normalised metric;
-  - missing, unread, extra and flagged (`lowConfidence`) results (counted and reported, no target yet; ADR-0018);
+  - not returned, unread, extra and flagged (`lowConfidence`) results (counted and reported; ADR-0018); the run fails when a document does not end in a `text` blob, or when fewer than 90% of the expected results are read and verified (starting value);
   - material, condition, method and dates (reported, no target yet).
 - **Offline run, on every pull request, free:**
   - The layout is built from the description: one line per section title, date, result row and method, every token a word with a box. It is not the rendered page, so the run needs no generator and runs anywhere with the standard library and jsonschema; rendering and OCR are the live run's job.

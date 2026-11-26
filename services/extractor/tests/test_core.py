@@ -90,7 +90,7 @@ class Extract(unittest.TestCase):
         self.assertEqual(blob['results'][0]['collectedAt'], '2026-04-10T07:25:00+02:00')
         self.assertEqual(blob['fragments'][0]['text'], 'Metoda ECLIA')
         self.assertEqual(blob['extraction']['promptVersion'], 'extract.v2')
-        self.assertEqual(usage, {'input': 100, 'output': 50, 'calls': 1, 'unread': 0})
+        self.assertEqual(usage, {'input': 100, 'output': 50, 'calls': 1})
 
     def test_the_model_version_that_answered_is_recorded(self):
         pages = [fakes.page(1, 1)]
@@ -207,11 +207,44 @@ class Extract(unittest.TestCase):
         blob, usage, _ = run([fakes.IRON_PAGE], fakes.iron_answer(ferritin='16'), fakes.iron_answer(ferritin='16'))
         self.assertEqual([r['name'] for r in blob['results']], ['Żelazo'])
         u = blob['unread'][0]
-        self.assertEqual((u['page'], u['fields'], usage['unread']), (1, ['value'], 1))
-        ferritin_words = [w['box'] for w in blob['pages'][0]['words'] if w['id'] in ('p1w5', 'p1w6', 'p1w7', 'p1w10')]
-        self.assertEqual(u['box'], union(ferritin_words))
+        self.assertEqual((u['page'], u['fields']), (1, ['value']))
+        name_box = next(w['box'] for w in blob['pages'][0]['words'] if w['id'] == 'p1w5')
+        self.assertEqual(u['box'], name_box)  # around the name, which passed
         self.assertEqual(list(Draft202012Validator(schema('text.v1')).iter_errors(blob)), [])
         self.assertEqual(text_checks.problems(blob), [])
+
+    def test_the_unread_box_and_fields(self):
+        answer = fakes.iron_answer()
+        answer['results'][0]['name'], answer['results'][0]['valueWords'] = 'Ferrytynaa', ['p1w12']  # 64: another row
+        blob, _, _ = run([fakes.IRON_PAGE], answer, answer)
+        u = blob['unread'][0]
+        self.assertEqual(u['fields'], ['name', 'value'])
+        words = {w['id']: w['box'] for w in blob['pages'][0]['words']}
+        self.assertEqual(u['box'], union([words['p1w7'], words['p1w8'], words['p1w9'], words['p1w10']]))  # unit, range
+        answer['results'][0]['nameWords'] = answer['results'][0]['valueWords'] = ['p1w99']
+        answer['results'][0]['unitWords'] = answer['results'][0]['rangeWords'] = []
+        answer['results'][0]['unit'] = answer['results'][0]['range'] = None
+        blob, _, _ = run([fakes.IRON_PAGE], answer, answer)
+        self.assertEqual(blob['unread'][0]['box'], None)
+        self.assertEqual(core._failed_fields('value and unit: do not equal their shared words'), {'value', 'unit'})
+        self.assertEqual(core._failed_fields('source/unit: breaks "type"'), {'unit'})
+        self.assertEqual(core._failed_fields('dates/0/kind: breaks "enum"'), {'other'})
+
+    def test_a_worse_retry_keeps_the_first_answer(self):
+        first = fakes.iron_answer(ferritin='16')  # one result unread, one verified
+        worse = fakes.iron_answer()
+        worse['documentDates'][0]['local'] = '2026-03-29T02:30'  # a document date that does not exist
+        blob, _, llm = run([fakes.IRON_PAGE], first, worse)
+        self.assertEqual(len(llm.calls), 2)
+        self.assertEqual(([r['name'] for r in blob['results']], len(blob['unread'])), (['Żelazo'], 1))
+
+    def test_one_batch_unread_and_another_verified(self):
+        pages = [fakes.IRON_PAGE] * 6
+        bad = fakes.iron_answer(ferritin='16')
+        bad['results'][1]['value'] = '63'  # nothing verified in the first batch
+        blob, _, _ = run(pages, bad, bad, fakes.iron_answer(page_no=6))
+        self.assertEqual([r['source']['page'] for r in blob['results']], [6, 6])
+        self.assertEqual([u['page'] for u in blob['unread']], [1, 1])
 
     def test_nothing_verified_is_still_invalid(self):
         bad = fakes.iron_answer(ferritin='16')

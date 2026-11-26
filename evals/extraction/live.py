@@ -145,7 +145,7 @@ def main(argv=None):
     if not rows:
         sys.exit('nothing ran: no document has the chosen forms')
     summary = score.total(scores)
-    failed = score.failures(summary)
+    failed = score.failures(summary, [r['outcome'] for r in rows])
     os.makedirs(args.out, exist_ok=True)
     report = {'models': sorted(models), 'summary': summary, 'failures': failed, 'runs': rows}
     with open(os.path.join(args.out, 'report.json'), 'w', encoding='utf-8') as f:
@@ -164,10 +164,11 @@ def markdown(report):
            '| Metric | Result | Target |', '|---|---|---|']
     for k, t in score.TARGETS.items():
         out.append(f'| {k} | {pct(s["ratios"][k])} | {pct(t)} |')
-    out += [f'| read and verified | {s["matched"]} of {s["expected"]} | reported |',
-            f'| missing / unread for review / extra | {s["missing"]} / {s["unread"]} / {s["extra"]} | reported |',
+    read = s['matched'] / s['expected'] if s['expected'] else 1.0
+    out += [f'| read and verified | {s["matched"]} of {s["expected"]} ({pct(read)}) | {pct(score.READ_TARGET)} |',
+            f'| not returned / unread for review / extra | {s["missing"]} / {s["unread"]} / {s["extra"]} | reported |',
             f'| low confidence, flagged for review | {s["flagged"]} | reported |', '',
-            '| Document | Form | Outcome | Values and units | Names | Ranges | Flags | Missing | Unread | Extra |',
+            '| Document | Form | Outcome | Values and units | Names | Ranges | Flags | Not returned | Unread | Extra |',
             '|---|---|---|---|---|---|---|---|---|---|']
     for r in report['runs']:
         q = r['ratios']

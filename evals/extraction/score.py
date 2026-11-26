@@ -16,6 +16,9 @@ import common  # noqa: F401  sets the paths to the extractor
 from extractor.dates import to_instant
 
 TARGETS = {'values_units': 1.0, 'names': 0.95, 'ranges': 0.95, 'flags': 0.95}
+# The share of expected results read and verified. Without it, a run where the model reads nothing would
+# pass, because the targets above are over the verified results (ADR-0018). Starting value.
+READ_TARGET = 0.9
 _SPACES = re.compile(r'\s+')
 
 
@@ -46,7 +49,7 @@ def score(expected, extracted, unread=0):
         method = norm(x['method'])
         counts['method'] += (not method) if not e['method'] else bool(method) and method in norm(e['method'])
         counts['dates'] += _dates(x['dates']) == _dates_expected(e['dates'])
-    missing = sum(1 for _, x in pairs if x is None)
+    missing = max(0, sum(1 for _, x in pairs if x is None) - unread)  # not returned at all; unread ones are counted apart
     ratios = {k: (v / n if n else 1.0) for k, v in counts.items()}
     return {'expected': len(expected), 'matched': n, 'missing': missing, 'unread': unread, 'flagged': flagged,
             'extra': len(extra), 'counts': counts, 'ratios': ratios}
@@ -112,6 +115,11 @@ def total(scores):
     return {**out, 'matched': n, 'counts': counts, 'ratios': {k: (v / n if n else 1.0) for k, v in counts.items()}}
 
 
-def failures(summary):
-    """Metrics below their target, as 'name ratio < target'."""
-    return [f'{k} {summary["ratios"][k]:.3f} < {t}' for k, t in TARGETS.items() if summary['ratios'][k] < t]
+def failures(summary, outcomes=()):
+    """Why the run fails: a document that did not end in 'ok', too few results read, or a metric below its target."""
+    out = [f'{n} document(s) failed: {", ".join(sorted(set(o for o in outcomes if o != "ok")))}'
+           for n in [sum(1 for o in outcomes if o != 'ok')] if n]
+    read = summary['matched'] / summary['expected'] if summary['expected'] else 1.0
+    if read < READ_TARGET:
+        out.append(f'read {read:.3f} < {READ_TARGET}')
+    return out + [f'{k} {summary["ratios"][k]:.3f} < {t}' for k, t in TARGETS.items() if summary['ratios'][k] < t]

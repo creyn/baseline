@@ -99,10 +99,18 @@ class Scoring(unittest.TestCase):
 
     def test_unread_results_are_reported_not_scored(self):
         s = score.score(self.expected, copy.deepcopy(self.blob['results'][1:]), unread=1)
-        self.assertEqual((s['matched'], s['missing'], s['unread']), (len(self.expected) - 1, 1, 1))
+        self.assertEqual((s['matched'], s['missing'], s['unread']), (len(self.expected) - 1, 0, 1))
         self.assertEqual(s['ratios']['values_units'], 1.0)
         t = score.total([s, s])
         self.assertEqual((t['expected'], t['matched'], t['unread']), (2 * len(self.expected), 2 * s['matched'], 2))
+
+    def test_a_run_where_documents_fail_fails(self):
+        nothing = score.score(self.expected, [])
+        self.assertEqual(nothing['ratios']['values_units'], 1.0)  # no verified result, so no wrong one
+        self.assertEqual(score.failures(score.total([nothing]), ['extract_invalid (2 problems)']),
+                         ['1 document(s) failed: extract_invalid (2 problems)', 'read 0.000 < 0.9'])
+        ok = score.score(self.expected, copy.deepcopy(self.blob['results']))
+        self.assertEqual(score.failures(score.total([ok]), ['ok']), [])
 
     def test_a_wrong_name_still_matches_by_value(self):
         results = copy.deepcopy(self.blob['results'])

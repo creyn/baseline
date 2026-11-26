@@ -36,7 +36,7 @@ For the name, the value, the unit and the range of every result, the LLM MUST re
 
 #### Scenario: Nothing verified
 
-- **WHEN** a batch is invalid after the retry because of a refusal, a date or a fragment, or no result of the version passes
+- **WHEN** after the retry the model refused, a document date or a fragment is invalid, a result names a page outside its batch, or no result of the version passes
 - **THEN** the extractor sends `Failed` with the reason `extract_invalid`
 
 #### Scenario: A word OCR is unsure of
@@ -112,7 +112,7 @@ Logs and telemetry of the extractor MUST carry `userId`, `docId`, `verId` and th
 
 ### Requirement: Evals on the synthetic documents
 
-Evals SHALL run the extractor's core on every synthetic document and compare the results with the truth from `evals/synthetic/describe.py`. Over the results the extractor verified and returned, values and units MUST be 100% correct, and names, ranges and flags as printed at least 95%; below either target the run fails. A wrong value or unit with `lowConfidence` counts as flagged, not wrong; unread, missing and flagged results are reported (ADR-0018). The evals MUST include a document with a result block that crosses a batch boundary.
+Evals SHALL run the extractor's core on every synthetic document and compare the results with the truth from `evals/synthetic/describe.py`. Over the results the extractor verified and returned, values and units MUST be 100% correct, and names, ranges and flags as printed at least 95%; below either target the run fails. A wrong value or unit with `lowConfidence` counts as flagged, not wrong; unread, not returned and flagged results are reported (ADR-0018). The run also fails when a document does not end in a `text` blob, or when fewer than 90% of the expected results are read and verified. The evals MUST include a document with a result block that crosses a batch boundary.
 
 #### Scenario: Offline run on a pull request
 
