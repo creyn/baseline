@@ -79,7 +79,7 @@ Every result gets `collectedAt`, the date its trend uses, and `collectedHasTime`
   2. Read the clean ZIP. If it is gone, the version was deleted or replaced: complete the message and log it. If it never comes back, the sweeper times the version out.
   3. Build one image-only PDF of all pages in memory and call `prebuilt-layout` once.
   4. Send the words to the LLM in batches of 5 pages, with structured output from a pydantic model.
-  5. Validate: the schema, the word ids, the dates. An invalid batch gets one retry with the errors. Still invalid: `Failed (extract_invalid)`.
+  5. Validate: the schema, the word ids, the dates. An invalid batch gets one retry with the errors. A result still invalid after the retry goes to `unread` (its page, a box and the failed fields, never its text) and the other results are kept ([ADR-0018](../../../docs/adr/0018-unread-results-and-low-confidence-words.md)). Still `Failed (extract_invalid)`: a refusal, an invalid date or fragment, a result on a page outside the batch, or no verified result at all. Code sets `lowConfidence` on a result when a word of its value or unit has an OCR confidence below 0.6 (starting value).
   6. No results in any batch: `Failed (no_results)`.
   7. Write the blob with `If-None-Match: *`. If another run wrote it first, keep theirs.
   8. Send `Extracted` and complete the message.
@@ -100,9 +100,9 @@ The tables are in [docs/data-model.md](../../../docs/data-model.md), one place f
 - **The truth** comes from `evals/synthetic/describe.py` (`expected_extraction`), the same function the generator uses.
 - **Matching:** an extracted result matches an expected one on the same page with the same printed name, after removing spaces and case. Each expected result is matched at most once.
 - **Metrics:**
-  - values and units exactly right, over all expected results (target 100%, the run fails below it);
+  - values and units exactly right, over the results the extractor verified and returned (target 100%, the run fails below it); a wrong one marked `lowConfidence` counts as flagged, not wrong ([ADR-0018](../../../docs/adr/0018-unread-results-and-low-confidence-words.md));
   - names, ranges and flags as printed (target 95%, the run fails below it). ADR-0007 sets the 95% on normalised names and ranges; normalisation does not exist yet ([ADR-0011](../../../docs/adr/0011-lab-parameters-units-and-ranges.md), in .NET), so this change measures the printed form, and the normalisation change adds the normalised metric;
-  - missing and extra results (counted and reported);
+  - not returned, unread, extra and flagged (`lowConfidence`) results (counted and reported; ADR-0018); the run fails when a document does not end in a `text` blob, or when fewer than 90% of the expected results are read and verified (starting value);
   - material, condition, method and dates (reported, no target yet).
 - **Offline run, on every pull request, free:**
   - The layout is built from the description: one line per section title, date, result row and method, every token a word with a box. It is not the rendered page, so the run needs no generator and runs anywhere with the standard library and jsonschema; rendering and OCR are the live run's job.

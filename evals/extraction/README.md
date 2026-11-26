@@ -4,9 +4,11 @@ Measure the extractor ([services/extractor](../../services/extractor/README.md))
 
 | Metric | Target |
 |---|---|
-| Values and units exactly right | 100% |
-| Names, ranges and flags as printed | 95% |
-| Missing and extra results, material, condition, method | reported |
+| Values and units exactly right, over the results read and verified; a wrong one marked `lowConfidence` counts as flagged, not wrong ([ADR-0018](../../docs/adr/0018-unread-results-and-low-confidence-words.md)) | 100% |
+| Names, ranges and flags as printed, over the same | 95% |
+| Expected results read and verified | 90% (starting value) |
+| Every document ends in a `text` blob | all |
+| Not returned, unread (for review), extra and flagged results, material, condition, method, dates | reported |
 
 - **Offline** ([offline.py](offline.py), [test_offline.py](test_offline.py)): every document through the real core, with a layout built from the description and a fake LLM that answers from the truth. It tests our code only: word numbering, the word check, the contract, dates, flags, the date for trends, batching and the scoring. It cannot find a wrong name, value or range, because the fake answers from the same truth the scorer compares with; that is the live run's job. Every metric must be 100%. Runs on every pull request and anywhere with jsonschema.
 - **Live** ([live.py](live.py), [the workflow](../../.github/workflows/evals.yml)): every form (text, scan, photo) through Document Intelligence and the LLM. Runs on pull requests that change the extractor, its contracts or the evals, every Monday, and on demand. The job summary has a table per document and form, and `report.json` is kept as an artifact for 30 days. Skipped until the Azure variables are set.

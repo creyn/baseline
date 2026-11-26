@@ -4,7 +4,7 @@ Date: 2026-11-22
 
 ## Status
 
-Accepted
+Accepted. Point 3 (a still invalid answer) and the measure of point 6 are changed by [ADR-0018](0018-unread-results-and-low-confidence-words.md): a result that cannot be read goes to review, and the others are kept.
 
 ## Context
 

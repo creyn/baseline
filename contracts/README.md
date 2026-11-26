@@ -6,7 +6,7 @@ The messages between the pipeline's services and the blob formats that one servi
 |---|---|---|---|
 | [messages.v1.schema.json](messages.v1.schema.json) | `ExtractRequested` (queue `extract`), `Extracted` and `Failed` (queue `status`) | checker, extractor, API (sweeper, U9) | extractor, API |
 | [manifest.v1.schema.json](manifest.v1.schema.json) | `manifest.json` in a version's ZIP: the page order (minimal) | browser | checker, extractor |
-| [text.v1.schema.json](text.v1.schema.json) | `text/{userId}/{docId}/{verId}.json`: words, fragments, dates and results | extractor | API |
+| [text.v1.schema.json](text.v1.schema.json) | `text/{userId}/{docId}/{verId}.json`: words, fragments, dates, results, and the places of results that could not be read (`unread`, ADR-0018) | extractor | API |
 
 ## Rules
 

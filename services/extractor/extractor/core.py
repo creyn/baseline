@@ -63,17 +63,18 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
     """pages: [Page]; layout.analyze(pages) -> [[word]] per page; llm.complete(messages) -> answer dict.
 
     Returns (text blob, usage) or raises InvalidAnswer or NoResults. Transient errors of
-    the services propagate unchanged.
+    the services propagate unchanged. A result that is still invalid after the retry goes to
+    `unread`, with its place on the page, and the other results are kept (ADR-0018).
     """
     numbered = number(layout.analyze(pages))
     blob_pages = [{'index': p.index, 'sha256': p.sha256, 'words': words} for p, words in zip(pages, numbered)]
     words = {w['id']: w for p in blob_pages for w in p['words']}
     usage = {'input': 0, 'output': 0, 'calls': 0}
-    results, document_dates, fragments = [], [], []
+    results, document_dates, fragments, unread, unread_problems = [], [], [], [], []
     for batch in batches(blob_pages, batch_pages):
         texts = [page_text(p['index'], p['words']) for p in batch]
         indexes = {p['index'] for p in batch}
-        errors = None
+        errors, first = None, None
         for attempt in (1, 2):
             answer, used = llm.complete(messages(texts, errors))
             for k in ('input', 'output'):
@@ -84,14 +85,22 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
             part, errors = convert(answer, words, indexes, zone)
             if not errors:
                 break
-        if errors:
-            raise InvalidAnswer(errors)
+            if attempt == 1:
+                first = (part, errors)
+        if first and _usable(first[1]) and _worse(part, errors, first[0]):
+            part, errors = first  # the retry was worse: keep the first answer, with its unread places
+        if not _usable(errors):
+            raise InvalidAnswer(errors)  # a refusal, a document date or a fragment: the version cannot be trusted
+        unread += part['unread']
+        unread_problems += errors
         results += part['results']
         fragments += part['fragments']
         for d in part['documentDates']:
             if (d['label'], d['at']) not in {(x['label'], x['at']) for x in document_dates}:
                 document_dates.append(d)
     if not results:
+        if unread:
+            raise InvalidAnswer(unread_problems)  # nothing verified to review
         raise NoResults()
     for r in results:
         r['collectedAt'], r['collectedHasTime'] = text_checks.collected_at(r['dates'], document_dates)
@@ -103,6 +112,7 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
                        'extractorVersion': VERSION,
                        'extractedAt': (now or datetime.now(timezone.utc)).isoformat(timespec='seconds').replace('+00:00', 'Z')},
         'pages': blob_pages, 'fragments': fragments, 'documentDates': document_dates, 'results': results,
+        'unread': unread,
     }
     problems = [_where(e) for e in _BLOB.iter_errors(blob)] + text_checks.problems(blob)
     if problems:
@@ -110,10 +120,21 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
     return blob, usage
 
 
+def _worse(retry, errors, first):
+    """A retry is worse when it cannot be used, verifies fewer results, or drops places the first answer had."""
+    count = lambda part: len(part['results']) + len(part['unread'])  # noqa: E731
+    return not _usable(errors) or len(retry['results']) < len(first['results']) or count(retry) < count(first)
+
+
+def _usable(errors):
+    """Only problems of single results: they go to `unread`, and the rest of the batch is kept."""
+    return all(e.startswith('result ') for e in errors)
+
+
 def convert(answer, words, indexes, zone):
     """One batch's answer -> blob parts and problems. Problems name fields and rules, never page text."""
     problems = []
-    out = {'results': [], 'documentDates': [], 'fragments': []}
+    out = {'results': [], 'documentDates': [], 'fragments': [], 'unread': []}
     if answer.get('refused'):
         return out, ['the model refused to answer']
     for n, d in enumerate(answer.get('documentDates', []), 1):
@@ -130,10 +151,41 @@ def convert(answer, words, indexes, zone):
                                  'box': union([words[i]['box'] for i in ids])})
     for n, a in enumerate(answer.get('results', []), 1):
         result, p = _result(a, words, indexes, zone)
-        problems += [f'result {n}: {m}' for m in p]
         if result:
             out['results'].append(result)
+        elif a.get('page') in indexes:
+            problems += [f'result {n}: {m}' for m in p]
+            out['unread'].append(_unread(a, p, words))
+        else:
+            problems += [f'page of result {n}: {m}' for m in p]  # no place to show it: the batch is invalid
     return out, problems
+
+
+_FIELDS = ('name', 'value', 'unit', 'range')
+
+
+def _failed_fields(problem):
+    if problem.startswith('value and unit'):
+        return {'value', 'unit'}
+    head = problem.split(':', 1)[0]
+    field = head.split('/')[1] if head.startswith('source/') and '/' in head else head.split('/')[0]
+    return {field} if field in _FIELDS else {'other'}
+
+
+def _unread(a, problems, words):
+    """A result that failed the check: its page, a box and which fields failed. The box is around the words
+    of the fields that passed (the name first), as a failed field may name words of another row; around all
+    the words it named on that page when no field passed; none when it named none there."""
+    prefix = f'p{a["page"]}w'
+    fields = set().union(*(_failed_fields(m) for m in problems)) if problems else {'other'}
+    def ids(names):
+        return [i for f in names for i in (a.get(f + 'Words') or [])
+                if isinstance(i, str) and i in words and i.startswith(prefix)]
+    passed = [f for f in _FIELDS if f not in fields]
+    chosen = ids(['name']) if 'name' in passed else []
+    chosen = chosen or ids(passed) or ids(_FIELDS)
+    return {'page': a['page'], 'box': union([words[i]['box'] for i in chosen]) if chosen else None,
+            'fields': sorted(fields, key=lambda f: (_FIELDS + ('other',)).index(f))}
 
 
 def _result(a, words, indexes, zone):
@@ -155,7 +207,7 @@ def _result(a, words, indexes, zone):
         'condition': a.get('condition') or None, 'method': a.get('method') or None,
         'analyser': a.get('analyser') or None,
         'dates': dates, 'collectedAt': None, 'collectedHasTime': False,
-        'suggestedParameter': a.get('suggestedParameter') or None,
+        'suggestedParameter': a.get('suggestedParameter') or None, 'lowConfidence': False,
         'source': {'page': a['page'], 'name': a.get('nameWords') or [], 'value': a.get('valueWords') or [],
                    'unit': (a.get('unitWords') or []) if a.get('unit') else [],
                    'range': (a.get('rangeWords') or []) if a.get('range') else []},
@@ -164,6 +216,7 @@ def _result(a, words, indexes, zone):
     if not problems:
         for field in ('name', 'range'):
             _regroup_words(result, field, words)
+        result['lowConfidence'] = text_checks.low_confidence(result, words)
         problems += text_checks.result_problems(result, words, indexes)
     if not problems and text_checks.known_unit(result['unit']):
         # A unit read with OCR misreadings ("tys/ul") becomes the known unit ("tys/µl"); the words keep the reading.

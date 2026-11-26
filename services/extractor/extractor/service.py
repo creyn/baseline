@@ -100,7 +100,8 @@ def _process(ids, ctx, delivery_count, store, status, extract):
     written = store.write_text_if_absent(ids, json.dumps(blob, ensure_ascii=False).encode('utf-8'))
     log.info('extracted', extra={**ctx, 'pages': len(pages), 'results': len(blob['results']),
                                  'written': written, 'inputTokens': usage['input'],
-                                 'outputTokens': usage['output'], 'llmCalls': usage['calls']})
+                                 'outputTokens': usage['output'], 'llmCalls': usage['calls'],
+                                 'unread': len(blob['unread'])})
     status.send(_status('Extracted', ids))
     return COMPLETE
 

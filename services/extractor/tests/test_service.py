@@ -108,6 +108,7 @@ class Service(unittest.TestCase):
 
     def test_invalid_answer(self):
         bad = fakes.iron_answer(ferritin='16')
+        bad['results'][1]['value'] = '63'  # nothing verified (ADR-0018)
         self.assertEqual(handle(self.store, self.status, Extractor(bad, bad)), service.COMPLETE)
         self.assertEqual(self.status.sent[0]['reason'], 'extract_invalid')
         self.assertIsNone(self.store.text)

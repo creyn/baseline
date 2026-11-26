@@ -9,6 +9,9 @@ from datetime import datetime
 _SPACES = re.compile(r'\s+')
 _LEADING_NUMBER = re.compile(r'^[<>≤≥]?\d+(?:[.,]\d+)?')
 _FLAGS = {'H': 'H', '↑': 'H', 'L': 'L', '↓': 'L'}
+# Below this OCR confidence a word of the value or the unit marks the result for checking on review
+# (ADR-0018). Starting value, set on the live evals: a scan lost the "µ" of "µIU/ml" at 0.43.
+LOW_CONFIDENCE = 0.6
 TREND_DATE_KINDS = ('collected', 'received', 'registered', 'performed', 'released')
 
 
@@ -83,6 +86,12 @@ def mismatch(text, words_text):
     return 'does not equal its words'
 
 
+def low_confidence(r, words):
+    """True when a word of the value or the unit has an OCR confidence below LOW_CONFIDENCE."""
+    ids = r['source']['value'] + r['source']['unit']
+    return any(words[i]['confidence'] < LOW_CONFIDENCE for i in ids if i in words)
+
+
 def map_flag(printed):
     """The laboratory's marker as printed, mapped to H, L or None. Anything unknown is None, never a guess."""
     return _FLAGS.get(normalise(printed)) if printed else None
@@ -133,6 +142,9 @@ def problems(doc):
     for f in doc['fragments']:
         if f['page'] not in indexes:
             out.append(f'a fragment names page {f["page"]}, which does not exist')
+    for n, u in enumerate(doc['unread'], 1):
+        if u['page'] not in indexes:
+            out.append(f'unread {n}: page {u["page"]} does not exist')
     for n, r in enumerate(doc['results'], 1):
         out += [f'result {n}: {m}' for m in result_problems(r, words, indexes)]
         if (r['collectedAt'], r['collectedHasTime'] if r['collectedAt'] else None) != collected_at(r['dates'], doc['documentDates']):
@@ -155,6 +167,8 @@ def result_problems(r, words, indexes):
                 out.append(f'{field}: word {i} is not on page {src["page"]}')
     if out:
         return out
+    if r['lowConfidence'] != low_confidence(r, words):
+        out.append('lowConfidence: is not what the word confidences say')
     if r['flag'] != map_flag(r['flagPrinted']):
         out.append('flag: does not match the printed marker')
     texts = {'name': r['name'], 'value': r['value'], 'unit': r['unit'], 'range': r['range']['text']}

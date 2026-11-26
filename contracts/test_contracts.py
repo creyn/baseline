@@ -261,6 +261,23 @@ class TextBlob(unittest.TestCase):
         self.assertEqual(text_checks.problems(self.doc), ['result 1: range: its text has words whose ids are missing; '
                                                           'list the id of every word in the text'])
 
+    def test_low_confidence_is_set_by_the_words(self):
+        word = next(w for p in self.doc['pages'] for w in p['words'] if w['id'] == 'p1w3')
+        word['confidence'] = 0.43
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: lowConfidence: is not what the word confidences say'])
+        self.doc['results'][0]['lowConfidence'] = True
+        self.assertEqual(text_checks.problems(self.doc), [])
+
+    def test_unread_results(self):
+        self.doc['unread'] = [{'page': 1, 'box': {'x': 0.1, 'y': 0.2, 'w': 0.3, 'h': 0.02}, 'fields': ['range']},
+                              {'page': 1, 'box': None, 'fields': ['name', 'other']}]
+        self.assertEqual(errors('text.v1', self.doc), [])
+        self.assertEqual(text_checks.problems(self.doc), [])
+        self.doc['unread'][0]['page'] = 2
+        self.assertEqual(text_checks.problems(self.doc), ['unread 1: page 2 does not exist'])
+        self.doc['unread'][0]['fields'] = []
+        self.assertTrue(errors('text.v1', self.doc))
+
     def pages_word(self, word_id, text):
         next(w for p in self.doc['pages'] for w in p['words'] if w['id'] == word_id)['text'] = text
 
