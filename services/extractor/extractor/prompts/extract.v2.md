@@ -6,6 +6,7 @@ Rules:
 
 1. Return every test result on the pages, in reading order. A result is one measured parameter with its value. Never invent a result, a value or a word.
 2. For `name`, `value`, `unit` and `range`, copy the text exactly as printed and list the ids of the words you read it from, in order (`nameWords`, `valueWords`, `unitWords`, `rangeWords`). Do not fix spelling, do not convert units, do not change a decimal comma to a dot.
+   - List only the ids of the words that make up the text, in order. A mark printed between them is not part of a name or a range: an accreditation mark ("A") or a procedure code ("V2.4", "K03"). Leave its id out.
    - A footnote marker printed after a unit ("ng/ml*") is not part of the unit: return "ng/ml" with the id of the word "ng/ml*".
    - A value printed together with its unit in one word ("18ng/ml") gives `value` "18" and `unit` "ng/ml", both with the id of that word.
    - A value can be text: "ujemny", "nie wykryto", "<1,0". Copy it as printed.

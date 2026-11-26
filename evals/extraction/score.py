@@ -76,7 +76,9 @@ def _range_ok(e, x):
         got = norm(x['range']['text'])
         whole = norm(' '.join(e['range_lines']))
         bands = [norm(line[_BAND_START.search(line).start():]) for line in e['range_lines'] if _BAND.search(line)]
-        return bool(got) and got in whole and all(b in got for b in bands)
+        several = len(bands) > 1
+        no_bounds = x['range']['kind'] == 'text' and x['range']['low'] is None and x['range']['high'] is None
+        return bool(got) and got in whole and all(b in got for b in bands) and (no_bounds or not several)
     if e.get('min') is not None or e.get('max') is not None:
         return norm(x['range']['low']) == norm(e.get('min')) and norm(x['range']['high']) == norm(e.get('max'))
     return norm(x['range']['text']) == norm(e.get('range'))

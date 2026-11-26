@@ -160,12 +160,34 @@ def _result(a, words, indexes, zone):
                    'range': (a.get('rangeWords') or []) if a.get('range') else []},
     }
     problems += [_where(e) for e in _RESULT.iter_errors(result)]
+    for field in ('name', 'range'):
+        _drop_extra_words(result, field, words)
     if not problems:
         problems += text_checks.result_problems(result, words, indexes)
     if not problems and text_checks.known_unit(result['unit']):
         # A unit read with OCR misreadings ("tys/ul") becomes the known unit ("tys/µl"); the words keep the reading.
         result['unit'] = text_checks.known_unit(result['unit'])
     return (None if problems else result), problems
+
+
+def _drop_extra_words(result, field, words):
+    """The model often lists, with a name or a range, a mark printed between its words (an accreditation
+    "A", a procedure code). When the text is exactly what is left after dropping some of the listed words,
+    keep only the words of the text. The text is never changed, so the word check still holds."""
+    text = result['name'] if field == 'name' else result['range']['text']
+    ids = result['source'][field]
+    if not text or not ids or any(i not in words for i in ids):
+        return
+    target, pos, kept = text_checks.normalise(text), 0, []
+    if target == text_checks.normalise(text_checks.joined(words, ids)):
+        return
+    for i in ids:
+        w = text_checks.normalise(words[i]['text'])
+        if w and target.startswith(w, pos):
+            kept.append(i)
+            pos += len(w)
+    if kept and pos == len(target):
+        result['source'][field] = kept
 
 
 def _date(d, zone):

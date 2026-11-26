@@ -227,6 +227,36 @@ class TextBlob(unittest.TestCase):
         r['source']['unit'], r['unit'] = ['p1w2'], 'µg/dl'
         self.assertEqual(text_checks.problems(self.doc), [])
 
+    def test_capital_l_units_and_no_clashes(self):
+        self.assertEqual(text_checks.known_unit('tys/uL'), 'tys/µL')
+        self.assertIsNone(text_checks.known_unit('mg/dL'))
+        for read, unit in text_checks._UNIT_TABLE.items():  # a reading stands for one unit and is never a unit itself
+            self.assertNotIn(read, text_checks.KNOWN_UNITS)
+            self.assertEqual(sum(read in text_checks._misreadings(u) for u in text_checks.KNOWN_UNITS), 1, read)
+
+    def test_a_range_of_several_bands_has_no_bounds(self):
+        self.assertEqual([text_checks.bands(t) for t in ('30 - 400', '<190', 'ujemny', 'na czczo: <150 nie na czczo: <175')],
+                         [1, 1, 0, 2])
+        r = self.doc['results'][0]
+        r['range'] = {'text': '30 - 400', 'low': '30', 'high': '400', 'kind': 'interval'}
+        self.assertEqual(text_checks.problems(self.doc), [])
+        self.pages_word('p1w4', '<30')
+        self.pages_word('p1w6', '<400')
+        r['range'] = {'text': '<30 - <400', 'low': '30', 'high': '400', 'kind': 'interval'}
+        self.assertEqual(text_checks.problems(self.doc),
+                         ['result 1: range: a range with several bands must have kind text and no bounds'])
+        r['range'] = {'text': '<30 - <400', 'low': None, 'high': None, 'kind': 'text'}
+        self.assertEqual(text_checks.problems(self.doc), [])
+
+    def test_the_word_check_says_which_way_it_differs(self):
+        src = self.doc['results'][0]['source']
+        src['range'] = src['range'] + ['p1w3']
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: range: its word ids hold more words than its text; '
+                                                          'list only the ids of the words in the text'])
+        src['range'] = src['range'][:1]
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: range: its text has words whose ids are missing; '
+                                                          'list the id of every word in the text'])
+
     def pages_word(self, word_id, text):
         next(w for p in self.doc['pages'] for w in p['words'] if w['id'] == word_id)['text'] = text
 

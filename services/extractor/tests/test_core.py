@@ -124,6 +124,18 @@ class Extract(unittest.TestCase):
         self.assertEqual(blob['pages'][0]['words'][12]['text'], 'ug/dI*')  # the reading stays in the words
         self.assertEqual(text_checks.problems(blob), [])
 
+    def test_a_mark_listed_with_the_range_is_dropped(self):
+        page = copy.deepcopy(fakes.IRON_PAGE)
+        page.insert(9, fakes.w('A', 0.66, 0.40, 0.005))  # an accreditation mark printed inside the range
+        answer = fakes.iron_answer()
+        answer['results'][0]['rangeWords'] = ['p1w8', 'p1w9', 'p1w10', 'p1w11']
+        answer['results'][1] = fakes.result(1, 'Żelazo', '64', 'µg/dl', '65', '175', 'L', (12, 13, 14, (15, 16, 17)))
+        answer['fragments'][0]['words'] = ['p1w19', 'p1w20']
+        blob, _, llm = run([page], answer)
+        self.assertEqual(len(llm.calls), 1)
+        self.assertEqual(blob['results'][0]['source']['range'], ['p1w8', 'p1w9', 'p1w11'])
+        self.assertEqual(text_checks.problems(blob), [])
+
     def test_a_value_not_read_from_the_page_gets_one_retry(self):
         blob, usage, llm = run([fakes.IRON_PAGE], fakes.iron_answer(ferritin='16'), fakes.iron_answer())
         self.assertEqual(len(llm.calls), 2)
