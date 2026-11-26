@@ -38,9 +38,11 @@ _BAND = re.compile(r'[<>≤≥]=?\s*\d[\d,.]*|\d[\d,.]*\s*[-–—]\s*\d')
 _NOT_BAND = re.compile(r'\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}([-./])\d{1,2}\1\d{2,4}\b|\b\d{1,2}:\d{2}\b'
                        r'|\b(?:19|20)\d\d\s*[-–—]\s*(?:19|20)\d\d\b')
 # The method and analyser line that laboratories print under the range ("metoda ECLIA, analizator Cobas pro")
-# is not part of it. The model glued it to multi-line ranges in the live evals. A range that really holds
-# such a word fails the check after the retry and goes to review (ADR-0018), so nothing wrong is stored.
-_METHOD_LINE = re.compile(r'(?:^|\s)(?:metoda|analizator)\b', re.IGNORECASE)
+# is not part of it. The model glued it to multi-line ranges in the live evals. Any form of the two words
+# counts ("(metoda ECLIA)", "metodą", "na analizatorze"). A range that really holds such a word ("metoda
+# Westergrena: K <12 mm/h") fails the check after the retry and goes to review for the user to enter
+# (ADR-0018): nothing wrong is stored, at the cost of typing it.
+_METHOD_LINE = re.compile(r'(?:^|[\s(,;:/])(?:metod|analizator)\w*', re.IGNORECASE)
 
 
 def _misreadings(unit):

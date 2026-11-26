@@ -258,9 +258,11 @@ class TextBlob(unittest.TestCase):
         r['source']['range'] = ['p1w4']
         self.assertEqual(text_checks.problems(self.doc),
                          ['result 1: range: holds the method or analyser line; return that line in method and analyser'])
-        for text in ('Metodametr 1-5', 'Wartość oczekiwana: <190'):
+        for text in ('Wartość oczekiwana: <190', 'ujemny', 'Wartości oczekiwane: kategorie ryzyka <115'):
             self.assertIsNone(text_checks._METHOD_LINE.search(text), text)
-        self.assertIsNotNone(text_checks._METHOD_LINE.search('>40 Analizator Cobas pro'))
+        for text in ('>40 Analizator Cobas pro', '<5 (metoda ECLIA)', '<5 oznaczono metodą CLIA',
+                     '4-10 na analizatorze Sysmex', 'metoda Westergrena: K <12 mm/h'):
+            self.assertIsNotNone(text_checks._METHOD_LINE.search(text), text)
 
     def test_the_word_check_says_which_way_it_differs(self):
         src = self.doc['results'][0]['source']
