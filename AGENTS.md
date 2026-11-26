@@ -47,6 +47,7 @@ Before a design change (an ADR, a diagram, a use case) is shown to the owner or 
 | [.githooks/pre-commit](.githooks/pre-commit) | The same scan for people. Enable once per clone: `git config core.hooksPath .githooks`. |
 | [.claude/agents/reviewer.md](.claude/agents/reviewer.md) | Review subagent: privacy, gates, ADRs, failure handling, tests. |
 | [contracts/](contracts/README.md) | JSON Schemas of the messages and blobs between services, with examples and the text blob checks. Every service tests what it sends against them. |
+| [infra/](infra/README.md) | Bicep of every Azure resource, deployed by `.github/workflows/deploy.yml` with a smoke test ([ADR-0019](docs/adr/0019-deployment-with-bicep-and-a-smoke-test.md)). |
 | [tools/docs-mcp/server.py](tools/docs-mcp/server.py) | Local MCP server with the project documentation: ADRs, gates, use cases, search. Read-only: documentation files that Git does not ignore. Claude Code starts it from [.mcp.json](.mcp.json) in the repository folder. |
 
 Running the tests:
@@ -58,5 +59,6 @@ python3 -m unittest discover -s contracts        # needs contracts/requirements.
 python3 -m unittest discover -s services/extractor -t services/extractor   # adapters need its requirements.txt; CI has it
 python3 -m unittest discover -s evals/synthetic   # the generator tests need requirements.txt; CI has it
 python3 -m unittest discover -s evals/extraction  # offline evals: fake AI services, every metric 100%
+python3 -m unittest discover -s tools/smoke       # the smoke test's own parts; needs the extractor's requirements
 node --test 'spikes/**/*.test.mjs'   # the quotes are needed on Node 22
 ```

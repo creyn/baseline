@@ -1,0 +1,6 @@
+**
+!services/extractor/requirements.txt
+!services/extractor/extractor/**
+!contracts/*.json
+!contracts/text_checks.py
+**/__pycache__

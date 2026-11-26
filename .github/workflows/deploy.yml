@@ -1,0 +1,113 @@
+name: Deploy
+
+# Builds the extractor's image, deploys infra/main.bicep to the production group and runs the smoke test
+# (ADR-0004, ADR-0019). On main when the extractor, its contracts or the infrastructure change, and on
+# demand. Skipped until the owner has set the production environment. No secrets: OIDC only.
+on:
+  push:
+    branches: [main]
+    paths: ['services/extractor/**', 'contracts/**', 'infra/**', 'tools/smoke/**', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false # never stop a deployment half way
+
+jobs:
+  check:
+    name: Azure set up?
+    runs-on: ubuntu-latest
+    environment: production
+    permissions: {}
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          SET: ${{ vars.DEPLOY_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' && vars.AZURE_SUBSCRIPTION_ID != '' && vars.AZURE_RESOURCE_GROUP != '' && vars.OIDC_SUBJECT_PREFIX != '' }}
+        run: |
+          if [ "$SET" != "true" ]; then
+            echo "::notice::Deployment skipped, the production environment variables are not all set."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  image:
+    name: Build and push the extractor's image
+    needs: check
+    if: needs.check.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.name.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/baseline-extractor:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - run: docker build -f services/extractor/Dockerfile -t "${{ steps.name.outputs.image }}" .
+      - run: docker push "${{ steps.name.outputs.image }}"
+
+  deploy:
+    name: Deploy and smoke test
+    needs: image
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.DEPLOY_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy the Bicep
+        id: deploy
+        run: |
+          az deployment group create -g "${{ vars.AZURE_RESOURCE_GROUP }}" -n "deploy-${GITHUB_RUN_ID}" \
+            -f infra/main.bicep \
+            -p extractorImage="${{ needs.image.outputs.image }}" githubSubjectPrefix="${{ vars.OIDC_SUBJECT_PREFIX }}" \
+            --query properties.outputs -o json > outputs.json
+          for k in storageAccountUrl serviceBusNamespace smokeClientId smokeUserId evalsClientId documentIntelligenceEndpoint openAiEndpoint; do
+            echo "$k=$(jq -r ".$k.value" outputs.json)" >> "$GITHUB_OUTPUT"
+          done
+      - name: Endpoints for the owner (no secrets)
+        run: |
+          {
+            echo "### Deployed"
+            echo "- image: ${{ needs.image.outputs.image }}"
+            echo "- evals identity client id: ${{ steps.deploy.outputs.evalsClientId }}"
+            echo "- Document Intelligence: ${{ steps.deploy.outputs.documentIntelligenceEndpoint }}"
+            echo "- Azure OpenAI: ${{ steps.deploy.outputs.openAiEndpoint }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
+          python -m pip install -q -r evals/synthetic/requirements.txt -r services/extractor/requirements.txt
+      - name: Generate the smoke test's document
+        run: python evals/synthetic/generate.py --out generated
+      # The smoke test signs in as its own identity: clean and text under the test user only, send to extract.
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ steps.deploy.outputs.smokeClientId }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Smoke test
+        run: |
+          sleep 60  # new role assignments can take a few minutes to apply
+          python tools/smoke/extractor_smoke.py --generated generated \
+            --storage "${{ steps.deploy.outputs.storageAccountUrl }}" \
+            --namespace "${{ steps.deploy.outputs.serviceBusNamespace }}" \
+            --user "${{ steps.deploy.outputs.smokeUserId }}"

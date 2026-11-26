@@ -24,6 +24,7 @@ This set replaces an earlier one (2026-11-17 to 2026-11-20), which is in the Git
 | 0016 | [A retry replaces a failed version; an upload sent again matches only a live version](0016-retry-replaces-a-failed-version.md) | Accepted |
 | 0017 | [Catching changes on the AI services: pinned versions and weekly live evals](0017-catching-changes-on-the-ai-services.md) | Accepted |
 | 0018 | [Results that cannot be read go to review, and words OCR is unsure of are marked](0018-unread-results-and-low-confidence-words.md) | Accepted |
+| 0019 | [Deployment with Bicep through the Azure CLI, all resources in one group, and a smoke test on a test user](0019-deployment-with-bicep-and-a-smoke-test.md) | Proposed |
 
 ## Order of dependence
 
