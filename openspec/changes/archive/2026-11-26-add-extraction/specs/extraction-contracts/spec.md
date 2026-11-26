@@ -78,7 +78,7 @@ The `text` blob of a version SHALL hold `extraction` (model, prompt version, dic
 #### Scenario: Text that does not fit
 
 - **WHEN** a value is longer than the `LabResult.Value` column
-- **THEN** the blob does not validate, because every text field has the `maxLength` of its column in [docs/data-model.md](../../../../../docs/data-model.md)
+- **THEN** the blob does not validate, because every text field has the `maxLength` of its column in [docs/data-model.md](../../../../../../docs/data-model.md)
 
 #### Scenario: A date with its zone
 
