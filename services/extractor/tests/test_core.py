@@ -12,7 +12,7 @@ from jsonschema import Draft202012Validator
 from extractor import core
 from extractor.contracts import schema, text_checks
 from extractor.dates import BadDate, to_instant
-from extractor.layout import box_from_polygon, lines, number
+from extractor.layout import box_from_polygon, lines, number, union
 from extractor.pages import BadZip, read_zip
 from tests import fakes
 
@@ -90,7 +90,7 @@ class Extract(unittest.TestCase):
         self.assertEqual(blob['results'][0]['collectedAt'], '2026-04-10T07:25:00+02:00')
         self.assertEqual(blob['fragments'][0]['text'], 'Metoda ECLIA')
         self.assertEqual(blob['extraction']['promptVersion'], 'extract.v2')
-        self.assertEqual(usage, {'input': 100, 'output': 50, 'calls': 1})
+        self.assertEqual(usage, {'input': 100, 'output': 50, 'calls': 1, 'unread': 0})
 
     def test_the_model_version_that_answered_is_recorded(self):
         pages = [fakes.page(1, 1)]
@@ -134,8 +134,9 @@ class Extract(unittest.TestCase):
     def test_a_name_not_printed_still_fails(self):
         answer = fakes.iron_answer()
         answer['results'][0]['name'] = 'Ferrytyna surowica'  # not on the page as one run of words
-        with self.assertRaises(core.InvalidAnswer):
-            run([fakes.IRON_PAGE], answer, answer)
+        blob, _, _ = run([fakes.IRON_PAGE], answer, answer)
+        self.assertEqual([r['name'] for r in blob['results']], ['Żelazo'])
+        self.assertEqual([u['fields'] for u in blob['unread']], [['name']])
 
     def test_regrouping_skips_only_marks_and_other_columns(self):
         w = fakes.w
@@ -181,10 +182,11 @@ class Extract(unittest.TestCase):
     def test_a_cut_name_or_range_still_fails(self):
         answer = fakes.iron_answer()
         answer['results'][0]['range'] = '30 -'  # the last word dropped from the text, all ids listed
-        with self.assertRaises(core.InvalidAnswer) as e:
-            run([fakes.IRON_PAGE], answer, answer)
-        self.assertEqual(e.exception.problems, ['result 1: range: its word ids hold more words than its text; '
-                                                'list only the ids of the words in the text, or copy the whole text'])
+        blob, _, llm = run([fakes.IRON_PAGE], answer, answer)
+        self.assertIn('result 1: range: its word ids hold more words than its text; '
+                      'list only the ids of the words in the text, or copy the whole text', llm.calls[1][1]['content'])
+        self.assertEqual(blob['unread'], [{'page': 1, 'box': blob['unread'][0]['box'], 'fields': ['range']}])
+        self.assertEqual([r['name'] for r in blob['results']], ['Żelazo'])
 
     def test_an_answer_that_breaks_the_schema_gets_the_retry(self):
         bad = fakes.iron_answer()
@@ -200,16 +202,30 @@ class Extract(unittest.TestCase):
         self.assertIn('result 1: value: does not equal its words', llm.calls[1][1]['content'])
         self.assertEqual(blob['results'][0]['value'], '18')
 
-    def test_still_invalid_after_the_retry(self):
+    def test_still_invalid_after_the_retry_goes_to_unread(self):
+        """ADR-0018: the verified results are kept; the other one is shown on review to enter by hand."""
+        blob, usage, _ = run([fakes.IRON_PAGE], fakes.iron_answer(ferritin='16'), fakes.iron_answer(ferritin='16'))
+        self.assertEqual([r['name'] for r in blob['results']], ['Żelazo'])
+        u = blob['unread'][0]
+        self.assertEqual((u['page'], u['fields'], usage['unread']), (1, ['value'], 1))
+        ferritin_words = [w['box'] for w in blob['pages'][0]['words'] if w['id'] in ('p1w5', 'p1w6', 'p1w7', 'p1w10')]
+        self.assertEqual(u['box'], union(ferritin_words))
+        self.assertEqual(list(Draft202012Validator(schema('text.v1')).iter_errors(blob)), [])
+        self.assertEqual(text_checks.problems(blob), [])
+
+    def test_nothing_verified_is_still_invalid(self):
+        bad = fakes.iron_answer(ferritin='16')
+        bad['results'][1]['value'] = '63'
         with self.assertRaises(core.InvalidAnswer) as e:
-            run([fakes.IRON_PAGE], fakes.iron_answer(ferritin='16'), fakes.iron_answer(ferritin='16'))
-        self.assertEqual(e.exception.problems, ['result 1: value: does not equal its words'])
+            run([fakes.IRON_PAGE], bad, bad)
+        self.assertEqual(e.exception.problems, ['result 1: value: does not equal its words',
+                                                'result 2: value: does not equal its words'])
 
     def test_problems_never_quote_the_page(self):
         bad = fakes.iron_answer(ferritin='16')
         bad['results'][1]['unit'] = 'x' * 60
         with self.assertRaises(core.InvalidAnswer) as e:
-            run([fakes.IRON_PAGE], bad, bad)
+            run([fakes.IRON_PAGE], bad, bad)  # both results fail: nothing verified
         for p in e.exception.problems:
             for text in ('16', '18', 'xxx', 'Ferrytyna', 'Żelazo'):
                 self.assertNotIn(text, p)
@@ -217,8 +233,9 @@ class Extract(unittest.TestCase):
     def test_a_word_from_another_batch(self):
         answer = fakes.iron_answer()
         answer['results'][0]['page'] = 6
-        with self.assertRaises(core.InvalidAnswer):
+        with self.assertRaises(core.InvalidAnswer) as e:  # no page to show it on: the batch is invalid
             run([fakes.IRON_PAGE], answer, answer)
+        self.assertEqual(e.exception.problems, ['page of result 1: page is not in this batch'])
 
     def test_a_date_that_does_not_exist(self):
         answer = fakes.iron_answer()

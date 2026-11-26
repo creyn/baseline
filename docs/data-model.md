@@ -66,6 +66,7 @@ How a version was extracted ([ADR-0006](adr/0006-document-lifecycle-and-review.m
 | `DictionaryVersion` | varchar(32), null | null until the dictionary exists |
 | `ExtractorVersion` | varchar(32) | |
 | `ExtractedAt` | datetimeoffset | |
+| `Unread` | nvarchar(max) | JSON: `unread` from the `text` blob, the places of results that could not be read ([ADR-0018](adr/0018-unread-results-and-low-confidence-words.md)); the review asks the user to enter or dismiss each one |
 
 ## LabResult
 
@@ -95,6 +96,7 @@ One result of one version, as extracted. Written in the same transaction that se
 | `SuggestedParameter` | varchar(64), null | the model's proposal for `ParameterCode`; empty until the dictionary exists |
 | `CollectedAt` | datetimeoffset, null | the date the trend uses, `collectedAt` from the `text` blob (the rule is in [the design](../openspec/changes/add-extraction/design.md)); required before approval, corrected on review |
 | `CollectedHasTime` | bit | false: a date without a printed time, stored at midnight |
+| `LowConfidence` | bit | an OCR word of the value or unit is below the confidence threshold; the review marks the result for checking ([ADR-0018](adr/0018-unread-results-and-low-confidence-words.md)) |
 | `Dates` | nvarchar(max) | JSON: the result's own labelled dates from the `text` blob |
 | `PageSha256` | binary(32) | |
 | `Source` | nvarchar(max) | JSON: the word ids and boxes of the name, value, unit and range, for highlighting |

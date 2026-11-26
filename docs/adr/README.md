@@ -23,7 +23,8 @@ This set replaces an earlier one (2026-11-17 to 2026-11-20), which is in the Git
 | 0015 | [Our own user id, and the identifiers in every log entry](0015-internal-user-id-and-log-identifiers.md) | Accepted |
 | 0016 | [A retry replaces a failed version; an upload sent again matches only a live version](0016-retry-replaces-a-failed-version.md) | Accepted |
 | 0017 | [Catching changes on the AI services: pinned versions and weekly live evals](0017-catching-changes-on-the-ai-services.md) | Accepted |
+| 0018 | [Results that cannot be read go to review, and words OCR is unsure of are marked](0018-unread-results-and-low-confidence-words.md) | Accepted |
 
 ## Order of dependence
 
-Masking (0003) decides what the server may receive. Hosting and operations (0004) rule out always-on services. Together they shape the import pipeline (0005), which defines the lifecycle and the review (0006), refined for uploads sent again (0016). Extraction (0007), retrieval (0008), the agent (0009) and the lab parameters (0011) build on the approved results. Identity and consent (0010, with our own user id in 0015), deletion (0012) and the security baseline (0013) cut across all of them. Languages (0002) and the way of working (0014) apply to every part.
+Masking (0003) decides what the server may receive. Hosting and operations (0004) rule out always-on services. Together they shape the import pipeline (0005), which defines the lifecycle and the review (0006), refined for uploads sent again (0016). Extraction (0007, with unread results in 0018), retrieval (0008), the agent (0009) and the lab parameters (0011) build on the approved results. Identity and consent (0010, with our own user id in 0015), deletion (0012) and the security baseline (0013) cut across all of them. Languages (0002) and the way of working (0014) apply to every part.

@@ -12,7 +12,8 @@
     "pages",
     "fragments",
     "documentDates",
-    "results"
+    "results",
+    "unread"
   ],
   "properties": {
     "schemaVersion": {
@@ -132,6 +133,51 @@
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/result"
+      }
+    },
+    "unread": {
+      "description": "Results the model could not read from the page, even on the retry (ADR-0018). The review shows each place and asks the user to enter the result by hand. Never the model's text: it was not verified.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "page",
+          "box",
+          "fields"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "box": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/box"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Around the words the model named on that page, or null when it named none that exist there."
+          },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "name",
+                "value",
+                "unit",
+                "range",
+                "other"
+              ]
+            },
+            "description": "The fields that failed the check."
+          }
+        },
+        "additionalProperties": false
       }
     }
   },
@@ -284,6 +330,7 @@
         "collectedAt",
         "collectedHasTime",
         "suggestedParameter",
+        "lowConfidence",
         "source"
       ],
       "properties": {
@@ -454,6 +501,10 @@
             }
           },
           "additionalProperties": false
+        },
+        "lowConfidence": {
+          "type": "boolean",
+          "description": "Set by code: a word of the value or the unit has an OCR confidence below text_checks.LOW_CONFIDENCE (ADR-0018). The review marks the result for checking."
         }
       },
       "additionalProperties": false

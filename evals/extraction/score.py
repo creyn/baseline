@@ -4,6 +4,11 @@ Standard library only. Targets (ADR-0007, design.md):
 - values and units exactly right: 100% (a unit misread by OCR and corrected to a known unit counts as right);
 - names, ranges and flags as printed: 95%;
 - missing and extra results, the mapped flag, material, condition, method and dates: reported, no target yet.
+
+ADR-0018: the ratios are over the results the extractor verified and returned (matched), not over all
+expected ones. A result in `unread` is not an error of a value: the review asks the user for it. It is
+reported with the missing ones. A result marked lowConfidence whose value or unit is wrong counts as
+"flagged", not wrong: the review marks it for checking.
 """
 import re
 
@@ -18,16 +23,20 @@ def norm(text):
     return _SPACES.sub('', text or '').rstrip('*').lower()
 
 
-def score(expected, extracted):
-    """expected: describe.expected_extraction(doc); extracted: the blob's results. Returns counts and ratios."""
+def score(expected, extracted, unread=0):
+    """expected: describe.expected_extraction(doc); extracted: the blob's results; unread: len(blob['unread']).
+    Returns counts and ratios over the matched results."""
     pairs, extra = match(expected, extracted)
-    n = len(expected)
+    n = sum(1 for _, x in pairs if x is not None)
+    flagged = 0
     counts = {k: 0 for k in ('values_units', 'names', 'ranges', 'flags', 'mapped_flags', 'material', 'condition',
                              'method', 'dates')}
     for e, x in pairs:
         if x is None:
             continue
-        counts['values_units'] += (x['value'] or '').strip() == e['value'] and norm(x['unit']) == norm(e['unit'] or None)
+        right = (x['value'] or '').strip() == e['value'] and norm(x['unit']) == norm(e['unit'] or None)
+        flagged += not right and x.get('lowConfidence', False)
+        counts['values_units'] += right or x.get('lowConfidence', False)
         counts['names'] += norm(x['name']) == norm(e['name'])
         counts['ranges'] += _range_ok(e, x)
         counts['flags'] += (x['flagPrinted'] or None) == (e['flag'] or None)
@@ -39,7 +48,8 @@ def score(expected, extracted):
         counts['dates'] += _dates(x['dates']) == _dates_expected(e['dates'])
     missing = sum(1 for _, x in pairs if x is None)
     ratios = {k: (v / n if n else 1.0) for k, v in counts.items()}
-    return {'expected': n, 'missing': missing, 'extra': len(extra), 'counts': counts, 'ratios': ratios}
+    return {'expected': len(expected), 'matched': n, 'missing': missing, 'unread': unread, 'flagged': flagged,
+            'extra': len(extra), 'counts': counts, 'ratios': ratios}
 
 
 def match(expected, extracted):
@@ -93,13 +103,13 @@ def _dates_expected(dates):
 
 
 def total(scores):
-    """Sums per-document scores into one, weighted by the number of expected results."""
+    """Sums per-document scores into one, weighted by the number of matched results."""
     if not scores:
         return score([], [])
-    n = sum(s['expected'] for s in scores)
+    n = sum(s['matched'] for s in scores)
     counts = {k: sum(s['counts'][k] for s in scores) for k in scores[0]['counts']}
-    return {'expected': n, 'missing': sum(s['missing'] for s in scores), 'extra': sum(s['extra'] for s in scores),
-            'counts': counts, 'ratios': {k: (v / n if n else 1.0) for k, v in counts.items()}}
+    out = {k: sum(s[k] for s in scores) for k in ('expected', 'missing', 'unread', 'flagged', 'extra')}
+    return {**out, 'matched': n, 'counts': counts, 'ratios': {k: (v / n if n else 1.0) for k, v in counts.items()}}
 
 
 def failures(summary):

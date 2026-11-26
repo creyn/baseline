@@ -63,13 +63,14 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
     """pages: [Page]; layout.analyze(pages) -> [[word]] per page; llm.complete(messages) -> answer dict.
 
     Returns (text blob, usage) or raises InvalidAnswer or NoResults. Transient errors of
-    the services propagate unchanged.
+    the services propagate unchanged. A result that is still invalid after the retry goes to
+    `unread`, with its place on the page, and the other results are kept (ADR-0018).
     """
     numbered = number(layout.analyze(pages))
     blob_pages = [{'index': p.index, 'sha256': p.sha256, 'words': words} for p, words in zip(pages, numbered)]
     words = {w['id']: w for p in blob_pages for w in p['words']}
     usage = {'input': 0, 'output': 0, 'calls': 0}
-    results, document_dates, fragments = [], [], []
+    results, document_dates, fragments, unread, unread_problems = [], [], [], [], []
     for batch in batches(blob_pages, batch_pages):
         texts = [page_text(p['index'], p['words']) for p in batch]
         indexes = {p['index'] for p in batch}
@@ -84,15 +85,20 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
             part, errors = convert(answer, words, indexes, zone)
             if not errors:
                 break
-        if errors:
-            raise InvalidAnswer(errors)
+        if [e for e in errors if not e.startswith('result ')]:
+            raise InvalidAnswer(errors)  # a refusal, a date or a fragment: the batch cannot be trusted
+        unread += part['unread']
+        unread_problems += errors
         results += part['results']
         fragments += part['fragments']
         for d in part['documentDates']:
             if (d['label'], d['at']) not in {(x['label'], x['at']) for x in document_dates}:
                 document_dates.append(d)
     if not results:
+        if unread:
+            raise InvalidAnswer(unread_problems)  # nothing verified to review
         raise NoResults()
+    usage['unread'] = len(unread)
     for r in results:
         r['collectedAt'], r['collectedHasTime'] = text_checks.collected_at(r['dates'], document_dates)
         if r['collectedAt'] is None:
@@ -103,6 +109,7 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
                        'extractorVersion': VERSION,
                        'extractedAt': (now or datetime.now(timezone.utc)).isoformat(timespec='seconds').replace('+00:00', 'Z')},
         'pages': blob_pages, 'fragments': fragments, 'documentDates': document_dates, 'results': results,
+        'unread': unread,
     }
     problems = [_where(e) for e in _BLOB.iter_errors(blob)] + text_checks.problems(blob)
     if problems:
@@ -113,7 +120,7 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
 def convert(answer, words, indexes, zone):
     """One batch's answer -> blob parts and problems. Problems name fields and rules, never page text."""
     problems = []
-    out = {'results': [], 'documentDates': [], 'fragments': []}
+    out = {'results': [], 'documentDates': [], 'fragments': [], 'unread': []}
     if answer.get('refused'):
         return out, ['the model refused to answer']
     for n, d in enumerate(answer.get('documentDates', []), 1):
@@ -130,10 +137,26 @@ def convert(answer, words, indexes, zone):
                                  'box': union([words[i]['box'] for i in ids])})
     for n, a in enumerate(answer.get('results', []), 1):
         result, p = _result(a, words, indexes, zone)
-        problems += [f'result {n}: {m}' for m in p]
         if result:
             out['results'].append(result)
+        elif a.get('page') in indexes:
+            problems += [f'result {n}: {m}' for m in p]
+            out['unread'].append(_unread(a, p, words))
+        else:
+            problems += [f'page of result {n}: {m}' for m in p]  # no place to show it: the batch is invalid
     return out, problems
+
+
+_FIELDS = ('name', 'value', 'unit', 'range')
+
+
+def _unread(a, problems, words):
+    """A result that failed the check: its page, a box around the words it named there, and which fields failed."""
+    prefix = f'p{a["page"]}w'
+    ids = [i for f in _FIELDS for i in (a.get(f + 'Words') or []) if isinstance(i, str) and i in words and i.startswith(prefix)]
+    fields = sorted({next((f for f in _FIELDS if m.startswith(f)), 'other') for m in problems},
+                    key=lambda f: (_FIELDS + ('other',)).index(f))
+    return {'page': a['page'], 'box': union([words[i]['box'] for i in ids]) if ids else None, 'fields': fields}
 
 
 def _result(a, words, indexes, zone):
@@ -155,7 +178,7 @@ def _result(a, words, indexes, zone):
         'condition': a.get('condition') or None, 'method': a.get('method') or None,
         'analyser': a.get('analyser') or None,
         'dates': dates, 'collectedAt': None, 'collectedHasTime': False,
-        'suggestedParameter': a.get('suggestedParameter') or None,
+        'suggestedParameter': a.get('suggestedParameter') or None, 'lowConfidence': False,
         'source': {'page': a['page'], 'name': a.get('nameWords') or [], 'value': a.get('valueWords') or [],
                    'unit': (a.get('unitWords') or []) if a.get('unit') else [],
                    'range': (a.get('rangeWords') or []) if a.get('range') else []},
@@ -164,6 +187,7 @@ def _result(a, words, indexes, zone):
     if not problems:
         for field in ('name', 'range'):
             _regroup_words(result, field, words)
+        result['lowConfidence'] = text_checks.low_confidence(result, words)
         problems += text_checks.result_problems(result, words, indexes)
     if not problems and text_checks.known_unit(result['unit']):
         # A unit read with OCR misreadings ("tys/ul") becomes the known unit ("tys/µl"); the words keep the reading.

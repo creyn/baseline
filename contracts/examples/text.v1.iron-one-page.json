@@ -292,6 +292,7 @@
       "collectedAt": "2026-04-10T07:25:00+02:00",
       "collectedHasTime": true,
       "suggestedParameter": null,
+      "lowConfidence": false,
       "source": {
         "page": 1,
         "name": [
@@ -331,6 +332,7 @@
       "collectedAt": "2026-04-10T07:25:00+02:00",
       "collectedHasTime": true,
       "suggestedParameter": null,
+      "lowConfidence": false,
       "source": {
         "page": 1,
         "name": [
@@ -349,5 +351,6 @@
         ]
       }
     }
-  ]
+  ],
+  "unread": []
 }

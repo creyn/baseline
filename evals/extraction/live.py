@@ -118,7 +118,7 @@ def main(argv=None):
                 continue
             started = time.monotonic()
             pages = pages_of(os.path.join(args.generated, doc['id']), form, len(doc['pages']))
-            outcome, results, usage = 'ok', [], {}
+            outcome, results, usage, unread = 'ok', [], {}, 0
             run_layout, run_llm = layout, llm
             if args.dump:
                 folder = os.path.join(args.dump, doc['id'], form)
@@ -128,7 +128,7 @@ def main(argv=None):
                 blob, usage = core.extract(pages, run_layout, run_llm, doc_id='019ab3c4-5d6e-7f80-9a1b-2c3d4e5f6a7b',
                                            ver_id='019ab3c4-6e7f-7081-8b2c-3d4e5f6a7b8c',
                                            model=env['AZURE_OPENAI_DEPLOYMENT'])
-                results = blob['results']
+                results, unread = blob['results'], len(blob['unread'])
                 if args.dump:
                     _write(os.path.join(args.dump, doc['id'], form, 'text-blob.json'), blob)
                 models.add(blob['extraction']['model'])
@@ -138,7 +138,7 @@ def main(argv=None):
                 outcome = 'no_results'
             except Exception as e:  # a service error ends this document, not the run; the type only
                 outcome = f'error ({type(e).__name__})'
-            s = score.score(expected, results)
+            s = score.score(expected, results, unread)
             scores.append(s)
             rows.append({'document': doc['id'], 'form': form, 'pages': len(pages), 'outcome': outcome,
                          'seconds': round(time.monotonic() - started, 1), 'tokens': usage, **s})
@@ -164,13 +164,15 @@ def markdown(report):
            '| Metric | Result | Target |', '|---|---|---|']
     for k, t in score.TARGETS.items():
         out.append(f'| {k} | {pct(s["ratios"][k])} | {pct(t)} |')
-    out += [f'| missing / extra | {s["missing"]} / {s["extra"]} of {s["expected"]} | reported |', '',
-            '| Document | Form | Outcome | Values and units | Names | Ranges | Flags | Missing | Extra |',
-            '|---|---|---|---|---|---|---|---|---|']
+    out += [f'| read and verified | {s["matched"]} of {s["expected"]} | reported |',
+            f'| missing / unread for review / extra | {s["missing"]} / {s["unread"]} / {s["extra"]} | reported |',
+            f'| low confidence, flagged for review | {s["flagged"]} | reported |', '',
+            '| Document | Form | Outcome | Values and units | Names | Ranges | Flags | Missing | Unread | Extra |',
+            '|---|---|---|---|---|---|---|---|---|---|']
     for r in report['runs']:
         q = r['ratios']
         out.append(f'| {r["document"]} | {r["form"]} | {r["outcome"]} | {pct(q["values_units"])} | {pct(q["names"])} '
-                   f'| {pct(q["ranges"])} | {pct(q["flags"])} | {r["missing"]} | {r["extra"]} |')
+                   f'| {pct(q["ranges"])} | {pct(q["flags"])} | {r["missing"]} | {r["unread"]} | {r["extra"]} |')
     out += ['', 'Failed: ' + ('; '.join(report['failures']) if report['failures'] else 'none'), '']
     return '\n'.join(out)
 
