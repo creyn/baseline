@@ -89,7 +89,7 @@ class Extract(unittest.TestCase):
         self.assertEqual([r['flag'] for r in blob['results']], [None, 'L'])
         self.assertEqual(blob['results'][0]['collectedAt'], '2026-04-10T07:25:00+02:00')
         self.assertEqual(blob['fragments'][0]['text'], 'Metoda ECLIA')
-        self.assertEqual(blob['extraction']['promptVersion'], 'extract.v1')
+        self.assertEqual(blob['extraction']['promptVersion'], 'extract.v2')
         self.assertEqual(usage, {'input': 100, 'output': 50, 'calls': 1})
 
     def test_the_model_version_that_answered_is_recorded(self):
@@ -112,6 +112,87 @@ class Extract(unittest.TestCase):
         user = llm.calls[0][1]['content']
         self.assertIn('## Page 1', user)
         self.assertIn('[p1w5]Ferrytyna [p1w6]18 [p1w7]ng/ml*', user)
+
+    def test_a_unit_misread_by_ocr_becomes_the_known_unit(self):
+        page = copy.deepcopy(fakes.IRON_PAGE)
+        page[12]['text'] = 'ug/dI*'  # OCR read "µg/dl*"
+        answer = fakes.iron_answer()
+        answer['results'][1]['unit'] = 'ug/dI'  # the model copies what OCR read
+        blob, _, llm = run([page], answer)
+        self.assertEqual(len(llm.calls), 1)
+        self.assertEqual(blob['results'][1]['unit'], 'µg/dl')
+        self.assertEqual(blob['pages'][0]['words'][12]['text'], 'ug/dI*')  # the reading stays in the words
+        self.assertEqual(text_checks.problems(blob), [])
+
+    def test_a_word_left_out_of_the_range_is_found_on_the_page(self):
+        answer = fakes.iron_answer()
+        answer['results'][0]['rangeWords'] = ['p1w8', 'p1w10']  # "-" left out
+        blob, _, llm = run([fakes.IRON_PAGE], answer)
+        self.assertEqual(len(llm.calls), 1)
+        self.assertEqual(blob['results'][0]['source']['range'], ['p1w8', 'p1w9', 'p1w10'])
+
+    def test_a_name_not_printed_still_fails(self):
+        answer = fakes.iron_answer()
+        answer['results'][0]['name'] = 'Ferrytyna surowica'  # not on the page as one run of words
+        with self.assertRaises(core.InvalidAnswer):
+            run([fakes.IRON_PAGE], answer, answer)
+
+    def test_regrouping_skips_only_marks_and_other_columns(self):
+        w = fakes.w
+        words = {'p1w1': w('Cholesterol', 0.05, 0.40), 'p1w2': w('LDL', 0.11, 0.40), 'p1w3': w('bezp.', 0.16, 0.40),
+                 'p1w4': w('<115', 0.60, 0.40), 'p1w5': w('A', 0.80, 0.40, 0.01), 'p1w6': w('w', 0.05, 0.42, 0.01),
+                 'p1w7': w('surowicy', 0.07, 0.42), 'p1w8': w('<100', 0.60, 0.42)}
+        def regroup(field, text, ids):
+            r = {'name': text if field == 'name' else 'x', 'range': {'text': text if field == 'range' else None},
+                 'source': {'page': 1, 'name': ids if field == 'name' else [], 'range': ids if field == 'range' else []}}
+            core._regroup_words(r, field, words)
+            return r['source'][field]
+        # A mark and a word of another column on the next line are skipped
+        self.assertEqual(regroup('range', '<115 <100', ['p1w4', 'p1w5', 'p1w6', 'p1w7', 'p1w8']), ['p1w4', 'p1w8'])
+        # A word left out on the same line is not: the name stays as listed and fails the check
+        self.assertEqual(regroup('name', 'Cholesterol bezp.', ['p1w1', 'p1w2', 'p1w3']), ['p1w1', 'p1w2', 'p1w3'])
+        self.assertEqual(regroup('name', 'Cholesterol', ['p1w1', 'p1w2']), ['p1w1', 'p1w2'])
+
+    def test_regrouping_never_passes_a_cut_or_a_word_left_out(self):
+        w = fakes.w
+        def regroup(words, text, ids):
+            r = {'name': text, 'range': {'text': None}, 'source': {'page': 1, 'name': ids, 'range': []}}
+            core._regroup_words(r, 'name', words)
+            return r['source']['name']
+        last_mark = {'p1w1': w('Witamina', 0.05, 0.40, 0.08), 'p1w2': w('B12', 0.14, 0.40, 0.03)}
+        self.assertEqual(regroup(last_mark, 'Witamina', ['p1w1', 'p1w2']), ['p1w1', 'p1w2'])
+        inner_mark = {'p1w1': w('Witamina', 0.05, 0.40, 0.08), 'p1w2': w('D', 0.14, 0.40, 0.01),
+                      'p1w3': w('25-OH', 0.16, 0.40)}
+        self.assertEqual(regroup(inner_mark, 'Witamina 25-OH', ['p1w1', 'p1w2', 'p1w3']), ['p1w1', 'p1w2', 'p1w3'])
+        indented = {'p1w1': w('Ab', 0.05, 0.40), 'p1w2': w('anty', 0.12, 0.415), 'p1w3': w('TPO', 0.18, 0.415)}
+        self.assertEqual(regroup(indented, 'Ab TPO', ['p1w1', 'p1w2', 'p1w3']), ['p1w1', 'p1w2', 'p1w3'])
+        bands = {'p1w1': w('M', 0.60, 0.40, 0.01), 'p1w2': w('13-17', 0.62, 0.40), 'p1w3': w('K', 0.68, 0.40, 0.01)}
+        self.assertEqual(regroup(bands, '13-17', ['p1w1', 'p1w2', 'p1w3']), ['p1w1', 'p1w2', 'p1w3'])
+        other_page = dict(last_mark, p2w1=w('Witamina', 0.05, 0.40))
+        self.assertEqual(regroup(other_page, 'Witamina', ['p2w1']), ['p2w1'])  # left to the word check
+
+    def test_an_id_on_another_page_gets_the_retry(self):
+        bad = fakes.iron_answer()
+        bad['results'][0]['nameWords'] = ['p2w5', 'p2w6']
+        blob, _, llm = run([fakes.IRON_PAGE, fakes.IRON_PAGE], bad, fakes.iron_answer())
+        self.assertEqual(len(llm.calls), 2)
+        self.assertIn('result 1: name: word p2w5 is not on page 1', llm.calls[1][1]['content'])
+
+    def test_a_cut_name_or_range_still_fails(self):
+        answer = fakes.iron_answer()
+        answer['results'][0]['range'] = '30 -'  # the last word dropped from the text, all ids listed
+        with self.assertRaises(core.InvalidAnswer) as e:
+            run([fakes.IRON_PAGE], answer, answer)
+        self.assertEqual(e.exception.problems, ['result 1: range: its word ids hold more words than its text; '
+                                                'list only the ids of the words in the text, or copy the whole text'])
+
+    def test_an_answer_that_breaks_the_schema_gets_the_retry(self):
+        bad = fakes.iron_answer()
+        bad['results'][0]['name'] = 7
+        bad['results'][0]['nameWords'] = [['p1w5']]
+        blob, _, llm = run([fakes.IRON_PAGE], bad, fakes.iron_answer())
+        self.assertEqual(len(llm.calls), 2)
+        self.assertEqual(blob['results'][0]['name'], 'Ferrytyna')
 
     def test_a_value_not_read_from_the_page_gets_one_retry(self):
         blob, usage, llm = run([fakes.IRON_PAGE], fakes.iron_answer(ferritin='16'), fakes.iron_answer())

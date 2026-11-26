@@ -5,5 +5,5 @@ so their tests run anywhere. The Azure adapters (azure_clients.py) and the model
 the LLM's answer (answer.py) need the packages in requirements.txt.
 """
 
-VERSION = '0.1.0'
-PROMPT_VERSION = 'extract.v1'
+VERSION = '0.2.0'
+PROMPT_VERSION = 'extract.v2'

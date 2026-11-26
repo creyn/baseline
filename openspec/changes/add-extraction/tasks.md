@@ -26,6 +26,6 @@
 
 ## 4. After merge
 
-- [ ] 4.1 The owner sets up Azure for the live evals
-- [ ] 4.2 The first live run; prompt fixes until the targets are met
+- [x] 4.1 The owner sets up Azure for the live evals
+- [ ] 4.2 The first live run; prompt fixes until the targets are met (first run 2026-11-26; prompt `extract.v2` and the unit correction in progress)
 - [ ] 4.3 Archive the change

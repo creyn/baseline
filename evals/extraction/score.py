@@ -1,7 +1,7 @@
 """Compares extracted results with the truth of a synthetic document (design: "Evals").
 
 Standard library only. Targets (ADR-0007, design.md):
-- values and units exactly right: 100%;
+- values and units exactly right: 100% (a unit misread by OCR and corrected to a known unit counts as right);
 - names, ranges and flags as printed: 95%;
 - missing and extra results, the mapped flag, material, condition, method and dates: reported, no target yet.
 """
@@ -65,7 +65,20 @@ def _take(items, test):
     return None
 
 
+_BAND = re.compile(r'[<>≤≥]|\d\s*[-–—]\s*\d')
+_BAND_START = re.compile(r'[<>≤≥]|\d')
+
+
 def _range_ok(e, x):
+    if e.get('range_lines') and e.get('min') is None:
+        # Several lines or bands: the whole printed text, never one band picked (owner, 2026-11-26).
+        # Every band must be there; a heading or a citation line may be left out.
+        got = norm(x['range']['text'])
+        whole = norm(' '.join(e['range_lines']))
+        bands = [norm(line[_BAND_START.search(line).start():]) for line in e['range_lines'] if _BAND.search(line)]
+        several = len(bands) > 1
+        no_bounds = x['range']['kind'] == 'text' and x['range']['low'] is None and x['range']['high'] is None
+        return bool(got) and got in whole and all(b in got for b in bands) and (no_bounds or not several)
     if e.get('min') is not None or e.get('max') is not None:
         return norm(x['range']['low']) == norm(e.get('min')) and norm(x['range']['high']) == norm(e.get('max'))
     return norm(x['range']['text']) == norm(e.get('range'))

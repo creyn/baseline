@@ -318,7 +318,7 @@
                 "string",
                 "null"
               ],
-              "maxLength": 400
+              "maxLength": 2000
             },
             "low": {
               "type": [

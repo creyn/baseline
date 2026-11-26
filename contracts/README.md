@@ -16,7 +16,7 @@ The messages between the pipeline's services and the blob formats that one servi
 - **No content in messages.** Messages carry identifiers and a reason. Page text and results travel in blobs.
 - **Service Bus properties.** The sender sets `subject` to the type, the application properties `docId` and `verId`, and the trace context in `Diagnostic-Id`. `CorrelationId` is not used ([ADR-0015](../docs/adr/0015-internal-user-id-and-log-identifiers.md)).
 - **Examples** in [examples/](examples/) are named `{schema}.v{major}.{name}.json`. Every schema has at least one, and services use them in their tests.
-- **Checks JSON Schema cannot express** (word ids exist on the right page, a value equals the words it was read from) are in [text_checks.py](text_checks.py). The extractor runs them before it writes a blob.
+- **Checks JSON Schema cannot express** (word ids exist on the right page, a value equals the words it was read from, a unit misread by OCR may only become the one known unit it stands for) are in [text_checks.py](text_checks.py). The extractor runs them before it writes a blob.
 
 ## Running the tests
 
