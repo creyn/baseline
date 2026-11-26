@@ -89,7 +89,7 @@ class Extract(unittest.TestCase):
         self.assertEqual([r['flag'] for r in blob['results']], [None, 'L'])
         self.assertEqual(blob['results'][0]['collectedAt'], '2026-04-10T07:25:00+02:00')
         self.assertEqual(blob['fragments'][0]['text'], 'Metoda ECLIA')
-        self.assertEqual(blob['extraction']['promptVersion'], 'extract.v2')
+        self.assertEqual(blob['extraction']['promptVersion'], 'extract.v3')
         self.assertEqual(usage, {'input': 100, 'output': 50, 'calls': 1})
 
     def test_the_model_version_that_answered_is_recorded(self):
@@ -187,6 +187,17 @@ class Extract(unittest.TestCase):
                       'list only the ids of the words in the text, or copy the whole text', llm.calls[1][1]['content'])
         self.assertEqual(blob['unread'], [{'page': 1, 'box': blob['unread'][0]['box'], 'fields': ['range']}])
         self.assertEqual([r['name'] for r in blob['results']], ['Żelazo'])
+
+    def test_a_range_with_the_method_line_gets_the_retry(self):
+        bad = fakes.iron_answer()
+        r = bad['results'][0]
+        r['range'], r['rangeWords'] = '30 - 400 Metoda ECLIA', ['p1w8', 'p1w9', 'p1w10', 'p1w18', 'p1w19']
+        r['rangeLow'] = r['rangeHigh'] = None
+        r['rangeKind'] = 'text'
+        blob, _, llm = run([fakes.IRON_PAGE], bad, fakes.iron_answer())
+        self.assertIn('result 1: range: holds the method or analyser line', llm.calls[1][1]['content'])
+        self.assertEqual(blob['results'][0]['range']['text'], '30 - 400')
+        self.assertEqual(blob['unread'], [])
 
     def test_an_answer_that_breaks_the_schema_gets_the_retry(self):
         bad = fakes.iron_answer()

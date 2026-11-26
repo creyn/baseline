@@ -251,6 +251,17 @@ class TextBlob(unittest.TestCase):
         r['range'] = {'text': '<30 - <400', 'low': None, 'high': None, 'kind': 'text'}
         self.assertEqual(text_checks.problems(self.doc), [])
 
+    def test_a_range_without_the_method_line(self):
+        r = self.doc['results'][0]
+        self.pages_word('p1w4', '30-400 metoda')
+        r['range'] = {'text': '30-400 metoda', 'low': None, 'high': None, 'kind': 'text'}
+        r['source']['range'] = ['p1w4']
+        self.assertEqual(text_checks.problems(self.doc),
+                         ['result 1: range: holds the method or analyser line; return that line in method and analyser'])
+        for text in ('Metodametr 1-5', 'Wartość oczekiwana: <190'):
+            self.assertIsNone(text_checks._METHOD_LINE.search(text), text)
+        self.assertIsNotNone(text_checks._METHOD_LINE.search('>40 Analizator Cobas pro'))
+
     def test_the_word_check_says_which_way_it_differs(self):
         src = self.doc['results'][0]['source']
         src['range'] = src['range'] + ['p1w3']

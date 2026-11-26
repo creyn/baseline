@@ -37,6 +37,10 @@ _BAND = re.compile(r'[<>≤≥]=?\s*\d[\d,.]*|\d[\d,.]*\s*[-–—]\s*\d')
 # Dates, times and year spans ("2019-08-31", "8:00-10:00", "2019-2021") are not bands.
 _NOT_BAND = re.compile(r'\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}([-./])\d{1,2}\1\d{2,4}\b|\b\d{1,2}:\d{2}\b'
                        r'|\b(?:19|20)\d\d\s*[-–—]\s*(?:19|20)\d\d\b')
+# The method and analyser line that laboratories print under the range ("metoda ECLIA, analizator Cobas pro")
+# is not part of it. The model glued it to multi-line ranges in the live evals. A range that really holds
+# such a word fails the check after the retry and goes to review (ADR-0018), so nothing wrong is stored.
+_METHOD_LINE = re.compile(r'(?:^|\s)(?:metoda|analizator)\b', re.IGNORECASE)
 
 
 def _misreadings(unit):
@@ -184,6 +188,8 @@ def result_problems(r, words, indexes):
     rng = r['range']
     if bands(rng['text']) > 1 and (rng['kind'] != 'text' or rng['low'] is not None or rng['high'] is not None):
         out.append('range: a range with several bands must have kind text and no bounds')
+    if _METHOD_LINE.search(rng['text'] or ''):
+        out.append('range: holds the method or analyser line; return that line in method and analyser')
     value_words = joined(words, src['value'])
     if texts['unit'] is not None and src['unit'] == src['value']:
         # A value printed together with its unit in one word, e.g. "18ng/ml".
