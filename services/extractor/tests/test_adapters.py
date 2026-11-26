@@ -83,6 +83,32 @@ class Adapters(unittest.TestCase):
         self.assertFalse(azure_clients._transient(http(400)))
         self.assertTrue(azure_clients._transient(ServiceRequestError('down')))
 
+    def test_the_clients_can_be_built(self):
+        """Building the clients needs no network: this catches incompatible package versions (openai and httpx)."""
+        class Credential:
+            def get_token(self, *scopes, **kwargs):
+                raise AssertionError('no token is needed to build a client')
+        llm = azure_clients.AzureOpenAILlm('https://x.openai.azure.com/', 'gpt', '2024-10-21', credential=Credential())
+        self.assertEqual((llm.keep_raw, llm.last_raw), (False, None))
+        azure_clients.DocumentIntelligenceLayout('https://x.cognitiveservices.azure.com/', credential=Credential())
+
+    def test_the_raw_answer_is_kept_for_the_evals(self):
+        from types import SimpleNamespace as NS
+        content = json.dumps({'results': [], 'documentDates': [], 'fragments': []})
+        message = NS(content=content, refusal=None)
+        response = NS(choices=[NS(message=message, finish_reason='stop')], model='gpt-x-2026-03-17',
+                      usage=NS(prompt_tokens=10, completion_tokens=2))
+        llm = azure_clients.AzureOpenAILlm.__new__(azure_clients.AzureOpenAILlm)
+        llm.deployment, llm.last_raw, llm.keep_raw = 'gpt', None, False
+        llm.client = NS(beta=NS(chat=NS(completions=NS(parse=lambda **kw: response))))
+        llm.complete([])
+        self.assertIsNone(llm.last_raw)  # production keeps nothing
+        llm.keep_raw = True
+        answer, usage = llm.complete([])
+        self.assertEqual(llm.last_raw, {'content': content, 'refusal': None, 'finish_reason': 'stop',
+                                        'model': 'gpt-x-2026-03-17'})
+        self.assertEqual(usage['model'], 'gpt-x-2026-03-17')
+
     def test_the_openai_errors_we_catch_exist(self):
         for name in ('RateLimitError', 'APIConnectionError', 'APITimeoutError', 'InternalServerError',
                      'LengthFinishReasonError', 'ContentFilterFinishReasonError'):

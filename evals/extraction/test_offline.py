@@ -3,14 +3,19 @@
 Run from the repository root: python3 -m unittest discover -s evals/extraction
 """
 import copy
+import json
 import os
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common  # noqa: E402
+import live  # noqa: E402
 import offline  # noqa: E402
 import score  # noqa: E402
+from extractor import core  # noqa: E402
+from extractor.pages import Page  # noqa: E402
 
 
 class Offline(unittest.TestCase):
@@ -40,6 +45,36 @@ class Offline(unittest.TestCase):
         for r in page6:
             self.assertEqual(r['dates'], [])
             self.assertEqual(r['collectedAt'], '2026-05-18T07:31:00+02:00')
+
+
+class Dump(unittest.TestCase):
+    def test_every_call_and_the_layout_are_written(self):
+        doc = next(d for d in common.documents() if len(d['pages']) == 7)
+        pages_words, targets = offline.build(doc)
+        llm = offline.FakeLlm(doc, pages_words, targets)
+        pages = [Page(i, f'{i:064x}', b'') for i in range(1, 8)]
+        with tempfile.TemporaryDirectory() as folder:
+            core.extract(pages, live.RecordingLayout(offline.FakeLayout(pages_words), folder),
+                         live.RecordingLlm(llm, folder), doc_id='019ab3c4-5d6e-7f80-9a1b-2c3d4e5f6a7b',
+                         ver_id='019ab3c4-6e7f-7081-8b2c-3d4e5f6a7b8c', model='offline')
+            self.assertEqual(sorted(os.listdir(folder)), ['call-1-answer.json', 'call-1-request.json',
+                                                          'call-2-answer.json', 'call-2-request.json', 'layout.json'])
+            with open(os.path.join(folder, 'call-2-request.json'), encoding='utf-8') as f:
+                self.assertIn('## Page 6', json.load(f)[1]['content'])
+            with open(os.path.join(folder, 'call-1-answer.json'), encoding='utf-8') as f:
+                self.assertTrue(json.load(f)['parsed']['results'])
+
+
+    def test_a_failed_call_is_written_with_its_type_and_raised(self):
+        class Down:
+            def complete(self, messages):
+                raise TimeoutError('the text of an error is not written')
+        with tempfile.TemporaryDirectory() as folder:
+            llm = live.RecordingLlm(Down(), folder)
+            with self.assertRaises(TimeoutError):
+                llm.complete([{'role': 'user', 'content': 'x'}])
+            with open(os.path.join(folder, 'call-1-answer.json'), encoding='utf-8') as f:
+                self.assertEqual(json.load(f), {'error': 'TimeoutError'})
 
 
 class Scoring(unittest.TestCase):
