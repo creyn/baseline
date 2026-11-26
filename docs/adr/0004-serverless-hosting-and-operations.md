@@ -4,7 +4,7 @@ Date: 2026-11-23
 
 ## Status
 
-Accepted. Point 2 is extended by [ADR-0017](0017-catching-changes-on-the-ai-services.md): live evals also run every week, and the model version is pinned.
+Accepted. Point 2 is extended by [ADR-0017](0017-catching-changes-on-the-ai-services.md): live evals also run every week, and the model version is pinned. [ADR-0019](0019-deployment-with-bicep-and-a-smoke-test.md) changes point 8 of the first decision and point 3 of the second: deployment is Bicep through the Azure CLI instead of azd, with every resource in the production group and a smoke test after each deployment.
 
 ## Context
 

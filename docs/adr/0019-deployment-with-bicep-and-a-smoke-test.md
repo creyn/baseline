@@ -4,7 +4,7 @@ Date: 2026-11-26
 
 ## Status
 
-Proposed. Changes point 8 of the first decision in [ADR-0004](0004-serverless-hosting-and-operations.md) ("deployed with azd and Bicep") and the deployment of its second decision (point 3), and point 3 of [ADR-0014](0014-development-with-ai-agents.md) ("deploys with azd and Bicep"). The rest of both stands.
+Accepted (the owner, 2026-11-26). Changes point 8 of the first decision in [ADR-0004](0004-serverless-hosting-and-operations.md) ("deployed with azd and Bicep") and the deployment of its second decision (point 3), and point 3 of [ADR-0014](0014-development-with-ai-agents.md) ("deploys with azd and Bicep"). The rest of both stands.
 
 ## Context
 
@@ -49,7 +49,7 @@ All options pass the gates. Scores from 1 to 5 on the criteria of [decision-crit
 
 ## Decision
 
-Option 3 for the tool, option 2 for the AI services, option 2 for checking.
+Option 3 for the tool, option 2 for the AI services, option 2 for checking (decided by the owner on 2026-11-26).
 
 1. **Infrastructure is one Bicep file set in `infra/`, deployed at resource-group scope** with `az deployment group create` by the workflow `deploy.yml`, signed in with OIDC to a deploying identity. Incremental mode, as ADR-0004 says.
 2. **The deploying identity** has two roles on the production group only: Contributor, and Role Based Access Control Administrator, because the Bicep assigns roles to the services' identities. The owner creates it once, with the group. Limiting which roles it may assign (a condition on the assignment) is to check.
