@@ -66,7 +66,7 @@ The code is written with AI coding agents. The rules they follow, the privacy ga
 - **Python:** pydantic, Tesseract, pytest
 - **TypeScript:** React, PDF.js, Tesseract.js
 - **Azure:** Azure OpenAI, Document Intelligence, Azure SQL (with vectors), Blob Storage, Service Bus, Container Apps, Entra External ID, Key Vault, Application Insights
-- **Delivery:** GitHub Actions, azd, Bicep, OpenSpec, a Model Context Protocol server for the documentation
+- **Delivery:** GitHub Actions, Bicep, OpenSpec, a Model Context Protocol server for the documentation
 
 ## Quality
 
