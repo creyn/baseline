@@ -209,6 +209,27 @@ class TextBlob(unittest.TestCase):
         r['value'], r['unit'] = '1', '8ng/ml'
         self.assertEqual(text_checks.problems(self.doc), ['result 1: value and unit: do not equal their shared words'])
 
+    def test_a_unit_misread_by_ocr_is_the_known_unit(self):
+        k = text_checks.known_unit
+        self.assertEqual([k(u) for u in ('tys/ul', 'min/ul', 'U/I', 'ulU/ml', 'μIU/ml', 'mlU/l', 'ug/dl', 'fI')],
+                         ['tys/µl', 'mln/µl', 'U/l', 'µIU/ml', 'µIU/ml', 'mIU/l', 'µg/dl', 'fl'])
+        self.assertEqual([k(u) for u in ('IU/ml', 'ng/ml', 'xyz', 'HbAlc', None)], [None] * 5)  # right, or unknown
+        self.pages_word('p1w3', 'ug/dl*')
+        r = self.doc['results'][0]
+        r['unit'] = 'µg/dl'
+        self.assertEqual(text_checks.problems(self.doc), [])
+        r['unit'] = 'mg/dl'  # not what the words can stand for
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: unit: does not equal its words'])
+
+    def test_a_misread_unit_in_one_word_with_the_value(self):
+        self.pages_word('p1w2', '18ug/dl')
+        r = self.doc['results'][0]
+        r['source']['unit'], r['unit'] = ['p1w2'], 'µg/dl'
+        self.assertEqual(text_checks.problems(self.doc), [])
+
+    def pages_word(self, word_id, text):
+        next(w for p in self.doc['pages'] for w in p['words'] if w['id'] == word_id)['text'] = text
+
     def test_flags_are_mapped_by_code(self):
         self.assertEqual([text_checks.map_flag(m) for m in ('H', '↑', 'L', '↓', '*', '+', None)],
                          ['H', 'H', 'L', 'L', None, None, None])

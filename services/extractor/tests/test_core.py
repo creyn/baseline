@@ -89,7 +89,7 @@ class Extract(unittest.TestCase):
         self.assertEqual([r['flag'] for r in blob['results']], [None, 'L'])
         self.assertEqual(blob['results'][0]['collectedAt'], '2026-04-10T07:25:00+02:00')
         self.assertEqual(blob['fragments'][0]['text'], 'Metoda ECLIA')
-        self.assertEqual(blob['extraction']['promptVersion'], 'extract.v1')
+        self.assertEqual(blob['extraction']['promptVersion'], 'extract.v2')
         self.assertEqual(usage, {'input': 100, 'output': 50, 'calls': 1})
 
     def test_the_model_version_that_answered_is_recorded(self):
@@ -112,6 +112,17 @@ class Extract(unittest.TestCase):
         user = llm.calls[0][1]['content']
         self.assertIn('## Page 1', user)
         self.assertIn('[p1w5]Ferrytyna [p1w6]18 [p1w7]ng/ml*', user)
+
+    def test_a_unit_misread_by_ocr_becomes_the_known_unit(self):
+        page = copy.deepcopy(fakes.IRON_PAGE)
+        page[12]['text'] = 'ug/dI*'  # OCR read "µg/dl*"
+        answer = fakes.iron_answer()
+        answer['results'][1]['unit'] = 'ug/dI'  # the model copies what OCR read
+        blob, _, llm = run([page], answer)
+        self.assertEqual(len(llm.calls), 1)
+        self.assertEqual(blob['results'][1]['unit'], 'µg/dl')
+        self.assertEqual(blob['pages'][0]['words'][12]['text'], 'ug/dI*')  # the reading stays in the words
+        self.assertEqual(text_checks.problems(blob), [])
 
     def test_a_value_not_read_from_the_page_gets_one_retry(self):
         blob, usage, llm = run([fakes.IRON_PAGE], fakes.iron_answer(ferritin='16'), fakes.iron_answer())

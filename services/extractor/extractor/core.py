@@ -162,6 +162,9 @@ def _result(a, words, indexes, zone):
     problems += [_where(e) for e in _RESULT.iter_errors(result)]
     if not problems:
         problems += text_checks.result_problems(result, words, indexes)
+    if not problems and text_checks.known_unit(result['unit']):
+        # A unit read with OCR misreadings ("tys/ul") becomes the known unit ("tys/µl"); the words keep the reading.
+        result['unit'] = text_checks.known_unit(result['unit'])
     return (None if problems else result), problems
 
 

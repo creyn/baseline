@@ -58,8 +58,13 @@ def build(doc):
                     range_cells = [(0.62, r['min'], 'range'), (0.70, r['max'], 'range')]
                 else:
                     range_cells = [(0.62, r.get('range'), 'range')]
+                if r.get('range_lines') and r.get('min') is None:
+                    range_cells = []
                 placed = sp.line((0.05, r['name'], 'name'), (0.35, r['value'], 'value'), (0.45, r['unit'], 'unit'),
                                  *range_cells, (0.90, r.get('flag'), None))
+                if not range_cells:
+                    for text in r['range_lines']:  # printed under the result, every line
+                        placed.setdefault('range', []).extend(sp.line((0.62, text, 'range')).get('range', []))
                 targets.append({'page': len(pages) + 1, 'r': r, 'section': section, 'words': placed})
             if section.get('method'):
                 targets_method = sp.line((0.05, section['method'], 'fragment'))
