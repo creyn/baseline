@@ -4,7 +4,7 @@ Date: 2026-11-26
 
 ## Status
 
-Proposed. Changes point 8 of the first decision in [ADR-0004](0004-serverless-hosting-and-operations.md) ("deployed with azd and Bicep") and the deployment of its second decision (point 3). The rest of ADR-0004 stands.
+Proposed. Changes point 8 of the first decision in [ADR-0004](0004-serverless-hosting-and-operations.md) ("deployed with azd and Bicep") and the deployment of its second decision (point 3), and point 3 of [ADR-0014](0014-development-with-ai-agents.md) ("deploys with azd and Bicep"). The rest of both stands.
 
 ## Context
 
@@ -59,12 +59,18 @@ Option 3 for the tool, option 2 for the AI services, option 2 for checking.
 6. **A smoke test runs after every deployment:**
    - it renders one synthetic document, puts its ZIP in `clean` and sends `ExtractRequested`, as a fixed test user (`userId` in [infra/README.md](../../infra/README.md));
    - it waits for the `text` blob and validates it against the contract;
-   - its identity may write `clean` and read `text` only under the test user's path (a condition on the role assignment), and may send to `extract`. It cannot read any real user's data (G3). The `Extracted` message it causes stays in `status` until the API exists, which ignores a version it does not know (ADR-0005, point 5).
+   - its identity may write `clean` and read `text` only under the test user's path (a condition on the role assignment), and may send to `extract`. It cannot read any real user's data (G3);
+   - the `Extracted` message it causes waits in `status` until the API exists, which ignores a version it does not know (ADR-0005, point 5);
+   - expired messages on `status` are not dead-lettered, so they do not raise the dead-letter alert. The API's sweeper recovers a version whose event was lost (ADR-0005, point 7);
+   - it first checks that it cannot read another user's `text` (a refusal, not "not found"), so the condition is proven on every deployment.
+7. **The region is fixed to Sweden Central in the Bicep**, because the Data Zone of the model follows the region (G2).
 
 ## Consequences
 
 - The deploying identity can change anything in the production group, including role assignments. It signs in only from the `production` environment of the repository, which only the `main` branch may use, so only code the owner merged is deployed.
 - Resource locks of ADR-0004 (point 6) need the right to write locks, which neither role gives. The owner adds them by hand after the first deployment, until a later change finds a narrower way.
 - Moving the AI services means new endpoints for the evals and one more step for the owner. The live evals run against the new services before the old group is deleted.
-- Each deployment costs one smoke test: one page of Document Intelligence and one LLM call, about 0.02 USD.
+- Each deployment costs one smoke test: one page of Document Intelligence and one LLM call, about 0.02 USD (a starting value, from the price list; not measured yet).
+- The conditions on the smoke identity's blob roles limit data only. Storage Blob Data Contributor also allows deleting the `clean` container itself, and the extractor's role the `text` container. A custom role with data actions only would close this, but creating roles needs rights the deploying identity does not have: to do by the owner later. Until then, only the `production` environment can sign in as these identities.
+- The first deployment fails once: a new package on GitHub Container Registry is private, so Container Apps cannot pull it. The owner makes the package public and runs the deployment again; later deployments push new versions to the same public package.
 - The smoke test's documents stay under the test user's path. They are fictional; the sweeper of ADR-0012 must not count them as orphans (to note in the API change).

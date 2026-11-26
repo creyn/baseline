@@ -82,7 +82,7 @@ box(1725, 675, 225, 100, C.sec, C.secS, 'Key Vault', ['sign-in certificate for',
 // development
 box(40, 900, 320, 120, C.ext, C.extS, 'VPS · Claude Code', ['writes code, no local build', 'hook: PII and secrets scan', 'subagent: code review']);
 box(420, 900, 320, 120, C.ext, C.extS, 'MCP server · project docs', ['local (stdio), no health data', 'ADRs, use cases, criteria']);
-box(820, 900, 520, 120, C.ext, C.extS, 'GitHub', ['repo · PR to main merged by the owner', 'Actions: build, tests on emulators, evals,', 'PII scan, deploy with azd + Bicep (OIDC, no secrets)', 'GHCR: container images'], { left: true });
+box(820, 900, 520, 120, C.ext, C.extS, 'GitHub', ['repo · PR to main merged by the owner', 'Actions: build, tests on emulators, evals,', 'PII scan, deploy Bicep with az (OIDC, no secrets)', 'GHCR: container images'], { left: true });
 
 // arrows: user and identity
 arrow([[295, 300], [368, 300]], 'masked ZIP', { at: [332, 290], color: C.masked });

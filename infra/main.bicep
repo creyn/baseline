@@ -3,7 +3,8 @@
 // No keys: every service signs in with Microsoft Entra ID, and local auth is off where Azure allows it.
 targetScope = 'resourceGroup'
 
-@description('Region. Sweden Central for the EU Data Zone models (ADR-0004).')
+@description('Region. Only Sweden Central: the model deployment is DataZoneStandard, whose data zone follows the region, so another region could move processing out of the EU (G2, ADR-0004).')
+@allowed(['swedencentral'])
 param location string = resourceGroup().location
 
 @description('The extractor image, e.g. ghcr.io/creyn/baseline-extractor:<git sha>.')
@@ -147,18 +148,32 @@ resource bus 'Microsoft.ServiceBus/namespaces@2024-01-01' = {
   }
 }
 
-var queueNames = ['check', 'extract', 'status']
+var queueProperties = {
+  lockDuration: 'PT5M' // the maximum; receivers renew it while they work (ADR-0005, point 6)
+  maxDeliveryCount: 10 // above the 5 tries of the services, so a crash on the last try dead-letters
+  defaultMessageTimeToLive: 'P14D'
+}
 
-resource queues 'Microsoft.ServiceBus/namespaces/queues@2024-01-01' = [for q in queueNames: {
+resource checkQueue 'Microsoft.ServiceBus/namespaces/queues@2024-01-01' = {
   parent: bus
-  name: q
-  properties: {
-    lockDuration: 'PT5M' // the maximum; receivers renew it while they work (ADR-0005, point 6)
-    maxDeliveryCount: 10 // above the 5 tries of the services, so a crash on the last try dead-letters
-    deadLetteringOnMessageExpiration: true
-    defaultMessageTimeToLive: 'P14D'
-  }
-}]
+  name: 'check'
+  properties: union(queueProperties, { deadLetteringOnMessageExpiration: true })
+}
+
+resource extractQueue 'Microsoft.ServiceBus/namespaces/queues@2024-01-01' = {
+  parent: bus
+  name: 'extract'
+  properties: union(queueProperties, { deadLetteringOnMessageExpiration: true })
+}
+
+// An expired status event is not dead-lettered: the API's sweeper recovers a version whose event was lost
+// (ADR-0005, point 7), and the smoke test's Extracted events, which no API reads yet, must not raise the
+// dead-letter alert of ADR-0004.
+resource statusQueue 'Microsoft.ServiceBus/namespaces/queues@2024-01-01' = {
+  parent: bus
+  name: 'status'
+  properties: union(queueProperties, { deadLetteringOnMessageExpiration: false })
+}
 
 // ------------------------------------------------------------------ AI services (ADR-0007, ADR-0017, ADR-0019)
 resource documentIntelligence 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
@@ -220,14 +235,14 @@ resource extractorText 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 }
 
 resource extractorExtract 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: queues[1]
-  name: guid(queues[1].id, extractorId.id, roles.busOwner)
+  scope: extractQueue
+  name: guid(extractQueue.id, extractorId.id, roles.busOwner)
   properties: { principalId: extractorId.properties.principalId, principalType: 'ServicePrincipal', roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.busOwner) }
 }
 
 resource extractorStatus 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: queues[2]
-  name: guid(queues[2].id, extractorId.id, roles.busSender)
+  scope: statusQueue
+  name: guid(statusQueue.id, extractorId.id, roles.busSender)
   properties: { principalId: extractorId.properties.principalId, principalType: 'ServicePrincipal', roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.busSender) }
 }
 
@@ -258,11 +273,14 @@ resource evalsDi 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 
 resource evalsAoai 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: openAi
-  name: guid(openAi.id, evalsId.id, roles.cognitiveUser)
-  properties: { principalId: evalsId.properties.principalId, principalType: 'ServicePrincipal', roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.cognitiveUser) }
+  name: guid(openAi.id, evalsId.id, roles.openAiUser)
+  properties: { principalId: evalsId.properties.principalId, principalType: 'ServicePrincipal', roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.openAiUser) }
 }
 
 // The smoke test: writes clean and reads text under the test user's path only (G3), sends to extract.
+// The conditions limit data actions only. Storage Blob Data Contributor also allows deleting the container
+// itself (a management action); a data-only custom role needs rights the deploying identity does not have
+// (ADR-0019, consequences).
 var smokePath = '${smokeUserId}/'
 var smokeCleanCondition = '((!(ActionMatches{\'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read\'}) AND !(ActionMatches{\'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write\'}) AND !(ActionMatches{\'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/add/action\'}) AND !(ActionMatches{\'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete\'})) OR (@Resource[Microsoft.Storage/storageAccounts/blobServices/containers/blobs:path] StringStartsWith \'${smokePath}\'))'
 var smokeTextCondition = '((!(ActionMatches{\'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read\'})) OR (@Resource[Microsoft.Storage/storageAccounts/blobServices/containers/blobs:path] StringStartsWith \'${smokePath}\'))'
@@ -292,13 +310,13 @@ resource smokeText 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 }
 
 resource smokeExtract 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: queues[1]
-  name: guid(queues[1].id, smokeId.id, roles.busSender)
+  scope: extractQueue
+  name: guid(extractQueue.id, smokeId.id, roles.busSender)
   properties: { principalId: smokeId.properties.principalId, principalType: 'ServicePrincipal', roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.busSender) }
 }
 
 // ------------------------------------------------------------------ Container Apps (ADR-0004: scale to zero)
-resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
+resource environment 'Microsoft.App/managedEnvironments@2025-01-01' = {
   name: 'cae-${name}-${suffix}'
   location: location
   properties: {
@@ -316,7 +334,8 @@ resource environmentLogs 'Microsoft.Insights/diagnosticSettings@2021-05-01-previ
   }
 }
 
-resource extractor 'Microsoft.App/containerApps@2024-03-01' = {
+// API version 2025-01-01 or later: `identity` on a scale rule does not exist before it.
+resource extractor 'Microsoft.App/containerApps@2025-01-01' = {
   name: 'ca-${name}-extractor'
   location: location
   identity: { type: 'UserAssigned', userAssignedIdentities: { '${extractorId.id}': {} } }

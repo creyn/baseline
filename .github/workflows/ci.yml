@@ -64,7 +64,7 @@ jobs:
       - name: The extractor's image builds (ADR-0019)
         run: docker build -f services/extractor/Dockerfile -t extractor:ci .
       - name: The image starts and finds its code and contracts
-        run: docker run --rm --entrypoint python extractor:ci -c "import extractor.main, extractor.contracts as c; c.schema('text.v1'); print('ok')"
+        run: docker run --rm --entrypoint python extractor:ci -c "import extractor.main, extractor.contracts as c; c.schema('text.v1'); from zoneinfo import ZoneInfo; ZoneInfo('Europe/Warsaw'); print('ok')"
 
   evals-offline:
     name: Extraction evals (offline)
@@ -134,5 +134,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Compiles and lints without Azure; the linter's warnings fail the job (bicepconfig.json).
-      - run: az bicep install && az bicep build --file infra/main.bicep --stdout > /dev/null
+      # Compiles and lints without Azure. Any warning fails the job: an unknown property is only a
+      # warning (BCP037), and Azure would drop it.
+      - run: |
+          az bicep install
+          az bicep build --file infra/main.bicep --stdout 2> bicep.log > /dev/null
+          cat bicep.log
+          if grep -qiE 'warning|error' bicep.log; then exit 1; fi

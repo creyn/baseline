@@ -36,6 +36,25 @@ class SmokeTest(unittest.TestCase):
         self.assertEqual(smoke.errors('messages.v1', msg), [])
         self.assertNotEqual(smoke.errors('messages.v1', {**msg, 'userId': 'not-a-uuid'}), [])
 
+    def test_a_refusal_is_retried_until_the_wait_is_over(self):
+        class Refused(Exception):
+            status_code = 403
+        calls, now = [], [0]
+
+        def call():
+            calls.append(1)
+            if len(calls) < 3:
+                raise Refused()
+            return 'done'
+        self.assertEqual(smoke.until_roles(call, 100, pause=10, clock=lambda: now[0],
+                                           sleep=lambda s: now.__setitem__(0, now[0] + s)), 'done')
+        self.assertEqual(len(calls), 3)
+        with self.assertRaises(Refused):
+            smoke.until_roles(lambda: (_ for _ in ()).throw(Refused()), 20, pause=10, clock=lambda: now[0],
+                              sleep=lambda s: now.__setitem__(0, now[0] + s))
+        with self.assertRaises(ValueError):  # anything else is not retried
+            smoke.until_roles(lambda: (_ for _ in ()).throw(ValueError()), 100, clock=lambda: 0, sleep=lambda s: None)
+
     def test_the_default_test_user_is_a_uuid7(self):
         with open(os.path.join(smoke._ROOT, 'infra', 'main.bicep')) as f:
             bicep = f.read()

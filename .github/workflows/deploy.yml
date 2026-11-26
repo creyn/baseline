@@ -27,9 +27,13 @@ jobs:
     steps:
       - id: check
         env:
+          MAIN: ${{ github.ref == 'refs/heads/main' }}
           SET: ${{ vars.DEPLOY_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' && vars.AZURE_SUBSCRIPTION_ID != '' && vars.AZURE_RESOURCE_GROUP != '' && vars.OIDC_SUBJECT_PREFIX != '' }}
         run: |
-          if [ "$SET" != "true" ]; then
+          if [ "$MAIN" != "true" ]; then
+            echo "::error::Only main is deployed."
+            exit 1
+          elif [ "$SET" != "true" ]; then
             echo "::notice::Deployment skipped, the production environment variables are not all set."
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
@@ -97,7 +101,7 @@ jobs:
           sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
           python -m pip install -q -r evals/synthetic/requirements.txt -r services/extractor/requirements.txt
       - name: Generate the smoke test's document
-        run: python evals/synthetic/generate.py --out generated
+        run: python evals/synthetic/generate.py --out generated --only a1-vitamin-d
       # The smoke test signs in as its own identity: clean and text under the test user only, send to extract.
       - uses: azure/login@v2
         with:
@@ -106,7 +110,6 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - name: Smoke test
         run: |
-          sleep 60  # new role assignments can take a few minutes to apply
           python tools/smoke/extractor_smoke.py --generated generated \
             --storage "${{ steps.deploy.outputs.storageAccountUrl }}" \
             --namespace "${{ steps.deploy.outputs.serviceBusNamespace }}" \

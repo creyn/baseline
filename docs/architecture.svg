@@ -118,7 +118,7 @@
 <text x="834" y="930" text-anchor="start" font-weight="bold" font-size="15" fill="#1f2933">GitHub</text>
 <text x="834" y="949" text-anchor="start" font-size="12.5" fill="#52606d">repo · PR to main merged by the owner</text>
 <text x="834" y="968" text-anchor="start" font-size="12.5" fill="#52606d">Actions: build, tests on emulators, evals,</text>
-<text x="834" y="987" text-anchor="start" font-size="12.5" fill="#52606d">PII scan, deploy with azd + Bicep (OIDC, no secrets)</text>
+<text x="834" y="987" text-anchor="start" font-size="12.5" fill="#52606d">PII scan, deploy Bicep with az (OIDC, no secrets)</text>
 <text x="834" y="1006" text-anchor="start" font-size="12.5" fill="#52606d">GHCR: container images</text>
 <path d="M295 300 L368 300" fill="none" stroke="#00838f" stroke-width="2"  marker-end="url(#arr-00838f)"/>
 <text x="332" y="290" text-anchor="middle" font-size="12" fill="#00838f" paint-order="stroke" stroke="#ffffff" stroke-width="4">masked ZIP</text>

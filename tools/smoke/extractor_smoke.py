@@ -45,6 +45,37 @@ def extract_requested(user, doc, ver):
     return {'type': 'ExtractRequested', 'schemaVersion': '1.0', 'userId': user, 'docId': doc, 'verId': ver}
 
 
+ROLE_WAIT = 300
+
+
+def refused(error):
+    """True for an authorization refusal (HTTP 403, or Service Bus's unauthorized error)."""
+    return getattr(error, 'status_code', None) == 403 or type(error).__name__ == 'ServiceBusAuthorizationError'
+
+
+def until_roles(call, wait, pause=15, clock=time.monotonic, sleep=time.sleep):
+    """Runs call(); while it is refused and the wait is not over, tries again."""
+    deadline = clock() + wait
+    while True:
+        try:
+            return call()
+        except Exception as e:  # noqa: BLE001  only refusals are retried
+            if not refused(e) or clock() >= deadline:
+                raise
+            print(f'refused ({type(e).__name__}), roles may not be applied yet; retrying', flush=True)
+            sleep(pause)
+
+
+def readable_elsewhere(blobs):
+    """Tries to read a blob of a random other user. A refusal is right; "not found" means the read was allowed."""
+    from azure.core.exceptions import HttpResponseError
+    try:
+        blobs.get_blob_client('text', f'{uuid7()}/{uuid7()}/{uuid7()}.json').download_blob()
+    except HttpResponseError as e:
+        return e.status_code != 403
+    return True
+
+
 def errors(schema_name, data):
     from jsonschema import Draft202012Validator
     from extractor import contracts
@@ -72,19 +103,37 @@ def main(argv=None):
     path = f'{args.user}/{doc}/{ver}'
     credential = DefaultAzureCredential()
     blobs = BlobServiceClient(args.storage, credential)
-    blobs.get_blob_client('clean', path + '.zip').upload_blob(clean_zip(pages))
     msg = extract_requested(args.user, doc, ver)
     if errors('messages.v1', msg):
         sys.exit('ExtractRequested breaks its contract')
-    with ServiceBusClient(args.namespace, credential) as bus, bus.get_queue_sender('extract') as sender:
-        sender.send_messages(ServiceBusMessage(json.dumps(msg), content_type='application/json', subject=msg['type'],
-                                               application_properties={'docId': doc, 'verId': ver}))
+
+    def upload():
+        blobs.get_blob_client('clean', path + '.zip').upload_blob(clean_zip(pages), overwrite=True)
+
+    def send():
+        with ServiceBusClient(args.namespace, credential) as bus, bus.get_queue_sender('extract') as sender:
+            sender.send_messages(ServiceBusMessage(json.dumps(msg), content_type='application/json',
+                                                   subject=msg['type'],
+                                                   application_properties={'docId': doc, 'verId': ver}))
+
+    # New role assignments can take minutes to apply: retry a refusal for a while.
+    until_roles(upload, ROLE_WAIT)
+    until_roles(send, ROLE_WAIT)
     print(f'sent ExtractRequested docId={doc} verId={ver}, waiting up to {args.timeout} s', flush=True)
+    # G3: the smoke identity must not read another user's text (the condition on its role).
+    if readable_elsewhere(blobs):
+        sys.exit('the smoke identity can read outside the test user: check the role condition')
 
     text = blobs.get_blob_client('text', path + '.json')
     deadline = time.monotonic() + args.timeout
     while time.monotonic() < deadline:
-        if text.exists():
+        try:
+            found = text.exists()
+        except Exception as e:  # noqa: BLE001  the read role may still be on its way
+            if not refused(e):
+                raise
+            found = False
+        if found:
             blob = json.loads(text.download_blob().readall())
             if errors('text.v1', blob):
                 sys.exit('text blob breaks its schema')
