@@ -87,8 +87,8 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
                 break
             if attempt == 1:
                 first = (part, errors)
-        if errors and first and _usable(first[1]) and (not _usable(errors) or len(first[0]['results']) > len(part['results'])):
-            part, errors = first  # the retry was worse: keep the first answer
+        if first and _usable(first[1]) and _worse(part, errors, first[0]):
+            part, errors = first  # the retry was worse: keep the first answer, with its unread places
         if not _usable(errors):
             raise InvalidAnswer(errors)  # a refusal, a document date or a fragment: the version cannot be trusted
         unread += part['unread']
@@ -118,6 +118,12 @@ def extract(pages, layout, llm, *, doc_id, ver_id, model, zone=DEFAULT_ZONE, now
     if problems:
         raise InvalidAnswer(problems)
     return blob, usage
+
+
+def _worse(retry, errors, first):
+    """A retry is worse when it cannot be used, verifies fewer results, or drops places the first answer had."""
+    count = lambda part: len(part['results']) + len(part['unread'])  # noqa: E731
+    return not _usable(errors) or len(retry['results']) < len(first['results']) or count(retry) < count(first)
 
 
 def _usable(errors):
@@ -162,7 +168,7 @@ def _failed_fields(problem):
     if problem.startswith('value and unit'):
         return {'value', 'unit'}
     head = problem.split(':', 1)[0]
-    field = head.split('/')[1] if head.startswith('source/') and '/' in head else head
+    field = head.split('/')[1] if head.startswith('source/') and '/' in head else head.split('/')[0]
     return {field} if field in _FIELDS else {'other'}
 
 

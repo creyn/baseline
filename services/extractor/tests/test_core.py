@@ -229,6 +229,7 @@ class Extract(unittest.TestCase):
         self.assertEqual(core._failed_fields('value and unit: do not equal their shared words'), {'value', 'unit'})
         self.assertEqual(core._failed_fields('source/unit: breaks "type"'), {'unit'})
         self.assertEqual(core._failed_fields('dates/0/kind: breaks "enum"'), {'other'})
+        self.assertEqual(core._failed_fields('range/kind: breaks "enum"'), {'range'})
 
     def test_a_worse_retry_keeps_the_first_answer(self):
         first = fakes.iron_answer(ferritin='16')  # one result unread, one verified
@@ -236,6 +237,13 @@ class Extract(unittest.TestCase):
         worse['documentDates'][0]['local'] = '2026-03-29T02:30'  # a document date that does not exist
         blob, _, llm = run([fakes.IRON_PAGE], first, worse)
         self.assertEqual(len(llm.calls), 2)
+        self.assertEqual(([r['name'] for r in blob['results']], len(blob['unread'])), (['Żelazo'], 1))
+
+    def test_a_clean_retry_that_drops_a_result_keeps_the_first_answer(self):
+        first = fakes.iron_answer(ferritin='16')
+        dropped = fakes.iron_answer()
+        dropped['results'] = dropped['results'][1:]  # "fixed" by leaving the result out
+        blob, _, _ = run([fakes.IRON_PAGE], first, dropped)
         self.assertEqual(([r['name'] for r in blob['results']], len(blob['unread'])), (['Żelazo'], 1))
 
     def test_one_batch_unread_and_another_verified(self):

@@ -49,7 +49,9 @@ def score(expected, extracted, unread=0):
         method = norm(x['method'])
         counts['method'] += (not method) if not e['method'] else bool(method) and method in norm(e['method'])
         counts['dates'] += _dates(x['dates']) == _dates_expected(e['dates'])
-    missing = max(0, sum(1 for _, x in pairs if x is None) - unread)  # not returned at all; unread ones are counted apart
+    # Not returned at all; unread places are counted apart. Assumes each unread place is an expected result,
+    # so an invented row that failed the check can hide one not returned. A reported count only.
+    missing = max(0, sum(1 for _, x in pairs if x is None) - unread)
     ratios = {k: (v / n if n else 1.0) for k, v in counts.items()}
     return {'expected': len(expected), 'matched': n, 'missing': missing, 'unread': unread, 'flagged': flagged,
             'extra': len(extra), 'counts': counts, 'ratios': ratios}
