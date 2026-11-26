@@ -10,7 +10,7 @@ This set replaces an earlier one (2026-11-17 to 2026-11-20), which is in the Git
 | 0002 | [Languages: .NET, Python, and TypeScript with React](0002-languages-dotnet-python-and-typescript.md) | Accepted |
 | 0003 | [Masking in the browser, zone rules, a second check on the server, no archive of originals](0003-masking-in-the-browser-and-a-second-check.md) | Accepted |
 | 0004 | [Serverless hosting on Azure, one environment, deployment and operations](0004-serverless-hosting-and-operations.md) | Accepted |
-| 0005 | [Asynchronous import: a pipeline of queues, without an outbox](0005-asynchronous-import-pipeline.md) | Accepted |
+| 0005 | [Asynchronous import: a pipeline of queues, without an outbox](0005-asynchronous-import-pipeline.md) (its figures are historical: [0005/README.md](0005/README.md)) | Accepted |
 | 0006 | [Document lifecycle, identifiers, statuses and the mandatory review](0006-document-lifecycle-and-review.md) | Accepted |
 | 0007 | [Extraction with Document Intelligence and an LLM](0007-extraction-with-document-intelligence-and-an-llm.md) | Accepted |
 | 0008 | [Retrieval without Azure AI Search: SQL queries and vectors in Azure SQL](0008-retrieval-without-ai-search.md) | Accepted |

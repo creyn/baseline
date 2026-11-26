@@ -45,7 +45,7 @@ Lab results are scattered across PDFs, emails, different labs' apps and paper. T
 - **Data model and contracts:** the tables in [docs/data-model.md](docs/data-model.md), the messages and blobs between services as JSON Schema in [contracts/](contracts/README.md).
 - **Everything scales to zero**: about 3.50 USD a month for 10 people ([ADR-0004](docs/adr/0004-serverless-hosting-and-operations.md), [use-cases.md](docs/use-cases.md)).
 
-All diagrams are generated from code in [tools/diagrams](tools/diagrams/). Edit the scripts, not the SVG files.
+All diagrams are generated from code in [tools/diagrams](tools/diagrams/). Edit the scripts, not the SVG files. The figures of ADR-0005 are frozen as the record of that decision ([docs/adr/0005/README.md](docs/adr/0005/README.md)).
 
 ## How decisions are made
 
