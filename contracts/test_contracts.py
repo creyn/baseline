@@ -237,7 +237,8 @@ class TextBlob(unittest.TestCase):
     def test_a_range_of_several_bands_has_no_bounds(self):
         cases = {'30 - 400': 1, '<190': 1, 'ujemny': 0, 'na czczo: <150 nie na czczo: <175': 2, '12,0-14,0': 1,
                  '0,5 – 4,5': 1, 'M: 13–17 K: 12–16': 2, 'wg ESC 2019-2021: <115': 1, '8:00-10:00 <20': 1,
-                 '2019-08-31': 0, '0-20 ng/ml Deficyt >20-30 ng/ml': 2}
+                 '2019-08-31': 0, '01-02-2026': 0, '0-20 ng/ml Deficyt >20-30 ng/ml': 2,
+                 'K: 12.0-16.0 M: 13.5-17.5': 2, '0.5-10': 1}
         self.assertEqual({t: text_checks.bands(t) for t in cases}, cases)
         r = self.doc['results'][0]
         r['range'] = {'text': '30 - 400', 'low': '30', 'high': '400', 'kind': 'interval'}

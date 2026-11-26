@@ -124,18 +124,6 @@ class Extract(unittest.TestCase):
         self.assertEqual(blob['pages'][0]['words'][12]['text'], 'ug/dI*')  # the reading stays in the words
         self.assertEqual(text_checks.problems(blob), [])
 
-    def test_a_mark_listed_with_the_range_is_dropped(self):
-        page = copy.deepcopy(fakes.IRON_PAGE)
-        page.insert(9, fakes.w('A', 0.66, 0.40, 0.005))  # an accreditation mark printed inside the range
-        answer = fakes.iron_answer()
-        answer['results'][0]['rangeWords'] = ['p1w8', 'p1w9', 'p1w10', 'p1w11']
-        answer['results'][1] = fakes.result(1, 'Żelazo', '64', 'µg/dl', '65', '175', 'L', (12, 13, 14, (15, 16, 17)))
-        answer['fragments'][0]['words'] = ['p1w19', 'p1w20']
-        blob, _, llm = run([page], answer)
-        self.assertEqual(len(llm.calls), 1)
-        self.assertEqual(blob['results'][0]['source']['range'], ['p1w8', 'p1w9', 'p1w11'])
-        self.assertEqual(text_checks.problems(blob), [])
-
     def test_a_word_left_out_of_the_range_is_found_on_the_page(self):
         answer = fakes.iron_answer()
         answer['results'][0]['rangeWords'] = ['p1w8', 'p1w10']  # "-" left out
@@ -164,6 +152,31 @@ class Extract(unittest.TestCase):
         # A word left out on the same line is not: the name stays as listed and fails the check
         self.assertEqual(regroup('name', 'Cholesterol bezp.', ['p1w1', 'p1w2', 'p1w3']), ['p1w1', 'p1w2', 'p1w3'])
         self.assertEqual(regroup('name', 'Cholesterol', ['p1w1', 'p1w2']), ['p1w1', 'p1w2'])
+
+    def test_regrouping_never_passes_a_cut_or_a_word_left_out(self):
+        w = fakes.w
+        def regroup(words, text, ids):
+            r = {'name': text, 'range': {'text': None}, 'source': {'page': 1, 'name': ids, 'range': []}}
+            core._regroup_words(r, 'name', words)
+            return r['source']['name']
+        last_mark = {'p1w1': w('Witamina', 0.05, 0.40, 0.08), 'p1w2': w('B12', 0.14, 0.40, 0.03)}
+        self.assertEqual(regroup(last_mark, 'Witamina', ['p1w1', 'p1w2']), ['p1w1', 'p1w2'])
+        inner_mark = {'p1w1': w('Witamina', 0.05, 0.40, 0.08), 'p1w2': w('D', 0.14, 0.40, 0.01),
+                      'p1w3': w('25-OH', 0.16, 0.40)}
+        self.assertEqual(regroup(inner_mark, 'Witamina 25-OH', ['p1w1', 'p1w2', 'p1w3']), ['p1w1', 'p1w2', 'p1w3'])
+        indented = {'p1w1': w('Ab', 0.05, 0.40), 'p1w2': w('anty', 0.12, 0.415), 'p1w3': w('TPO', 0.18, 0.415)}
+        self.assertEqual(regroup(indented, 'Ab TPO', ['p1w1', 'p1w2', 'p1w3']), ['p1w1', 'p1w2', 'p1w3'])
+        bands = {'p1w1': w('M', 0.60, 0.40, 0.01), 'p1w2': w('13-17', 0.62, 0.40), 'p1w3': w('K', 0.68, 0.40, 0.01)}
+        self.assertEqual(regroup(bands, '13-17', ['p1w1', 'p1w2', 'p1w3']), ['p1w1', 'p1w2', 'p1w3'])
+        other_page = dict(last_mark, p2w1=w('Witamina', 0.05, 0.40))
+        self.assertEqual(regroup(other_page, 'Witamina', ['p2w1']), ['p2w1'])  # left to the word check
+
+    def test_an_id_on_another_page_gets_the_retry(self):
+        bad = fakes.iron_answer()
+        bad['results'][0]['nameWords'] = ['p2w5', 'p2w6']
+        blob, _, llm = run([fakes.IRON_PAGE, fakes.IRON_PAGE], bad, fakes.iron_answer())
+        self.assertEqual(len(llm.calls), 2)
+        self.assertIn('result 1: name: word p2w5 is not on page 1', llm.calls[1][1]['content'])
 
     def test_a_cut_name_or_range_still_fails(self):
         answer = fakes.iron_answer()

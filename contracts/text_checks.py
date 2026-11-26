@@ -32,7 +32,7 @@ _MISREAD = {'µ': 'µuμ', 'l': 'lI1i', 'I': 'Il1'}
 # A band of a range: a bound with a comparison ("<190", ">=14,0") or an interval ("0-20", "30 - 400").
 _BAND = re.compile(r'[<>≤≥]=?\s*\d[\d,.]*|\d[\d,.]*\s*[-–—]\s*\d')
 # Dates, times and year spans ("2019-08-31", "8:00-10:00", "2019-2021") are not bands.
-_NOT_BAND = re.compile(r'\b\d{1,4}[-./]\d{1,2}[-./]\d{2,4}\b|\b\d{1,2}:\d{2}\b'
+_NOT_BAND = re.compile(r'\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}([-./])\d{1,2}\1\d{2,4}\b|\b\d{1,2}:\d{2}\b'
                        r'|\b(?:19|20)\d\d\s*[-–—]\s*(?:19|20)\d\d\b')
 
 
