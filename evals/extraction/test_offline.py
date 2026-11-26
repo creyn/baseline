@@ -121,6 +121,19 @@ class Scoring(unittest.TestCase):
         self.assertLess(s['counts']['dates'], len(self.expected)) if self.expected[0]['dates'] else None
         self.assertEqual(score.failures(s), [])  # reported, no target
 
+    def test_a_range_of_several_bands(self):
+        doc = next(d for d in common.documents() if d['id'].startswith('b1'))
+        e = next(x for x in offline.expected(doc) if x['name'].startswith('Cholesterol LDL'))
+        whole = ' '.join(e['range_lines'])
+        r = lambda text, kind='text', low=None, high=None: {'range': {'text': text, 'kind': kind, 'low': low, 'high': high}}  # noqa: E731
+        self.assertTrue(score._range_ok(e, r(whole)))
+        self.assertTrue(score._range_ok(e, r(' '.join(e['range_lines'][1:]))))  # the heading left out
+        self.assertFalse(score._range_ok(e, r(e['range_lines'][1])))  # one band picked
+        self.assertFalse(score._range_ok(e, r(whole, 'lt', '115')))  # bounds from one band
+        self.assertFalse(score._range_ok(e, r(whole + ' <40 - dla wszystkich')))  # text not printed
+        one = next(x for x in offline.expected(doc) if x['name'].startswith('Cholesterol HDL'))
+        self.assertTrue(score._range_ok(one, r('>40', 'gt', '40')))  # one band: bounds are fine
+
     def test_dates_are_read_as_printed(self):
         self.assertEqual(common.local('02.03.2026 08:50:00'), '2026-03-02T08:50')
         self.assertEqual(common.local('20-10-2026 07:30'), '2026-10-20T07:30')

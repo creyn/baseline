@@ -80,8 +80,8 @@ One result of one version, as extracted. Written in the same transaction that se
 | `PrintedName` | nvarchar(200) | the name as printed: "Tyreotropina (TSH) III generacji" |
 | `ParameterCode` | varchar(64), null | the parameter this result measures (TSH, WBC), from the dictionary ([ADR-0011](adr/0011-lab-parameters-units-and-ranges.md)); set when the user confirms it on review, null before. Trends group by it, or by the printed name until it is mapped (ADR-0011) |
 | `Value` | nvarchar(100) | as printed: "18", "<1,0", "nie wykryto" |
-| `Unit` | nvarchar(50), null | as printed, without a footnote marker |
-| `RangeText` | nvarchar(400), null | as printed |
+| `Unit` | nvarchar(50), null | as printed, without a footnote marker; a unit misread by OCR is corrected to the one known unit it stands for ([text_checks.py](../contracts/text_checks.py)), and the words keep the reading |
+| `RangeText` | nvarchar(2000), null | as printed, every line and band |
 | `RangeLow` | nvarchar(50), null | as printed |
 | `RangeHigh` | nvarchar(50), null | as printed |
 | `RangeKind` | varchar(8) | `interval`, `lt`, `gt`, `text`, `none` |

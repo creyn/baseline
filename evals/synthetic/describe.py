@@ -87,7 +87,8 @@ def expected_extraction(doc):
     flag is the laboratory's flag as printed; computed_flag is what code must compute from the range
     (ADR-0011). They differ only where the description says so.
     """
-    keys = ('name', 'value', 'unit', 'range', 'min', 'max', 'flag', 'icd9', 'material', 'condition', 'method', 'dates', 'page')
+    keys = ('name', 'value', 'unit', 'range', 'range_lines', 'min', 'max', 'flag', 'icd9', 'material', 'condition', 'method',
+            'dates', 'page')
     out = []
     for r in results(doc):
         e = {k: r.get(k) for k in keys}

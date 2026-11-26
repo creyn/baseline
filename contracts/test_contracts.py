@@ -209,6 +209,61 @@ class TextBlob(unittest.TestCase):
         r['value'], r['unit'] = '1', '8ng/ml'
         self.assertEqual(text_checks.problems(self.doc), ['result 1: value and unit: do not equal their shared words'])
 
+    def test_a_unit_misread_by_ocr_is_the_known_unit(self):
+        k = text_checks.known_unit
+        self.assertEqual([k(u) for u in ('tys/ul', 'min/ul', 'U/I', 'ulU/ml', 'μIU/ml', 'mlU/l', 'ug/dl', 'fI')],
+                         ['tys/µl', 'mln/µl', 'U/l', 'µIU/ml', 'µIU/ml', 'mIU/l', 'µg/dl', 'fl'])
+        self.assertEqual([k(u) for u in ('IU/ml', 'ng/ml', 'xyz', 'HbAlc', None)], [None] * 5)  # right, or unknown
+        self.pages_word('p1w3', 'ug/dl*')
+        r = self.doc['results'][0]
+        r['unit'] = 'µg/dl'
+        self.assertEqual(text_checks.problems(self.doc), [])
+        r['unit'] = 'mg/dl'  # not what the words can stand for
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: unit: does not equal its words'])
+
+    def test_a_misread_unit_in_one_word_with_the_value(self):
+        self.pages_word('p1w2', '18ug/dl')
+        r = self.doc['results'][0]
+        r['source']['unit'], r['unit'] = ['p1w2'], 'µg/dl'
+        self.assertEqual(text_checks.problems(self.doc), [])
+
+    def test_capital_l_units_and_no_clashes(self):
+        self.assertEqual(text_checks.known_unit('tys/uL'), 'tys/µL')
+        self.assertIsNone(text_checks.known_unit('mg/dL'))
+        for read, unit in text_checks._UNIT_TABLE.items():  # a reading stands for one unit and is never a unit itself
+            self.assertNotIn(read, text_checks.KNOWN_UNITS)
+            self.assertEqual(sum(read in text_checks._misreadings(u) for u in text_checks.KNOWN_UNITS), 1, read)
+
+    def test_a_range_of_several_bands_has_no_bounds(self):
+        cases = {'30 - 400': 1, '<190': 1, 'ujemny': 0, 'na czczo: <150 nie na czczo: <175': 2, '12,0-14,0': 1,
+                 '0,5 – 4,5': 1, 'M: 13–17 K: 12–16': 2, 'wg ESC 2019-2021: <115': 1, '8:00-10:00 <20': 1,
+                 '2019-08-31': 0, '01-02-2026': 0, '0-20 ng/ml Deficyt >20-30 ng/ml': 2,
+                 'K: 12.0-16.0 M: 13.5-17.5': 2, '0.5-10': 1}
+        self.assertEqual({t: text_checks.bands(t) for t in cases}, cases)
+        r = self.doc['results'][0]
+        r['range'] = {'text': '30 - 400', 'low': '30', 'high': '400', 'kind': 'interval'}
+        self.assertEqual(text_checks.problems(self.doc), [])
+        self.pages_word('p1w4', '<30')
+        self.pages_word('p1w6', '<400')
+        r['range'] = {'text': '<30 - <400', 'low': '30', 'high': '400', 'kind': 'interval'}
+        self.assertEqual(text_checks.problems(self.doc),
+                         ['result 1: range: a range with several bands must have kind text and no bounds'])
+        r['range'] = {'text': '<30 - <400', 'low': None, 'high': None, 'kind': 'text'}
+        self.assertEqual(text_checks.problems(self.doc), [])
+
+    def test_the_word_check_says_which_way_it_differs(self):
+        src = self.doc['results'][0]['source']
+        src['range'] = src['range'] + ['p1w3']
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: range: its word ids hold more words than its text; '
+                                                          'list only the ids of the words in the text, '
+                                                          'or copy the whole text'])
+        src['range'] = src['range'][:1]
+        self.assertEqual(text_checks.problems(self.doc), ['result 1: range: its text has words whose ids are missing; '
+                                                          'list the id of every word in the text'])
+
+    def pages_word(self, word_id, text):
+        next(w for p in self.doc['pages'] for w in p['words'] if w['id'] == word_id)['text'] = text
+
     def test_flags_are_mapped_by_code(self):
         self.assertEqual([text_checks.map_flag(m) for m in ('H', '↑', 'L', '↓', '*', '+', None)],
                          ['H', 'H', 'L', 'L', None, None, None])

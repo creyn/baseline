@@ -4,6 +4,7 @@ The LLM proposes; code checks every field against the words it names, adds the t
 zones, maps the flags and picks the date for trends. Nothing here logs page content.
 """
 import os
+import re
 from datetime import datetime, timezone
 
 from jsonschema import Draft202012Validator
@@ -161,8 +162,65 @@ def _result(a, words, indexes, zone):
     }
     problems += [_where(e) for e in _RESULT.iter_errors(result)]
     if not problems:
+        for field in ('name', 'range'):
+            _regroup_words(result, field, words)
         problems += text_checks.result_problems(result, words, indexes)
+    if not problems and text_checks.known_unit(result['unit']):
+        # A unit read with OCR misreadings ("tys/ul") becomes the known unit ("tys/µl"); the words keep the reading.
+        result['unit'] = text_checks.known_unit(result['unit'])
     return (None if problems else result), problems
+
+
+_MARK = re.compile(r'[A-Z]|[A-Z]{1,3}\d+(?:[.,]\d+)*')
+
+
+def _regroup_words(result, field, words):
+    """Long names and ranges run over several lines, between other columns, and the model often lists
+    their word ids a little wrong: a mark printed between the lines (an accreditation "A", a procedure
+    code "V2.4") or a word of another column added, or a word left out. When the text does not equal
+    the listed words, code looks for the text on the page itself, in reading order from the first listed
+    word. Inside it, it may skip only marks and words on another line than the last word found, and only
+    when every skipped word lies outside the horizontal span of the words found (another column). It
+    keeps the words found when they hold every listed word except such skipped ones. So a cut name, a
+    word left out, one band picked from a range or a text not printed still fails. The text never changes."""
+    text = result['name'] if field == 'name' else result['range']['text']
+    ids = result['source'][field]
+    page = f'p{result["source"]["page"]}w'
+    if not text or not ids or any(i not in words or not i.startswith(page) for i in ids):
+        return  # the word check reports it
+    if text_checks.field_matches(text, text_checks.joined(words, ids)):
+        return
+    order = sorted((i for i in words if i.startswith(page)), key=lambda i: int(i[len(page):]))
+    rank = {i: n for n, i in enumerate(order)}
+    target = text_checks.normalise(text)
+    start = rank[ids[0]]
+    for first in range(max(0, start - 3), min(len(order), start + 4)):  # the model may start a word early or late
+        found, skipped, pos = [], [], 0
+        for i in order[first:]:
+            w = text_checks.normalise(words[i]['text'])
+            if w and target.startswith(w, pos):
+                found.append(i)
+                pos += len(w)
+                if pos == len(target):
+                    break
+            elif found and (_MARK.fullmatch(words[i]['text']) or not _same_line(words[i], words[found[-1]])):
+                skipped.append(i)
+            else:
+                break
+        if pos != len(target) or not found:
+            continue
+        skipped = [i for i in skipped if rank[i] < rank[found[-1]]]
+        left = min(words[f]['box']['x'] for f in found)
+        right = max(words[f]['box']['x'] + words[f]['box']['w'] for f in found)
+        if any(left < words[i]['box']['x'] + words[i]['box']['w'] and words[i]['box']['x'] < right for i in skipped):
+            continue  # a skipped word inside the span of the text: not another column
+        if set(ids) - set(skipped) <= set(found):
+            result['source'][field] = found
+            return
+
+
+def _same_line(word, other):
+    return abs(word['box']['y'] - other['box']['y']) <= other['box']['h'] / 2
 
 
 def _date(d, zone):
