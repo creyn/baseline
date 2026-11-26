@@ -17,3 +17,8 @@ evals/synthetic/out/
 !spikes/browser-sanitiser/samples/synthetic-lab-result.png
 private/
 __pycache__/
+
+# Output of the live evals run by hand (evals/extraction/README.md)
+/generated/
+/report/
+/dump/

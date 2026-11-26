@@ -16,6 +16,7 @@ import argparse
 import io
 import json
 import os
+import shutil
 import sys
 import time
 
@@ -26,6 +27,7 @@ from extractor import core  # noqa: E402
 from extractor.pages import Page  # noqa: E402
 
 RENDER_DPI = 200
+FORMS = ('text', 'scan', 'photo')
 
 
 def _write(path, data):
@@ -98,11 +100,13 @@ def main(argv=None):
     ap.add_argument('--dump', help='folder for the requests and answers of the AI services')
     args = ap.parse_args(argv)
     forms = set(args.forms.split(',')) if args.forms else None
+    if forms and not forms <= set(FORMS):
+        ap.error(f'--forms takes {",".join(FORMS)}')
     from extractor.azure_clients import AzureOpenAILlm, DocumentIntelligenceLayout
     env = os.environ
     layout = DocumentIntelligenceLayout(env['DOCUMENT_INTELLIGENCE_ENDPOINT'])
     llm = AzureOpenAILlm(env['AZURE_OPENAI_ENDPOINT'], env['AZURE_OPENAI_DEPLOYMENT'],
-                         env.get('AZURE_OPENAI_API_VERSION') or '2024-10-21')
+                         env.get('AZURE_OPENAI_API_VERSION') or '2024-10-21', keep_raw=bool(args.dump))
     rows, scores, models = [], [], set()
     docs = [d for d in common.documents() if not args.only or d['id'] == args.only]
     if not docs:
@@ -118,6 +122,7 @@ def main(argv=None):
             run_layout, run_llm = layout, llm
             if args.dump:
                 folder = os.path.join(args.dump, doc['id'], form)
+                shutil.rmtree(folder, ignore_errors=True)  # no files left from an earlier run
                 run_layout, run_llm = RecordingLayout(layout, folder), RecordingLlm(llm, folder)
             try:
                 blob, usage = core.extract(pages, run_layout, run_llm, doc_id='019ab3c4-5d6e-7f80-9a1b-2c3d4e5f6a7b',
@@ -137,6 +142,8 @@ def main(argv=None):
             scores.append(s)
             rows.append({'document': doc['id'], 'form': form, 'pages': len(pages), 'outcome': outcome,
                          'seconds': round(time.monotonic() - started, 1), 'tokens': usage, **s})
+    if not rows:
+        sys.exit('nothing ran: no document has the chosen forms')
     summary = score.total(scores)
     failed = score.failures(summary)
     os.makedirs(args.out, exist_ok=True)

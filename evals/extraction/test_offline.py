@@ -65,6 +65,18 @@ class Dump(unittest.TestCase):
                 self.assertTrue(json.load(f)['parsed']['results'])
 
 
+    def test_a_failed_call_is_written_with_its_type_and_raised(self):
+        class Down:
+            def complete(self, messages):
+                raise TimeoutError('the text of an error is not written')
+        with tempfile.TemporaryDirectory() as folder:
+            llm = live.RecordingLlm(Down(), folder)
+            with self.assertRaises(TimeoutError):
+                llm.complete([{'role': 'user', 'content': 'x'}])
+            with open(os.path.join(folder, 'call-1-answer.json'), encoding='utf-8') as f:
+                self.assertEqual(json.load(f), {'error': 'TimeoutError'})
+
+
 class Scoring(unittest.TestCase):
     def setUp(self):
         self.doc = next(d for d in common.documents() if d['id'].startswith('c3'))
