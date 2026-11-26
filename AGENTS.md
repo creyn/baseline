@@ -22,7 +22,7 @@ The gates G1 to G6 are defined once, in [docs/decision-criteria.md](docs/decisio
 
 - **Decisions:** every architecture decision is an ADR in `docs/adr` with considered options. Accepted ADRs are never edited, only superseded.
 - **Specs first:** a feature starts as an OpenSpec change proposal (`openspec/changes/…`) before code.
-- **Diagrams:** generated from `tools/diagrams`. Edit the scripts, never the SVG files. The figures of ADR-0005 are frozen as the record of that decision and are neither generated nor edited ([docs/adr/0005/README.md](docs/adr/0005/README.md)).
+- **Diagrams:** generated from `tools/diagrams`. Edit the scripts, never the SVG files, and commit the SVG files `npm run build` makes; CI fails when they differ. The figures of ADR-0005 are frozen as the record of that decision and are neither generated nor edited ([docs/adr/0005/README.md](docs/adr/0005/README.md)).
 - **Failure handling:** every message receiver is idempotent (Service Bus Basic has no duplicate detection). Status changes are forward-only (`UPDATE … WHERE status = …`). No database transaction spans an external call.
 - **Tests run in CI.** Development happens on a small VPS without .NET or Docker, so the pipeline is the build. Keep tests runnable without Azure (emulators in containers).
 - **Review:** before opening a pull request, run the `reviewer` subagent on the branch.
