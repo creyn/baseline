@@ -102,3 +102,23 @@ jobs:
         with:
           node-version: 22
       - run: node --test 'spikes/**/*.test.mjs'
+
+  diagrams:
+    name: Diagrams match their scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # The architecture and sequence diagrams must always be current. The ADR-0005 figures are frozen
+      # (docs/adr/0005/README.md), so the build does not run their script.
+      # Removed first, so a diagram dropped from its script but left in docs also fails the check.
+      - name: Generate the diagrams
+        run: |
+          rm docs/architecture.svg docs/sequences/*.svg
+          (cd tools/diagrams && npm run build)
+      - name: Fail when an SVG differs from its script
+        run: |
+          git status --porcelain -- docs
+          test -z "$(git status --porcelain -- docs)" || { echo "Run 'npm run build' in tools/diagrams and commit the SVG files."; exit 1; }

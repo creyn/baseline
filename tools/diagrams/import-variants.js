@@ -1,11 +1,22 @@
-// Generates docs/adr/0005/: the three import variants compared in ADR-0005, each with the most frequent reads.
-// Usage: node import-variants.js
+// Generated docs/adr/0005/: the three import variants compared in ADR-0005, each with the most frequent reads.
+// FROZEN since 2026-11-26: the figures are the record of ADR-0005 and are not generated again
+// (docs/adr/0005/README.md). This script reads the shared steps.js of the current diagrams, so running it
+// now would draw later decisions into an accepted ADR. It is kept to show how the figures were made.
+// Usage: node import-variants.js --frozen-ok OUT_DIR   (writes only to a folder you name, never to docs/adr/0005)
 // SLA targets are proposals, not measurements, except the browser masking times measured in the spike.
 // Alternative paths are drawn as alt frames with arrows. Red "✗" notes describe only infrastructure failures
 // (a component is down, a process crashes before it acknowledges a message): the state the system is left in.
 const path = require('path');
 const render = require('./sequence.js');
-const out = process.argv[2] || path.join(__dirname, '../../docs/adr/0005');
+if (process.argv[2] !== '--frozen-ok' || !process.argv[3]) {
+  console.error('The ADR-0005 figures are frozen (docs/adr/0005/README.md). To draw them elsewhere: node import-variants.js --frozen-ok OUT_DIR');
+  process.exit(1);
+}
+const out = path.resolve(process.argv[3]);
+if (out === path.resolve(__dirname, '../../docs/adr/0005')) {
+  console.error('Not into docs/adr/0005: the figures there are frozen.');
+  process.exit(1);
+}
 
 const { P, SUB, mask, upload, relaySend, check, extract, apply, applyExtracted, review, reads } = require('./steps.js');
 
