@@ -5,7 +5,7 @@ targetScope = 'resourceGroup'
 
 @description('Region. Only Sweden Central: the model deployment is DataZoneStandard, whose data zone follows the region, so another region could move processing out of the EU (G2, ADR-0004).')
 @allowed(['swedencentral'])
-param location string = resourceGroup().location
+param location string = 'swedencentral'
 
 @description('The extractor image, e.g. ghcr.io/creyn/baseline-extractor:<git sha>.')
 param extractorImage string
