@@ -2,7 +2,7 @@
 
 ## 1. Decision and infrastructure
 
-- [x] 1.1 ADR-0019 (proposed): Bicep through az, all resources in one group, a smoke test on a test user
+- [x] 1.1 ADR-0019: Bicep through az, all resources in one group, a smoke test on a test user
 - [x] 1.2 `infra/main.bicep`: storage, Service Bus, AI services, monitoring, identities and roles, Container Apps
 - [x] 1.3 CI: compile and lint the Bicep
 

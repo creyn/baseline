@@ -4,7 +4,7 @@ Date: 2026-11-26
 
 ## Status
 
-Accepted (the owner, 2026-11-26). Changes point 8 of the first decision in [ADR-0004](0004-serverless-hosting-and-operations.md) ("deployed with azd and Bicep") and the deployment of its second decision (point 3), and point 3 of [ADR-0014](0014-development-with-ai-agents.md) ("deploys with azd and Bicep"). The rest of both stands.
+Accepted. Changes point 8 of the first decision in [ADR-0004](0004-serverless-hosting-and-operations.md) ("deployed with azd and Bicep") and the deployment of its second decision (point 3), and point 3 of [ADR-0014](0014-development-with-ai-agents.md) ("deploys with azd and Bicep"). The rest of both stands.
 
 ## Context
 
