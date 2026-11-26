@@ -136,6 +136,22 @@ class Extract(unittest.TestCase):
         self.assertEqual(blob['results'][0]['source']['range'], ['p1w8', 'p1w9', 'p1w11'])
         self.assertEqual(text_checks.problems(blob), [])
 
+    def test_a_cut_name_or_range_still_fails(self):
+        answer = fakes.iron_answer()
+        answer['results'][0]['range'] = '30 -'  # the last word dropped from the text, all ids listed
+        with self.assertRaises(core.InvalidAnswer) as e:
+            run([fakes.IRON_PAGE], answer, answer)
+        self.assertEqual(e.exception.problems, ['result 1: range: its word ids hold more words than its text; '
+                                                'list only the ids of the words in the text, or copy the whole text'])
+
+    def test_an_answer_that_breaks_the_schema_gets_the_retry(self):
+        bad = fakes.iron_answer()
+        bad['results'][0]['name'] = 7
+        bad['results'][0]['nameWords'] = [['p1w5']]
+        blob, _, llm = run([fakes.IRON_PAGE], bad, fakes.iron_answer())
+        self.assertEqual(len(llm.calls), 2)
+        self.assertEqual(blob['results'][0]['name'], 'Ferrytyna')
+
     def test_a_value_not_read_from_the_page_gets_one_retry(self):
         blob, usage, llm = run([fakes.IRON_PAGE], fakes.iron_answer(ferritin='16'), fakes.iron_answer())
         self.assertEqual(len(llm.calls), 2)

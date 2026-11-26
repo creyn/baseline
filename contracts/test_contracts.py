@@ -235,8 +235,10 @@ class TextBlob(unittest.TestCase):
             self.assertEqual(sum(read in text_checks._misreadings(u) for u in text_checks.KNOWN_UNITS), 1, read)
 
     def test_a_range_of_several_bands_has_no_bounds(self):
-        self.assertEqual([text_checks.bands(t) for t in ('30 - 400', '<190', 'ujemny', 'na czczo: <150 nie na czczo: <175')],
-                         [1, 1, 0, 2])
+        cases = {'30 - 400': 1, '<190': 1, 'ujemny': 0, 'na czczo: <150 nie na czczo: <175': 2, '12,0-14,0': 1,
+                 '0,5 – 4,5': 1, 'M: 13–17 K: 12–16': 2, 'wg ESC 2019-2021: <115': 1, '8:00-10:00 <20': 1,
+                 '2019-08-31': 0, '0-20 ng/ml Deficyt >20-30 ng/ml': 2}
+        self.assertEqual({t: text_checks.bands(t) for t in cases}, cases)
         r = self.doc['results'][0]
         r['range'] = {'text': '30 - 400', 'low': '30', 'high': '400', 'kind': 'interval'}
         self.assertEqual(text_checks.problems(self.doc), [])
@@ -252,7 +254,8 @@ class TextBlob(unittest.TestCase):
         src = self.doc['results'][0]['source']
         src['range'] = src['range'] + ['p1w3']
         self.assertEqual(text_checks.problems(self.doc), ['result 1: range: its word ids hold more words than its text; '
-                                                          'list only the ids of the words in the text'])
+                                                          'list only the ids of the words in the text, '
+                                                          'or copy the whole text'])
         src['range'] = src['range'][:1]
         self.assertEqual(text_checks.problems(self.doc), ['result 1: range: its text has words whose ids are missing; '
                                                           'list the id of every word in the text'])

@@ -65,7 +65,7 @@ def _take(items, test):
     return None
 
 
-_BAND = re.compile(r'[<>≤≥]|\d\s*-\s*\d')
+_BAND = re.compile(r'[<>≤≥]|\d\s*[-–—]\s*\d')
 _BAND_START = re.compile(r'[<>≤≥]|\d')
 
 
