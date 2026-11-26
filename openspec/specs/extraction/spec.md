@@ -17,7 +17,15 @@ The extractor SHALL send all pages of a version to Document Intelligence `prebui
 
 ### Requirement: Every value is read from the page
 
-For the name, the value, the unit and the range of every result, the LLM MUST return the ids of the words it read them from. The extractor MUST reject a result whose text does not equal those words, after removing spaces and a trailing footnote marker.
+For the name, the value, the unit and the range of every result, the LLM MUST return the ids of the words it read them from. The extractor MUST reject a result whose text does not equal those words, after removing spaces and a trailing footnote marker, with these rules:
+
+- A unit read with OCR misreadings that can stand for only one known unit is accepted as that unit; the words keep the reading.
+- When a name or a range does not equal its listed words, the extractor looks for the text on the page from the first listed word, and may skip only marks (an accreditation mark, a procedure code) and words in another column. The text is never changed.
+- A value printed together with its unit in one word ("18ng/ml") must be the whole number at the start of that word.
+- A range with more than one band MUST have kind `text` and no bounds.
+- A range MUST NOT hold the method or analyser line printed under it (any form of "metoda" or "analizator").
+
+The retry gets the problems without page text. When the retry is worse than the first answer (a problem outside one result, or fewer verified results), the first answer is kept.
 
 #### Scenario: A value the model did not read
 
@@ -28,6 +36,21 @@ For the name, the value, the unit and the range of every result, the LLM MUST re
 
 - **WHEN** the page prints "ng/ml*" and the model returns the unit "ng/ml"
 - **THEN** the check passes
+
+#### Scenario: A unit misread by OCR
+
+- **WHEN** OCR reads "tys/ul" and the model returns the unit "tys/µl"
+- **THEN** the check passes
+
+#### Scenario: The method line glued to a range
+
+- **WHEN** the model returns the range "<190 metoda spektrofotometryczna"
+- **THEN** the result is invalid and the retry names the method line
+
+#### Scenario: A worse retry
+
+- **WHEN** the retry verifies fewer results than the first answer
+- **THEN** the first answer is kept, with its unread places
 
 #### Scenario: One result still invalid
 

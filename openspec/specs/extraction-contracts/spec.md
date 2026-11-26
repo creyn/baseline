@@ -63,7 +63,7 @@ A clean ZIP SHALL contain `manifest.json` with `schemaVersion` and `order`, the 
 
 ### Requirement: The text blob
 
-The `text` blob of a version SHALL hold `extraction` (model, prompt version, dictionary version, extractor version, time), `pages` (each page's `sha256` and its words with id, text, box and confidence), `fragments`, `documentDates` and `results`. Boxes MUST be fractions of the page, from the top left. Every date MUST have a `kind`, and every result a `collectedAt` (or null) chosen by code.
+The `text` blob of a version SHALL hold `extraction` (model, prompt version, dictionary version, extractor version, time), `pages` (each page's `sha256` and its words with id, text, box and confidence), `fragments`, `documentDates`, `results` and `unread` (each place a result could not be read: its page, a box or null, and the failed fields, never its text; ADR-0018). Boxes MUST be fractions of the page, from the top left. Every date MUST have a `kind`, and every result a `collectedAt` (or null) chosen by code and `lowConfidence`, set by code from the OCR confidence of its value and unit words.
 
 #### Scenario: A result points to its words
 
