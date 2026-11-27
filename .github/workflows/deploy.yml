@@ -51,7 +51,7 @@ jobs:
     outputs:
       image: ${{ steps.name.outputs.image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: name
         run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/baseline-extractor:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
       - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
@@ -68,8 +68,8 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/login@v2
+      - uses: actions/checkout@v7
+      - uses: azure/login@v3
         with:
           client-id: ${{ vars.DEPLOY_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
@@ -93,7 +93,7 @@ jobs:
             echo "- Document Intelligence: ${{ steps.deploy.outputs.documentIntelligenceEndpoint }}"
             echo "- Azure OpenAI: ${{ steps.deploy.outputs.openAiEndpoint }}"
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Install
@@ -103,7 +103,7 @@ jobs:
       - name: Generate the smoke test's document
         run: python evals/synthetic/generate.py --out generated --only a1-vitamin-d
       # The smoke test signs in as its own identity: clean and text under the test user only, send to extract.
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ steps.deploy.outputs.smokeClientId }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}

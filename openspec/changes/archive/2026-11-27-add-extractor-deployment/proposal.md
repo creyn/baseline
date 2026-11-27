@@ -2,7 +2,7 @@
 
 ## Why
 
-The extractor runs only in tests and evals. Nothing of Baseline runs on Azure yet. The first deployment puts the extractor on Azure with its queues and storage, so that a document put on the `extract` queue ends as a `text` blob, and shows that the identities, roles and scaling of [ADR-0004](../../../docs/adr/0004-serverless-hosting-and-operations.md) and [ADR-0005](../../../docs/adr/0005-asynchronous-import-pipeline.md) work. How it is deployed is [ADR-0019](../../../docs/adr/0019-deployment-with-bicep-and-a-smoke-test.md) (accepted).
+The extractor runs only in tests and evals. Nothing of Baseline runs on Azure yet. The first deployment puts the extractor on Azure with its queues and storage, so that a document put on the `extract` queue ends as a `text` blob, and shows that the identities, roles and scaling of [ADR-0004](../../../../docs/adr/0004-serverless-hosting-and-operations.md) and [ADR-0005](../../../../docs/adr/0005-asynchronous-import-pipeline.md) work. How it is deployed is [ADR-0019](../../../../docs/adr/0019-deployment-with-bicep-and-a-smoke-test.md) (accepted).
 
 ## What Changes
 

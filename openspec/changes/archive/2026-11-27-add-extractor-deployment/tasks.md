@@ -15,7 +15,7 @@
 ## 3. After merge
 
 - [x] 3.1 The owner decides ADR-0019 (accepted 2026-11-26)
-- [ ] 3.2 The owner creates the production group, the deploying identity and the `production` environment
-- [ ] 3.3 The first deployment; the image package made public; the smoke test passes
-- [ ] 3.4 The evals moved to the new services; `rg-baseline-evals` deleted; resource locks added by hand
-- [ ] 3.5 Archive the change
+- [x] 3.2 The owner creates the production group, the deploying identity and the `production` environment (2026-11-26; the resource providers registered once on the subscription)
+- [x] 3.3 The first deployment; the image package made public; the smoke test passes (2026-11-26)
+- [x] 3.4 The evals moved to the new services; `rg-baseline-evals` deleted; resource locks added by hand (2026-11-27; live evals on the new services: values and units 100%, names 97.6%, ranges and flags 100%, 125 of 126 read)
+- [x] 3.5 Archive the change
