@@ -25,6 +25,7 @@ The gates G1 to G6 are defined once, in [docs/decision-criteria.md](docs/decisio
 - **Diagrams:** generated from `tools/diagrams`. Edit the scripts, never the SVG files, and commit the SVG files `npm run build` makes; CI fails when they differ. The figures of ADR-0005 are frozen as the record of that decision and are neither generated nor edited ([docs/adr/0005/README.md](docs/adr/0005/README.md)).
 - **Failure handling:** every message receiver is idempotent (Service Bus Basic has no duplicate detection). Status changes are forward-only (`UPDATE … WHERE status = …`). No database transaction spans an external call.
 - **Tests run in CI.** Development happens on a small VPS without .NET or Docker, so the pipeline is the build. Keep tests runnable without Azure (emulators in containers).
+- **Workflows:** every action is pinned to a full commit SHA, with its version in a comment (`uses: owner/action@<sha> # v1.2.3`). Dependabot updates the pins and the dependencies every week, and CodeQL runs on every pull request ([ADR-0013](docs/adr/0013-application-security-baseline.md), point 6).
 - **Review:** before opening a pull request, run the `reviewer` subagent on the branch.
 - **Language:** everything in the repository is in English, in plain, short sentences. The only exception is the text the family sees in the UI, including the consent text: it is Polish and lives in the UI's locale files ([ADR-0002](docs/adr/0002-languages-dotnet-python-and-typescript.md)).
 
