@@ -2,7 +2,7 @@
 
 ## Context
 
-The extractor's core and service shell are done and tested ([services/extractor](../../../services/extractor/README.md)); its settings come from the environment and it signs in with `DefaultAzureCredential` ([main.py](../../../services/extractor/extractor/main.py)). The live evals use Document Intelligence and Azure OpenAI in `rg-baseline-evals`, made by hand. This change puts the extractor on Azure and moves every resource into one group, as [ADR-0004](../../../docs/adr/0004-serverless-hosting-and-operations.md) asks. How, and why not azd: [ADR-0019](../../../docs/adr/0019-deployment-with-bicep-and-a-smoke-test.md) (proposed).
+The extractor's core and service shell are done and tested ([services/extractor](../../../services/extractor/README.md)); its settings come from the environment and it signs in with `DefaultAzureCredential` ([main.py](../../../services/extractor/extractor/main.py)). The live evals use Document Intelligence and Azure OpenAI in `rg-baseline-evals`, made by hand. This change puts the extractor on Azure and moves every resource into one group, as [ADR-0004](../../../docs/adr/0004-serverless-hosting-and-operations.md) asks. How, and why not azd: [ADR-0019](../../../docs/adr/0019-deployment-with-bicep-and-a-smoke-test.md) (accepted).
 
 ## Goals and non-goals
 

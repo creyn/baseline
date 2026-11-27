@@ -4,7 +4,7 @@ Date: 2026-11-22
 
 ## Status
 
-Accepted
+Accepted. Point 3 is changed by [ADR-0019](0019-deployment-with-bicep-and-a-smoke-test.md): CI deploys Bicep through the Azure CLI, not azd.
 
 ## Context
 
