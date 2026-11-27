@@ -22,7 +22,7 @@ Every Azure resource of Baseline SHALL be defined in `infra/main.bicep` and depl
 
 ### Requirement: Least privilege per identity
 
-Each caller SHALL have its own managed identity with roles only on the containers, queues and services it uses, as listed in the design. The smoke test's identity MUST NOT read or write blobs outside the test user's path.
+Each caller SHALL have its own managed identity with roles only on the containers, queues and services it uses, as listed in the [design](../../changes/archive/2026-11-27-add-extractor-deployment/design.md). The smoke test's identity MUST NOT read or write blobs outside the test user's path.
 
 #### Scenario: The smoke identity and a real user's data
 
