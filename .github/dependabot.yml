@@ -1,0 +1,25 @@
+# ADR-0013, point 6: dependencies are watched. Actions are pinned to commit SHAs; Dependabot updates the pins.
+# No npm entry: tools/diagrams and the spike have no dependencies. A nuget entry comes with the first .NET project.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+  - package-ecosystem: pip
+    directories:
+      - /services/extractor
+      - /contracts
+      - /evals/synthetic
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ['*']
+  - package-ecosystem: docker
+    directory: /services/extractor
+    schedule:
+      interval: weekly
