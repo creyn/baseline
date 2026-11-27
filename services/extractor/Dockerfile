@@ -1,6 +1,6 @@
 # The extractor's image (ADR-0019). Built from the repository root, because it needs contracts/:
 #   docker build -f services/extractor/Dockerfile .
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 # Links the GitHub package to the repository, so the workflow's token can push new versions.
 LABEL org.opencontainers.image.source=https://github.com/creyn/baseline
