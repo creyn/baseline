@@ -1,25 +1,42 @@
-# ADR-0013, point 6: dependencies are watched. Actions are pinned to commit SHAs; Dependabot updates the pins.
+# ADR-0013 point 6, refined by ADR-0020: dependencies are watched, new versions are proposed
+# only after a waiting time, majors one by one, and nothing is merged automatically.
+# Security updates ignore the waiting time; they are turned on in the repository settings, not here.
 # No npm entry: tools/diagrams and the spike have no dependencies. A nuget entry comes with the first .NET project.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    cooldown:
+      default-days: 14
     groups:
       actions:
         patterns: ['*']
+        update-types: [minor, patch]
   - package-ecosystem: pip
     directories:
       - /services/extractor
       - /contracts
       - /evals/synthetic
     schedule:
-      interval: weekly
+      interval: monthly
+    cooldown:
+      semver-patch-days: 7
+      semver-minor-days: 14
+      semver-major-days: 30
     groups:
       python:
         patterns: ['*']
+        update-types: [minor, patch]
   - package-ecosystem: docker
     directory: /services/extractor
     schedule:
-      interval: weekly
+      interval: monthly
+    cooldown:
+      default-days: 14
+    ignore:
+      # ADR-0020 point 4: Python stays 3.12 until a separate decision. The tag has no digest,
+      # so until then this entry opens no pull requests; pin a digest to get base image updates.
+      - dependency-name: python
+        versions: ['>=3.13']

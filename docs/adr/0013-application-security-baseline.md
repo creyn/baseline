@@ -4,7 +4,7 @@ Date: 2026-11-23
 
 ## Status
 
-Accepted
+Accepted. Point 6 is refined by [ADR-0020](0020-dependency-updates-after-a-waiting-time.md): new versions are proposed monthly, after a waiting time, majors one by one, and never merged automatically.
 
 ## Context
 
