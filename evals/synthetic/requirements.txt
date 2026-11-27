@@ -1,5 +1,5 @@
 # Versions are pinned: a new version can change every generated file.
-reportlab==4.2.5
+reportlab==5.1.0
 chardet==5.2.0
 pillow==11.0.0
 pypdfium2==4.30.0
