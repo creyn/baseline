@@ -2,7 +2,7 @@
 
 ## Context
 
-The extractor's core and service shell are done and tested ([services/extractor](../../../services/extractor/README.md)); its settings come from the environment and it signs in with `DefaultAzureCredential` ([main.py](../../../services/extractor/extractor/main.py)). The live evals use Document Intelligence and Azure OpenAI in `rg-baseline-evals`, made by hand. This change puts the extractor on Azure and moves every resource into one group, as [ADR-0004](../../../docs/adr/0004-serverless-hosting-and-operations.md) asks. How, and why not azd: [ADR-0019](../../../docs/adr/0019-deployment-with-bicep-and-a-smoke-test.md) (accepted).
+The extractor's core and service shell are done and tested ([services/extractor](../../../../services/extractor/README.md)); its settings come from the environment and it signs in with `DefaultAzureCredential` ([main.py](../../../../services/extractor/extractor/main.py)). The live evals use Document Intelligence and Azure OpenAI in `rg-baseline-evals`, made by hand. This change puts the extractor on Azure and moves every resource into one group, as [ADR-0004](../../../../docs/adr/0004-serverless-hosting-and-operations.md) asks. How, and why not azd: [ADR-0019](../../../../docs/adr/0019-deployment-with-bicep-and-a-smoke-test.md) (accepted).
 
 ## Goals and non-goals
 
@@ -12,7 +12,7 @@ The extractor's core and service shell are done and tested ([services/extractor]
 
 ## Decisions
 
-### Resources ([infra/main.bicep](../../../infra/main.bicep))
+### Resources ([infra/main.bicep](../../../../infra/main.bicep))
 
 - **Names:** `<type>-baseline-<suffix>`, the suffix from the group's id, so a second deployment finds the same resources. Identities and the Container App have fixed names.
 - **Storage:** `Standard_LRS`, shared keys and public blob access off, TLS 1.2. Containers `incoming`, `clean`, `text`; a lifecycle rule deletes `incoming` blobs after a day (ADR-0005).
@@ -42,7 +42,7 @@ The extractor's core and service shell are done and tested ([services/extractor]
 
 Every role is scoped to the one container, queue or service it is for. The smoke identity's conditions limit data actions only; Storage Blob Data Contributor also allows deleting the container (ADR-0019, consequences). The smoke test checks on every run that it cannot read another user's `text`. The role ids in the Bicep are checked on the first deployment; a wrong id fails it.
 
-### Deployment ([deploy.yml](../../../.github/workflows/deploy.yml))
+### Deployment ([deploy.yml](../../../../.github/workflows/deploy.yml))
 
 1. Only `main` (the workflow fails on any other ref), on push (paths of the extractor, the contracts, the infrastructure and the smoke test) and on demand. Skipped until the `production` environment has its variables. One deployment at a time, never cancelled half way.
 2. Build the image and push it to GitHub Container Registry with the workflow's own token.
@@ -51,7 +51,7 @@ Every role is scoped to the one container, queue or service it is for. The smoke
 
 Pull requests compile and lint the Bicep and build and start the image (CI), without Azure.
 
-### Smoke test ([tools/smoke](../../../tools/smoke/extractor_smoke.py))
+### Smoke test ([tools/smoke](../../../../tools/smoke/extractor_smoke.py))
 
 Renders page 1 of the synthetic document `a1-vitamin-d`. A refused upload or send is retried for up to 5 minutes, because new role assignments take time. It writes its clean ZIP under the test user with new `docId` and `verId`, sends `ExtractRequested` (validated against the contract), and waits up to 10 minutes for the `text` blob. The blob must pass the schema and the text checks and hold at least one result. It prints identifiers and counts only. A cold start (scale from zero, about 30 seconds of polling plus the start) is part of the wait.
 

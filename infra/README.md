@@ -1,6 +1,6 @@
 # Infrastructure
 
-Everything Baseline runs on Azure, as Bicep at resource-group scope ([ADR-0004](../docs/adr/0004-serverless-hosting-and-operations.md), [ADR-0019](../docs/adr/0019-deployment-with-bicep-and-a-smoke-test.md)). The workflow [deploy.yml](../.github/workflows/deploy.yml) deploys it on `main` and on demand, then runs the [smoke test](../tools/smoke/extractor_smoke.py). The rules are in the OpenSpec change [add-extractor-deployment](../openspec/changes/add-extractor-deployment/design.md).
+Everything Baseline runs on Azure, as Bicep at resource-group scope ([ADR-0004](../docs/adr/0004-serverless-hosting-and-operations.md), [ADR-0019](../docs/adr/0019-deployment-with-bicep-and-a-smoke-test.md)). The workflow [deploy.yml](../.github/workflows/deploy.yml) deploys it on `main` and on demand, then runs the [smoke test](../tools/smoke/extractor_smoke.py). The requirements are in the living spec [deployment](../openspec/specs/deployment/spec.md), the design in the archived change [add-extractor-deployment](../openspec/changes/archive/2026-11-27-add-extractor-deployment/design.md).
 
 | Resource | Why |
 |---|---|

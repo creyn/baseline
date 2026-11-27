@@ -58,8 +58,8 @@ jobs:
       AZURE_OPENAI_DEPLOYMENT: ${{ vars.AZURE_OPENAI_DEPLOYMENT }}
       AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Install
@@ -68,7 +68,7 @@ jobs:
           python -m pip install -q -r evals/synthetic/requirements.txt -r services/extractor/requirements.txt
       - name: Generate the synthetic documents
         run: python evals/synthetic/generate.py --out generated
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
@@ -78,7 +78,7 @@ jobs:
       - name: Summary
         if: always()
         run: test -f report/summary.md && cat report/summary.md >> "$GITHUB_STEP_SUMMARY" || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: extraction-evals
