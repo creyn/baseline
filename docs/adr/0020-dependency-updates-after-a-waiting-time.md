@@ -17,7 +17,7 @@ Both were closed without merging. A version released yesterday may carry its own
 Facts checked in the [Dependabot options reference](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference) on 2026-11-27:
 - `cooldown` delays version updates by a number of days after a release. The default is 3 days.
 - pip supports separate days for patch, minor and major versions. Docker and GitHub Actions support only `default-days`.
-- `cooldown` and the `update-types` of `allow` apply to version updates only, not to security updates.
+- `cooldown` applies to version updates only, not to security updates.
 - A group can be limited to `update-types` (`patch`, `minor`, `major`).
 - Whether `ignore` also holds back security updates is not stated there: to check.
 
@@ -40,13 +40,13 @@ We choose option 3.
    - Docker and GitHub Actions: 14 days (only one value is supported).
 3. **Minor and patch updates in one pull request per ecosystem.** Each major version comes in its own pull request. Its release notes are read and the code is fixed in the same pull request before it is merged.
 4. **The Python version is held at 3.12** in the extractor's image. A new Python version is its own decision, when the libraries we use publish wheels for it.
-5. **Security updates come at once**, without a waiting time.
+5. **Security updates come at once**, without a waiting time. They need "Dependabot alerts" and "Dependabot security updates" turned on in the repository settings, which `dependabot.yml` cannot do; the owner turns them on and checks them (to check: not visible to the agents' token).
 6. **Nothing is merged automatically.** A Dependabot pull request is a proposal like any other: CI, a review, and a merge by the owner. No workflow approves or merges it.
 
 ## Consequences
 
 - A new version reaches us at the earliest after its waiting time, and at the latest about a month later.
 - Fewer pull requests: about one per ecosystem a month, plus one per major version.
-- A Dependabot pull request that touches the extractor also runs the live evals (about 0.61 USD a run), which is what a dependency change of the extractor should do.
+- A Dependabot pull request that touches the extractor also runs the live evals (about 0.65 USD a run, [ADR-0017](0017-catching-changes-on-the-ai-services.md)), which is what a dependency change of the extractor should do. Seen on 2026-11-27: the live evals ran on both closed Dependabot pull requests.
 - A fix that arrives as a normal release, not as a security advisory, waits like any other version.
 - The waiting times are guesses. If a bug we hit was already fixed in a version we were still waiting for, we shorten them.

@@ -1,6 +1,6 @@
 # ADR-0013 point 6, refined by ADR-0020: dependencies are watched, new versions are proposed
 # only after a waiting time, majors one by one, and nothing is merged automatically.
-# Security updates ignore the waiting time.
+# Security updates ignore the waiting time; they are turned on in the repository settings, not here.
 # No npm entry: tools/diagrams and the spike have no dependencies. A nuget entry comes with the first .NET project.
 version: 2
 updates:
@@ -36,6 +36,7 @@ updates:
     cooldown:
       default-days: 14
     ignore:
-      # ADR-0020 point 4: Python stays 3.12 until a separate decision.
+      # ADR-0020 point 4: Python stays 3.12 until a separate decision. The tag has no digest,
+      # so until then this entry opens no pull requests; pin a digest to get base image updates.
       - dependency-name: python
         versions: ['>=3.13']
